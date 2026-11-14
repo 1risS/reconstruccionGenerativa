@@ -1,0 +1,17 @@
+{
+  "name": "paisajes-sonoros-little-havana",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "audios": "./scripts/convertir-audios.sh",
+    "local": "node scripts/servidor-local.mjs",
+    "qrs": "node scripts/generar-qrs.mjs",
+    "deploy": "wrangler pages deploy site --project-name=little-havana-sonoro --branch=main --commit-dirty=true"
+  },
+  "dependencies": {
+    "qrcode": "1.5.4"
+  },
+  "devDependencies": {
+    "wrangler": "^4.161.0"
+  }
+}

@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#121010">
+  <title>Little Havana</title>
+  <link rel="stylesheet" href="../assets/estilo.css">
+</head>
+<body data-sitio="tower-hotel">
+  <main class="pagina" id="app">
+    <header class="muestra"></header>
+    <section class="sitio">
+      <span class="numero"></span>
+      <h1 class="nombre"></h1>
+      <p class="lugar"></p>
+      <p class="texto"></p>
+    </section>
+    <section class="reproductor">
+      <button class="boton" aria-pressed="false" aria-label="Reproducir">
+        <svg class="anillo" viewBox="0 0 120 120" aria-hidden="true">
+          <circle class="pista" cx="60" cy="60" r="52"/>
+          <circle class="avance" cx="60" cy="60" r="52"/>
+        </svg>
+        <span class="icono" aria-hidden="true">
+          <svg class="play" viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5z"/></svg>
+          <svg class="pausa" viewBox="0 0 24 24"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg>
+        </span>
+      </button>
+      <div class="pistas"></div>
+      <div class="barra">
+        <input id="rango" type="range" min="0" max="1000" value="0" aria-label="Posición">
+        <div class="tiempos"><span id="actual">0:00</span><span id="total">–:––</span></div>
+      </div>
+      <p class="aviso">Se recomienda usar auriculares.</p>
+    </section>
+  </main>
+  <script src="../assets/sitios.js"></script>
+  <script src="../assets/reproductor.js"></script>
+</body>
+</html>

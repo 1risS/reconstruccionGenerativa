@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Calibrar proyecciones · Deriva Calle 8</title>
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.css">
+  <link rel="stylesheet" href="../assets/estilo.css">
+  <link rel="stylesheet" href="calibrar.css">
+</head>
+<body>
+  <div class="cabecera">
+    <b>Calibrar proyecciones</b>
+    <select id="vista" aria-label="Imagen a calibrar"></select>
+    <span class="estado" id="estado"></span>
+    <span class="espacio"></span>
+    <button id="guardar" class="principal">Guardar</button>
+    <button id="probar">Probar en la página</button>
+    <button id="copiar" title="Copia el bloque de la vista para pegarlo en recorrido.js">Copiar</button>
+  </div>
+
+  <main class="area">
+    <section class="panel-img" id="panel-img">
+      <canvas id="lienzo"></canvas>
+      <div class="flotante arriba">
+        <label><input type="checkbox" id="ver-contornos" checked> contornos</label>
+        <label><input type="checkbox" id="ver-ocultas" checked> ocultar líneas tapadas</label>
+        <label>imagen <input type="range" id="opacidad" min="0" max="100" value="100"></label>
+      </div>
+      <p class="ayuda flotante abajo">clic = marcar · arrastrar un punto = moverlo · arrastrar = desplazar · rueda = zoom · tecla 0 = encuadrar · ⌫ = borrar par</p>
+    </section>
+
+    <section class="panel-mapa">
+      <div id="mapa"></div>
+      <div class="flotante arriba">
+        <label><input type="checkbox" id="ver-satelite" checked> satélite</label>
+        <label><input type="checkbox" id="ver-edificios" checked> edificios</label>
+      </div>
+      <p class="ayuda flotante abajo">clic = punto 3D (se pega a la esquina más cercana) · ⇧ clic = elegir edificio · la cámara se puede arrastrar</p>
+    </section>
+
+    <aside class="lateral">
+      <h2>Pares <small>imagen ↔ ciudad</small></h2>
+      <p class="nota" id="instruccion"></p>
+      <table class="pares">
+        <thead><tr><th>#</th><th>img</th><th>3D</th><th>altura (m)</th><th>error</th><th></th></tr></thead>
+        <tbody id="lista-pares"></tbody>
+      </table>
+      <button id="nuevo-par" class="ancho">+ nuevo par</button>
+
+      <h2>Cálculo</h2>
+      <div class="opciones">
+        <label><input type="checkbox" id="auto" checked> calcular al marcar</label>
+        <label><input type="checkbox" id="libre-giro" checked> giro</label>
+        <label><input type="checkbox" id="libre-apertura" checked> apertura</label>
+        <label title="Requiere 6 pares o más"><input type="checkbox" id="libre-centro"> centro óptico</label>
+      </div>
+      <button id="calcular" class="ancho">Calcular cámara</button>
+      <p class="resultado" id="resultado"></p>
+
+      <h2>Ajuste manual <small>arrastrar y soltar</small></h2>
+      <div class="ajustes" id="ajustes"></div>
+      <button id="deshacer" class="ancho">Deshacer ajuste</button>
+
+      <div id="edificio" class="edificio" hidden>
+        <h2>Edificio</h2>
+        <label>altura <input type="number" id="alto-edificio" min="1" max="200" step="0.5"> m</label>
+        <span class="nota" id="alto-original"></span>
+        <button id="quitar-alto">original</button>
+      </div>
+    </aside>
+  </main>
+
+  <div class="aviso" id="aviso" hidden></div>
+
+  <script src="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.js"></script>
+  <script src="recorrido.js"></script>
+  <script src="calibracion.js"></script>
+  <script type="module" src="calibrar.js"></script>
+</body>
+</html>
