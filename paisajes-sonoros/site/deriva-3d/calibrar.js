@@ -37,7 +37,12 @@ function abrirTrabajo(item) {
   const img = item.def.imagen;
   if (trabajo[img]) return trabajo[img];
   const guardada = (borrador && borrador.vistas && borrador.vistas[img]) || (ARCHIVO.vistas || {})[img];
-  const v = C.normalizar(guardada ? { ...item.def, ...guardada, imagen: img } : item.def, aLocal);
+  let v = C.normalizar(guardada ? { ...item.def, ...guardada, imagen: img } : item.def, aLocal);
+  // protección: una cámara absurda (muy lejos o con zoom extremo) vuelve a la de recorrido.js, conservando los pares
+  if (v.apertura < 2 || v.pos[2] > 1500 || Math.hypot(v.pos[0] - v.mira[0], v.pos[1] - v.mira[1]) > 3000) {
+    v = C.normalizar(item.def, aLocal);
+    setTimeout(() => aviso('La cámara guardada de esta vista era absurda (muy lejos o con zoom extremo); volví a la original. Tus pares se conservan.', 7000), 500);
+  }
   const pares = ((guardada && guardada.pares) || []).map((q) => ({
     uv: q.u != null ? [q.u, q.v] : null, ll: q.lat != null ? { lat: q.lat, lng: q.lng } : null,
     alt: q.alt || 0, techo: !!q.techo, b: null,
@@ -513,17 +518,25 @@ $('#nuevo-par').addEventListener('click', () => { nuevoPar(); pintarLista(); act
 function calcular(avisar) {
   const ps = completos().map(aPar);
   const lib = libres();
-  const min = lib.centro ? 6 : 4;
-  if (ps.length < min) {
-    if (avisar) aviso(`Hacen falta al menos ${min} pares completos${lib.centro ? ' para liberar el centro óptico' : ''}.`);
+  if (ps.length < 4) {
+    if (avisar) aviso('Hacen falta al menos 4 pares completos (con punto en la imagen y en el mapa).');
     return false;
   }
-  const r = C.calibrar(ps, W, H, T.v, lib);
+  const r = C.calibrar(ps, W, H, T.v, { ...lib, centro: lib.centro }, {
+    original: C.normalizar(T.item.def, aLocal),
+    dist: parseFloat($('#dist-max').value) || 300, apMin: parseFloat($('#ap-min').value) || 12,
+  });
   if (!r) return false;
   T.v = { ...T.v, ...r.vista };
   T.calculada = clonar(T.v);
+  T.ultimo = r;
   return true;
 }
+$('#original').addEventListener('click', () => {
+  T.v = C.normalizar(T.item.def, aLocal); T.calculada = clonar(T.v); T.ultimo = null;
+  cambio({ manual: true });
+  aviso('Volví a la cámara puesta a mano en recorrido.js.', 2500);
+});
 function actualizarErrores() {
   const res = C.residuos(T.v, T.pares.map((q) => (q.uv && q.ll ? aPar(q) : { uv: [0, 0], X: [0, 0, -1e6] })), W, H);
   T.errores = res.map((r, i) => (r && T.pares[i].uv && T.pares[i].ll ? Math.hypot(r[0], r[1]) : NaN));
@@ -536,12 +549,24 @@ function actualizarErrores() {
     txt += `<b>${ok.length}</b> pares · error medio <b>${medio.toFixed(1)} px</b> (${((medio / W) * 100).toFixed(1)} % del ancho)` +
       ` · máx. <span class="${max > Math.max(8, medio * 3) ? 'malo' : ''}">${max.toFixed(1)} px en #${imax + 1}</span><br>`;
   }
+  // avisos sobre la calidad del cálculo
+  const comp = completos(), n = comp.length, avisos = [];
+  if (n >= 4) {
+    const alts = comp.map(altPar);
+    if (Math.max(...alts) - Math.min(...alts) < 1) avisos.push('Todos los puntos están a la misma altura (el piso): así no se puede saber bien la altura de la cámara. Sumá 2 o 3 puntos en <b>techos</b> o en lo alto de la torre, con la altura correcta del edificio.');
+    const u = comp.map((q) => q.uv[0]), w = comp.map((q) => q.uv[1]);
+    if (Math.max(...u) - Math.min(...u) < 0.4 || Math.max(...w) - Math.min(...w) < 0.25) avisos.push('Los puntos están amontonados en una parte de la imagen: repartilos hacia los bordes.');
+    if (n < 6) avisos.push(`Con ${n} pares la apertura queda fija (${red(v.apertura, 1)}°). Desde 6 pares se calcula también.`);
+    if (T.ultimo && T.ultimo.limitada) avisos.push('La cámara llegó a un límite (distancia máxima o apertura mínima). Pasa con imágenes casi sin perspectiva, como los dioramas: los contornos van a calzar en el centro y menos en los bordes. Podés subir la distancia máxima para probar.');
+    if ($('#libre-centro').checked && n < 8) avisos.push('El centro óptico se calcula recién desde 8 pares.');
+  }
+  if (avisos.length) txt += '<span class="avisos">' + avisos.map((a) => '⚠ ' + a).join('<br>') + '</span><br>';
   txt += `cámara a <b>${red(v.pos[2], 1)} m</b> de altura · apertura ${red(v.apertura, 1)}° · giro ${red(v.giro, 1)}°` +
     (v.centro[0] || v.centro[1] ? ` · centro ${red(v.centro[0], 3)}, ${red(v.centro[1], 3)}` : '');
   $('#resultado').innerHTML = txt;
 }
 $('#calcular').addEventListener('click', () => { if (calcular(true)) cambio({ calculo: true }); });
-['#libre-giro', '#libre-apertura', '#libre-centro'].forEach((s) => $(s).addEventListener('change', () => {
+['#libre-giro', '#libre-apertura', '#libre-centro', '#dist-max', '#ap-min'].forEach((s) => $(s).addEventListener('change', () => {
   if ($('#auto').checked && calcular(false)) cambio({ calculo: true });
 }));
 

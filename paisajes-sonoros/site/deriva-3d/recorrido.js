@@ -29,6 +29,8 @@
 //    mira      → punto al que apunta el centro de la imagen (lat, lng, alt)
 //    apertura  → ángulo horizontal de la imagen, en grados (más chico = la imagen cubre menos ciudad)
 //  Fuera de su tramo, la primera vista de cada lugar queda proyectada (tenue) como huella.
+//  vuelve      → (opcional) otros tramos en que la cámara regresa al mismo lugar: [{ desde, hasta }, …]
+//                 (p. ej. cuando el recorrido vuelve a pasar frente a la huella). Usa las mismas vistas.
 //
 // Abrí la página con ?editar al final de la URL para marcar puntos sobre el mapa
 // mientras escuchás (clic en el mapa = punto en el momento actual del audio).
@@ -68,32 +70,91 @@ window.RECORRIDO = {
 
   proyecciones: [
     {
-      desde: '4:12', hasta: '4:48', lugar: 'Tower Theater', tipo: 'diorama generado por IA',
+      // drone/tower_theatre_00.jpeg — captura aérea desde la esquina de Calle 8 y 15 Av, mirando al suroeste.
+      // Cámara calculada a partir de esquinas del teatro y del cruce peatonal (ver calibracion.js, se puede
+      // retocar en calibrar.html). El volumen del teatro en edificios.json se midió sobre esta misma foto.
+      // Ida: pausa en la vereda norte, 15 Av. Vuelta: pausa final frente al teatro, en la vereda sur.
+      desde: '4:12', hasta: '4:48', lugar: 'Tower Theater', tipo: 'captura de dron',
+      vuelve: [{ desde: '11:52', hasta: '12:32' }],
       vistas: [
-        { imagen: 'registros/tower-theater-diorama-00.webp', apertura: 42,
-          camara: { lat: 25.765945, lng: -80.219124, alt: 60 }, mira: { lat: 25.76546, lng: -80.21966, alt: 4 } },
-        { imagen: 'registros/tower-theater-diorama-02.webp', apertura: 40,
-          camara: { lat: 25.76546, lng: -80.218962, alt: 72 }, mira: { lat: 25.76546, lng: -80.21966, alt: 4 } }
+        { imagen: 'registros/tower-theatre-dron-00.webp', apertura: 73.7, rumbo: -137.2, cabeceo: 22.2, giro: -0.1,
+          camara: { lat: 25.7657892, lng: -80.2194265, alt: 19.5 }, mira: { lat: 25.7655532, lng: -80.2196669, alt: 5 } }
       ]
     },
     {
-      // fachadas/25.765975736679938, -80.21976477493762_00/_01.jpg — vista frontal desde la vereda sur
-      desde: '5:15', hasta: '5:51', lugar: 'Ball & Chain', tipo: 'diorama generado por IA',
+      // fachadas/ball_and_chain_00.jpeg — foto de la artista desde la vereda sur, a la altura de los ojos
+      // (teleobjetivo, sin EXIF). Fachada en edificios.json: lat ≈ 25.765815, a ~22 m de la cámara.
+      // Escala por las personas en la puerta (≈ 8 m de ancho en la pared); las cabezas quedan apenas
+      // debajo del centro → la cámara mira casi horizontal, un poco hacia arriba.
+      // Ida: el caminante pasa pegado a la fachada (vereda norte) y la cámara cruza a la vereda de enfrente.
+      // (A la vuelta no regresa: ese tramo lo ocupa Cuban Cigars Corp, en la vereda sur.)
+      desde: '5:08', hasta: '5:38', lugar: 'Ball & Chain', tipo: 'fotografía',
       vistas: [
-        { imagen: 'registros/ball-and-chain-fachada-00.webp', apertura: 46,
-          camara: { lat: 25.76512, lng: -80.219765, alt: 22 }, mira: { lat: 25.765976, lng: -80.219765, alt: 5 } },
-        { imagen: 'registros/ball-and-chain-fachada-01.webp', apertura: 44,
-          camara: { lat: 25.765076, lng: -80.219765, alt: 38 }, mira: { lat: 25.765976, lng: -80.219765, alt: 5 } }
+        { imagen: 'registros/ball-and-chain-foto-00.webp', apertura: 21,
+          camara: { lat: 25.76562, lng: -80.219765, alt: 1.6 }, mira: { lat: 25.765815, lng: -80.219765, alt: 2 } }
       ]
     },
     {
-      desde: '11:52', hasta: '12:32', lugar: '336 SW 15 Av.', tipo: 'diorama generado por IA',
+      // fachadas/25.766093230951114, -80.22060821726569.jpeg — Top Cigars y Skinny Louie (1551 SW 8 St),
+      // foto de la artista desde la vereda sur. La longitud del nombre coincide con el centro de la foto.
+      // Fachada en edificios.json: lat ≈ 25.765782 (polígono de Kung Fu Chicken + Top Cigars + Skinny Louie).
+      // Por las personas: ≈ 15,6 m de ancho en la pared y las cabezas bien debajo del centro → cámara
+      // a 1,6 m inclinada ~8° hacia arriba (el centro de la foto cae a ~4,3 m en la pared).
+      desde: '6:02', hasta: '6:28', lugar: 'Top Cigars · Skinny Louie', tipo: 'fotografía',
+      vuelve: [{ desde: '10:40', hasta: '11:04' }],
       vistas: [
-        { imagen: 'registros/336-sw15-diorama-00.webp', apertura: 40,
-          camara: { lat: 25.769374, lng: -80.219364, alt: 48 }, mira: { lat: 25.76975, lng: -80.21978, alt: 2 } },
-        { imagen: 'registros/336-sw15-diorama-01.webp', apertura: 38,
-          camara: { lat: 25.76975, lng: -80.219321, alt: 57 }, mira: { lat: 25.76975, lng: -80.21978, alt: 2 } }
+        { imagen: 'registros/top-cigars-foto-00.webp', apertura: 43,
+          camara: { lat: 25.765605, lng: -80.220608, alt: 1.6 }, mira: { lat: 25.765782, lng: -80.220608, alt: 4.3 } }
+      ]
+    },
+    {
+      // fachadas/25.7655590444568, -80.22000060276768.jpeg — Cuban Cigars Corp (1520 SW 8 St), vereda sur.
+      // Foto de la artista desde la misma vereda, de cerca y frontal (fachada mirando al norte).
+      // Fachada en edificios.json: lat ≈ 25.765604 (la coordenada del nombre cae 5 m adentro del local).
+      // Escala por la puerta "1520" (≈ 7 m de ancho en la pared) → cámara a ~6 m, apertura ~62°;
+      // verticales paralelas → mira casi horizontal (el centro de la foto cae a ~2 m de altura).
+      // Sólo a la vuelta: el caminante va por esta vereda y pasa por el lugar de la artista hacia las 11:24.
+      desde: '11:10', hasta: '11:34', lugar: 'Cuban Cigars Corp', tipo: 'fotografía',
+      vistas: [
+        { imagen: 'registros/cuban-cigars-foto-00.webp', apertura: 62,
+          camara: { lat: 25.765658, lng: -80.220001, alt: 1.6 }, mira: { lat: 25.765604, lng: -80.220001, alt: 2 } }
       ]
     }
   ]
+  // ── DIORAMAS EN PAUSA ── todavía no calzan bien sobre la ciudad; para reactivarlos, descomentar y
+  // volver a ponerlos dentro de proyecciones: [ … ] (máximo 6 vistas en total).
+  // proyecciones_dioramas: [
+  //   {
+  //     desde: '4:12', hasta: '4:48', lugar: 'Tower Theater', tipo: 'diorama generado por IA',
+  //     vistas: [
+  //       { imagen: 'registros/tower-theater-diorama-00.webp', apertura: 42,
+  //         camara: { lat: 25.765945, lng: -80.219124, alt: 60 }, mira: { lat: 25.76546, lng: -80.21966, alt: 4 } },
+  //       { imagen: 'registros/tower-theater-diorama-02.webp', apertura: 40,
+  //         camara: { lat: 25.76546, lng: -80.218962, alt: 72 }, mira: { lat: 25.76546, lng: -80.21966, alt: 4 } }
+  //     ]
+  //   },
+  //   {
+  //     // ⚠ Ball & Chain ya está activo con la foto: para sumar estos dioramas, poner sus dos vistas
+  //     //   ANTES de la foto en la proyección activa (no agregar una segunda entrada "Ball & Chain").
+  //     // fachadas/25.765975736679938, -80.21976477493762_00/_01.jpg — vista frontal desde la vereda sur
+  //     // a la vuelta, desde la vereda sur, la huella se ve en la pared: la cámara vuelve a subir para revelarla
+  //     desde: '5:15', hasta: '5:51', lugar: 'Ball & Chain', tipo: 'diorama generado por IA',
+  //     vuelve: [{ desde: '10:52', hasta: '11:22' }],
+  //     vistas: [
+  //       { imagen: 'registros/ball-and-chain-fachada-00.webp', apertura: 46,
+  //         camara: { lat: 25.76512, lng: -80.219765, alt: 22 }, mira: { lat: 25.765976, lng: -80.219765, alt: 5 } },
+  //       { imagen: 'registros/ball-and-chain-fachada-01.webp', apertura: 44,
+  //         camara: { lat: 25.765076, lng: -80.219765, alt: 38 }, mira: { lat: 25.765976, lng: -80.219765, alt: 5 } }
+  //     ]
+  //   },
+  //   {
+  //     desde: '11:52', hasta: '12:32', lugar: '336 SW 15 Av.', tipo: 'diorama generado por IA',
+  //     vistas: [
+  //       { imagen: 'registros/336-sw15-diorama-00.webp', apertura: 40,
+  //         camara: { lat: 25.769374, lng: -80.219364, alt: 48 }, mira: { lat: 25.76975, lng: -80.21978, alt: 2 } },
+  //       { imagen: 'registros/336-sw15-diorama-01.webp', apertura: 38,
+  //         camara: { lat: 25.76975, lng: -80.219321, alt: 57 }, mira: { lat: 25.76975, lng: -80.21978, alt: 2 } }
+  //     ]
+  //   }
+  // ]
 }

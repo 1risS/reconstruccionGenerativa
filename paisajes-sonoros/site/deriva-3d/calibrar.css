@@ -81,3 +81,12 @@ input[type="number"] { background: #221e1c; border: 1px solid var(--line); borde
   .area { grid-template-columns: 1fr; grid-auto-rows: 60vh; }
   .lateral { grid-row: auto; height: auto; }
 }
+
+.guia { background: #1b1817; border: 1px solid var(--line); border-radius: 8px; padding: 0.5rem 0.7rem; margin-bottom: 0.8rem; line-height: 1.45; }
+.guia summary { cursor: pointer; font-family: var(--serif); font-size: 1rem; }
+.guia p, .guia ol { margin-top: 0.45rem; color: #d8d0c4; }
+.guia ol { padding-left: 1.2rem; }
+.guia li { margin-bottom: 0.25rem; }
+.limites { margin: 0.4rem 0; }
+.limites input { width: 4rem; }
+.resultado .avisos { display: block; color: #ffd27a; margin: 0.3rem 0; }

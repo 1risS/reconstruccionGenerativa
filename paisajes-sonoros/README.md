@@ -72,9 +72,18 @@ sin claves ni costo) que reproduce el recorrido sincronizado con `deriva_calle_8
 - `site/deriva-3d/mapa.js`, `mapa.css` ← lógica y estilo
 - **Ciudad dibujada** (`ciudad.js` + `edificios.json`): volúmenes de OpenStreetMap con sol rasante de atardecer,
   sombras, tramado en las sombras y ventanas. `edificios.json` es una copia fija de la zona (Calle 8 entre 12 y 18 Av, hasta la calle 2 al norte)
+  **Excepción:** el Tower Theatre (en OSM era un solo bloque de 5 m) se reemplazó por volúmenes medidos sobre la foto del dron:
+  auditorio de 10 m, cuerpo curvo del frente de 5 m, torre de entrada de 8 m y aguja de 18 m.
+- **Proyección activa:** la captura de dron del Tower Theatre (`registros/tower-theatre-dron-00.webp`, original en `../drone/`),
+  en la pausa de 15 Av a la ida (4:12) y en la pausa final frente al teatro (11:52). Los dioramas de IA quedan comentados
+  en `recorrido.js` hasta que calcen.
 - **Proyecciones anamórficas** (`proyecciones` en `recorrido.js`): cada imagen se proyecta sobre la ciudad desde el
   punto de vista donde fue tomada (`camara`, `mira`, `apertura`). La cámara deja al caminante, sube a ese punto y ahí
-  la imagen se recompone; desde la vereda queda fragmentada en las paredes. Máximo 6 vistas en total.
+  la imagen se recompone; desde la vereda queda fragmentada en las paredes. Máximo 6 vistas en total. Con `vuelve: [{ desde, hasta }]` la cámara
+  regresa a un lugar en otro momento del audio (mismas vistas, no suma al máximo).
+  Fotos tomadas desde la vereda: `camara` a la altura de los ojos (alt ≈ 1,6). Si miran al frente o hacia arriba,
+  el vuelo abre el encuadre para que entren enteras (MapLibre no inclina la cámara más de 84°).
+  Si el cartel o la parte alta de la foto pasan por encima del volumen, corregir la altura en `calibracion.js` → `alturas`.
 - **Calibrar las proyecciones** (`/deriva-3d/calibrar.html`, con `npm run local`): se marcan pares
   "este punto de la imagen = esta esquina de la ciudad" (imagen a la izquierda, satélite con los edificios a la derecha)
   y se calcula la cámara que los explica: posición, rumbo, inclinación, giro, apertura y, opcionalmente, centro óptico

@@ -1,0 +1,120 @@
+@import url('https://fonts.googleapis.com/css2?family=Yomogi&family=Zen+Loop:ital@1&display=swap');
+
+canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: -1;
+  display: block;
+  width: 100%;
+  height: 100vh;
+}
+
+:root {
+  color-scheme: dark;
+  scroll-behavior: smooth;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-flow: column;
+  background: radial-gradient(
+      circle at top,
+      rgba(238, 102, 65, 0.14),
+      transparent 35%
+    ),
+    linear-gradient(180deg, #0f1013 0%, #1a1b20 100%);
+  color: #ece8df;
+}
+
+.hero,
+article {
+  opacity: 0;
+  pointer-events: none;
+  width: min(52rem, calc(100vw - 3rem));
+  place-self: center;
+  border-radius: 10px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.hero {
+  min-height: 8vh;
+  margin-top: 0;
+  padding: 0;
+}
+
+h1 {
+  margin: 0;
+  font: 10vmin 'Zen Loop', cursive;
+  line-height: 0.9;
+  letter-spacing: 0.04em;
+}
+
+#status {
+  margin: 1rem 0 0;
+  font: 1rem/1.5 'Yomogi', cursive;
+  color: #e8d5b7;
+}
+
+#play-button {
+  margin-top: 1rem;
+  padding: 0.8rem 1.1rem;
+  border: 0;
+  border-radius: 999px;
+  background: #ee6641;
+  color: #111;
+  font: 700 0.95rem/1 'Yomogi', cursive;
+  cursor: pointer;
+}
+
+#play-button:hover {
+  background: #ff8564;
+}
+
+article {
+  min-height: 220vh;
+  margin-block: 0;
+  padding: 0;
+  font-family: 'Yomogi', cursive;
+  line-height: 1.7;
+}
+
+article:last-of-type {
+  margin-block: 0;
+  border-end-start-radius: 10px;
+  border-end-end-radius: 10px;
+}
+
+article h2 {
+  margin: 0 0 1rem;
+  font-size: 1.2rem;
+}
+
+a {
+  color: inherit;
+}
+
+code {
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 0.95em;
+}
+
+@media (max-width: 700px) {
+  .hero,
+  article {
+    width: calc(100vw - 1.5rem);
+  }
+
+  h1 {
+    font-size: 18vw;
+  }
+}

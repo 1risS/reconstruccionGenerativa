@@ -144,8 +144,9 @@ const PROYS = (R.proyecciones || []).map((p) => {
     VISTAS.push(vista);
     return vista;
   });
-  return { ...p, desde: aSeg(p.desde), hasta: aSeg(p.hasta), vistas };
-});
+  // "vuelve": otros tramos en que la cámara regresa al mismo lugar (mismas vistas, sin texturas nuevas)
+  return [p, ...(p.vuelve || [])].map((tr) => ({ ...p, desde: aSeg(tr.desde), hasta: aSeg(tr.hasta), vistas }));
+}).flat().sort((a, b) => a.desde - b.desde);
 if (VISTAS.length > MAX_VISTAS) console.warn(`recorrido.js: sólo se proyectan las primeras ${MAX_VISTAS} vistas`);
 PROYS.forEach((p) => {
   const e = estado(p.desde), [x, y] = aLocal([e.lng, e.lat]), v = p.vistas[0];
@@ -169,7 +170,11 @@ function pesosProy(p, t) {
 }
 function intensidades(t) {
   const arr = new Array(VISTAS.length).fill(0);
+  // un lugar con varios tramos (vuelve) aparece varias veces en PROYS: manda el tramo en curso o más cercano
+  const activo = (p) => t >= p.inicio - ANTICIPA && t < p.hasta + POST;
+  const enCurso = new Set(PROYS.filter(activo).map((p) => p.vistas));
   for (const p of PROYS) {
+    if (!activo(p) && enCurso.has(p.vistas)) continue;
     const v0 = p.vistas[0].idx, ult = p.vistas[p.vistas.length - 1].idx;
     if (t >= p.inicio && t <= p.hasta) pesosProy(p, t).forEach((w, k) => (arr[p.vistas[k].idx] = w));
     else if (t > p.hasta && t < p.hasta + POST) {
@@ -198,6 +203,17 @@ VISTAS.forEach((v) => (v.polar = polar(v.pos, v.mira)));
 function encuadre(v) {
   const W = window.innerWidth, H = window.innerHeight, panel = $('#panel').hidden ? 0 : $('#panel').offsetHeight;
   const tanH = Math.tan((v.apertura * RAD) / 2), tanV = tanH / v.aspecto;
+  // fotos tomadas desde la vereda (a la altura de los ojos, mirando al frente o hacia arriba): MapLibre no
+  // inclina la cámara más de PITCH_CALLE, así que la imagen queda `sube` por encima del centro de la pantalla.
+  // La posición de la cámara sí es exacta (eso es lo que recompone la imagen); acá sólo se abre el encuadre
+  // para que entre entera, entre el borde de arriba y el panel.
+  const sube = Math.max(0, 90 - (v.cabeceo || 0) - PITCH_CALLE) * RAD;
+  if (sube > 0) {
+    const aV = Math.atan(tanV), abajo = aV - sube;
+    const f = Math.min(W / 2 / (1.08 * tanH), (H / 2 - 30) / Math.tan(Math.min(sube + aV * 1.03, 1.4)),
+      abajo > 0 ? Math.max(40, H / 2 - panel - 30) / Math.tan(abajo * 1.03) : Infinity);
+    return { fov: (2 * Math.atan(H / 2 / f)) / RAD, aj: 0 };
+  }
   const f = Math.min(W / 2 / (1.08 * tanH), (H - panel - 90) / 2 / (1.05 * tanV));
   return { fov: (2 * Math.atan(H / 2 / f)) / RAD, aj: Math.atan((panel / 2 - 20) / f) / RAD };
 }

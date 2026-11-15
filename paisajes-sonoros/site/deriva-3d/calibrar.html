@@ -40,6 +40,20 @@
     </section>
 
     <aside class="lateral">
+      <details class="guia" open>
+        <summary>¿Cómo funciona?</summary>
+        <p>Cada imagen se proyecta sobre la ciudad 3D desde un punto en el aire, como un proyector. Para que calce hay que encontrar
+          <b>desde dónde</b> y <b>con qué lente</b> se "sacó" la imagen. Eso se calcula a partir de puntos que vos reconocés en los dos lados.</p>
+        <ol>
+          <li><b>Clic en la imagen</b> sobre algo reconocible (una cruz amarilla).</li>
+          <li><b>Clic en el mapa</b> sobre ese mismo lugar. Se pega a la esquina de edificio más cercana. Eso forma un <b>par</b>.</li>
+          <li>Indicá si el punto está en el <b>piso</b> o en el <b>techo</b>. Para el techo, corregí la altura del edificio con <b>⇧ clic</b> en el mapa: casi todos figuran con 3 m.</li>
+          <li>Repetí hasta tener <b>8 a 12 pares</b>: esquinas de varios edificios, cerca y lejos, en toda la imagen, y algunos en altura.</li>
+        </ol>
+        <p>Las líneas <span style="color:#5ff0ff">celestes</span> son los edificios vistos desde la cámara calculada. Cuando calzan con la imagen, la proyección está bien.
+          Las líneas <span style="color:#ff4fa3">rosas</span> muestran cuánto le erra la cámara a cada punto.</p>
+      </details>
+
       <h2>Pares <small>imagen ↔ ciudad</small></h2>
       <p class="nota" id="instruccion"></p>
       <table class="pares">
@@ -55,7 +69,12 @@
         <label><input type="checkbox" id="libre-apertura" checked> apertura</label>
         <label title="Requiere 6 pares o más"><input type="checkbox" id="libre-centro"> centro óptico</label>
       </div>
+      <div class="opciones limites">
+        <label title="Hasta qué distancia de los puntos puede alejarse la cámara">distancia máx. <input type="number" id="dist-max" value="300" min="30" max="5000" step="10"> m</label>
+        <label title="Las imágenes casi sin perspectiva tienden a pedir un zoom extremo">apertura mín. <input type="number" id="ap-min" value="12" min="1" max="90" step="1"> °</label>
+      </div>
       <button id="calcular" class="ancho">Calcular cámara</button>
+      <button id="original" class="ancho">Volver a la cámara original</button>
       <p class="resultado" id="resultado"></p>
 
       <h2>Ajuste manual <small>arrastrar y soltar</small></h2>

@@ -116,27 +116,36 @@ export function residuos(v, pares, ancho, alto) {
     return [(r[0] - q.uv[0]) * ancho, (r[1] - q.uv[1]) * alto];
   });
 }
-function vectorResiduos(v, pares, ancho, alto) {
+// lim = { dist, apMin, cm }: límites de plausibilidad. Las imágenes casi isométricas (dioramas de IA) se explican
+// "mejor" con una cámara infinitamente lejos y un zoom infinito; estos términos lo impiden empujando la cámara
+// de vuelta a una distancia y una apertura razonables (cuestan como varios píxeles de error por metro o grado de exceso).
+function vectorResiduos(v, pares, ancho, alto, lim) {
   const out = [];
   for (const r of residuos(v, pares, ancho, alto)) out.push(...(r || [5000, 5000]));
+  if (lim) {
+    const d = Math.hypot(v.pos[0] - lim.cm[0], v.pos[1] - lim.cm[1], v.pos[2] - lim.cm[2]);
+    out.push(d > lim.dist ? (d - lim.dist) * 8 : 0);
+    out.push(v.apertura < lim.apMin ? (lim.apMin - v.apertura) * 60 : 0);
+    out.push(v.pos[2] < 2 ? (2 - v.pos[2]) * 40 : 0);
+  }
   return out;
 }
 const costo = (r) => r.reduce((a, b) => a + b * b, 0);
 
 // Levenberg–Marquardt con jacobiano numérico
-function levenberg(v0, pares, ancho, alto, libres, iter = 150) {
+function levenberg(v0, pares, ancho, alto, libres, lim, iter = 150) {
   const idx = [0, 1, 2, 3, 4];
   if (libres.giro) idx.push(5);
   if (libres.apertura) idx.push(6);
   if (libres.centro) idx.push(7, 8);
   let p = aVector(v0);
-  let r = vectorResiduos(aVista(p), pares, ancho, alto), c = costo(r);
+  let r = vectorResiduos(aVista(p), pares, ancho, alto, lim), c = costo(r);
   let lam = 1e-3;
   for (let it = 0; it < iter; it++) {
     const J = idx.map((k) => {
       const a = [...p], b = [...p];
       a[k] += PASOS[k]; b[k] -= PASOS[k];
-      const ra = vectorResiduos(aVista(a), pares, ancho, alto), rb = vectorResiduos(aVista(b), pares, ancho, alto);
+      const ra = vectorResiduos(aVista(a), pares, ancho, alto, lim), rb = vectorResiduos(aVista(b), pares, ancho, alto, lim);
       return ra.map((x, i) => (x - rb[i]) / (2 * PASOS[k]));
     });
     const n = idx.length;
@@ -150,7 +159,7 @@ function levenberg(v0, pares, ancho, alto, libres, iter = 150) {
       const q = [...p];
       idx.forEach((k, i) => (q[k] += d[i]));
       q[4] = Math.max(-89, Math.min(89, q[4]));
-      const rq = vectorResiduos(aVista(q), pares, ancho, alto), cq = costo(rq);
+      const rq = vectorResiduos(aVista(q), pares, ancho, alto, lim), cq = costo(rq);
       if (cq < c) {
         const rel = (c - cq) / (c || 1);
         p = q; r = rq; c = cq; lam = Math.max(lam / 4, 1e-9); mejoro = true;
@@ -268,30 +277,40 @@ export function dlt(pares, ancho, alto) {
 }
 
 // ajuste completo: prueba varios puntos de partida y se queda con el mejor
-export function calibrar(pares, ancho, alto, inicial, libres = { giro: true, apertura: true, centro: false }) {
+// opciones: { dist: distancia máxima de la cámara a los puntos (m), apMin: apertura mínima (°),
+//             original: vista de partida de recorrido.js (se prueba siempre, por si la actual se fue lejos) }
+export function calibrar(pares, ancho, alto, inicial, libres = { giro: true, apertura: true, centro: false }, opciones = {}) {
   const minimo = libres.centro ? 6 : 4;
   if (pares.length < minimo) return null;
+  const cm = [0, 1, 2].map((k) => pares.reduce((s, q) => s + q.X[k], 0) / pares.length);
+  const lim = { dist: opciones.dist || 300, apMin: opciones.apMin || 12, cm };
+  // con pocos pares la apertura queda fija: si no, sobran libertades y la cámara se escapa
+  libres = { ...libres, apertura: libres.apertura && pares.length >= 6, centro: libres.centro && pares.length >= 8 };
+  // si la cámara actual quedó fuera de los límites, se parte de la original
+  const lejos = (v) => Math.hypot(v.pos[0] - cm[0], v.pos[1] - cm[1], v.pos[2] - cm[2]) > lim.dist * 1.5 || v.apertura < lim.apMin * 0.7;
+  if (lejos(inicial) && opciones.original) inicial = opciones.original;
+  if (inicial.apertura < lim.apMin) inicial = { ...inicial, apertura: lim.apMin };
   const fijo = (v) => ({ ...v,
     giro: libres.giro ? v.giro : inicial.giro || 0,
     apertura: libres.apertura ? v.apertura : inicial.apertura,
     centro: libres.centro ? v.centro : inicial.centro || [0, 0] });
   const inicios = [{ ...inicial, centro: inicial.centro || [0, 0], giro: inicial.giro || 0 }];
   const d = dlt(pares, ancho, alto);
-  if (d && d.cabeceo > -60 && d.apertura > 5 && d.apertura < 150) {
+  if (opciones.original && opciones.original !== inicial) inicios.push({ ...opciones.original, centro: inicial.centro || [0, 0] });
+  if (d && d.cabeceo > -60 && d.apertura > 5 && d.apertura < 150 && !lejos(d)) {
     inicios.push(fijo(d));
     inicios.push(fijo({ ...d, centro: [0, 0] }));
   }
   // apuntando al centro de los puntos marcados, desde la posición actual
-  const cm = [0, 1, 2].map((k) => pares.reduce((s, q) => s + q.X[k], 0) / pares.length);
   inicios.push({ ...inicios[0], ...orientacion(inicial.pos, cm) });
   let mejor = null;
   for (const v0 of inicios) {
-    const r = levenberg(v0, pares, ancho, alto, libres);
+    const r = levenberg(v0, pares, ancho, alto, libres, lim);
     if (!mejor || r.costo < mejor.costo) mejor = r;
   }
   const res = residuos(mejor.v, pares, ancho, alto);
   const errs = res.map((r) => (r ? Math.hypot(r[0], r[1]) : Infinity));
-  return { vista: mejor.v, errores: errs, medio: Math.sqrt(errs.reduce((s, e) => s + e * e, 0) / errs.length) };
+  return { vista: mejor.v, libres, limitada: lejos(mejor.v) || Math.hypot(mejor.v.pos[0] - cm[0], mejor.v.pos[1] - cm[1], mejor.v.pos[2] - cm[2]) > lim.dist * 1.02 || mejor.v.apertura < lim.apMin * 0.98, errores: errs, medio: Math.sqrt(errs.reduce((s, e) => s + e * e, 0) / errs.length) };
 }
 
 export { NOMBRES };
