@@ -1,0 +1,9 @@
+# macOS
+.DS_Store
+
+# Assets pesados (originales fuera del repo)
+/audios/
+/fachadas/
+/dioramas/
+/drone/
+/paisajes-sonoros/site/audio/
