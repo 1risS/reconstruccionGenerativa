@@ -115,7 +115,7 @@ sin claves ni costo) que reproduce el recorrido sincronizado con `deriva_calle_8
 
 La obra está pensada para el teléfono. En una computadora (mouse o trackpad y ventana apaisada), `assets/marco.js`
 redirige cada página a `/marco/`, que la muestra en un iframe con forma de celular que ocupa el alto de la ventana,
-con una nota y un QR de la página para abrirla en el teléfono. La barra de direcciones conserva la URL real.
+con una nota y un QR de la página en el sitio publicado (también al probar en local) para abrirla en el teléfono. La barra de direcciones conserva la URL real.
 Como adentro del iframe el viewport es de celular, los encuadres de la cámara y de las proyecciones son los mismos
 que verá el público. Para ver una página sin el marco: `?sin-marco` (con `?editar` nunca se enmarca).
 Toda página nueva tiene que cargar `assets/marco.js` en el `<head>`.

@@ -77,11 +77,14 @@
       try { frame.contentWindow.addEventListener('hashchange', sincronizar); } catch (e) {}
     });
 
-    // QR de la página actual (si la biblioteca no carga, simplemente no aparece)
+    // QR de la página actual en el sitio publicado (también al probar en localhost, que no abre desde el teléfono).
+    // Si la biblioteca no carga, simplemente no aparece.
+    const PUBLICO = 'https://little-havana-sonoro.pages.dev';
     function dibujarQR(url) {
       if (typeof qrcode !== 'function') return;
+      const u = new URL(url);
       const q = qrcode(0, 'M');
-      q.addData(url);
+      q.addData(PUBLICO + u.pathname);
       q.make();
       document.getElementById('qr-img').innerHTML = q.createSvgTag({ cellSize: 4, margin: 0, scalable: true });
       document.getElementById('qr').hidden = false;
