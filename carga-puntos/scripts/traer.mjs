@@ -117,7 +117,8 @@ for (const [audio, lista] of [...porAudio].sort(([a], [b]) => (a === AUDIO_DERIV
   for (const m of lista) {
     const lugar = lugarPorId.get(m.lugar);
     const pos = m.lat != null ? m : null;
-    const nota = [m.oye, lugar && lugar.nombre].filter(Boolean).join(' · ');
+    const oye = (m.oye || '').trim(), nombre = ((lugar && lugar.nombre) || '').trim();
+    const nota = (oye.toLowerCase() === nombre.toLowerCase() ? [oye] : [oye, nombre]).filter(Boolean).join(' · ');
     const partes = [`t: '${fmt(m.t)}'`];
     if (m.hasta != null) partes.push(`hasta: '${fmt(m.hasta)}'`);
     if (pos) partes.push(`lat: ${pos.lat}, lng: ${pos.lng}`);

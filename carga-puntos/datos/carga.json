@@ -1,0 +1,221 @@
+{
+  "version": 74,
+  "guardado": "2026-11-16T22:40:22.458Z",
+  "datos": {
+    "lugares": [
+      {
+        "id": "l-mwjmzmw5rbwt",
+        "nombre": "Tower Theater",
+        "direccion": "1508 SW 8 St",
+        "nota": "",
+        "lat": 25.76546,
+        "lng": -80.21966,
+        "fotos": []
+      },
+      {
+        "id": "l-mwjmzmw5rvak",
+        "nombre": "Ball & Chain",
+        "direccion": "1513 SW 8 St",
+        "nota": "",
+        "lat": 25.765815,
+        "lng": -80.219765,
+        "fotos": []
+      },
+      {
+        "id": "l-mwjmzmw5ek5p",
+        "nombre": "Cuban Cigars Corp",
+        "direccion": "1520 SW 8 St",
+        "nota": "",
+        "lat": 25.765604,
+        "lng": -80.220001,
+        "fotos": []
+      },
+      {
+        "id": "l-mwjmzmw59tdc",
+        "nombre": "Top Cigars · Skinny Louie",
+        "direccion": "1551 SW 8 St",
+        "nota": "",
+        "lat": 25.765782,
+        "lng": -80.220608,
+        "fotos": []
+      },
+      {
+        "id": "l-mwjqhrn0op63",
+        "nombre": "Pajaritos 1",
+        "direccion": "1421 8ST ",
+        "nota": "Comienzo del recorrido. Tiene fotos, quedan pendientes los links de Drive\n",
+        "lat": 25.765832,
+        "lng": -80.2182399,
+        "fotos": []
+      },
+      {
+        "id": "l-mwjrrhzhj195",
+        "nombre": "Guantanamera",
+        "direccion": "",
+        "nota": "",
+        "lat": 25.7658358,
+        "lng": -80.2191451,
+        "fotos": [
+          {
+            "id": "f-mwjrwy1gyc1r",
+            "url": "https://drive.google.com/file/d/1mW3305Az-x2_X3yvD_1mT4wDqKEMVozm/view?usp=drive_link",
+            "tipo": "fotografía",
+            "nota": "",
+            "desde": null
+          }
+        ]
+      },
+      {
+        "id": "l-mwjslt3wod2o",
+        "nombre": "Cubaocho ",
+        "direccion": "",
+        "nota": "",
+        "lat": 25.7658383,
+        "lng": -80.2193573,
+        "fotos": []
+      },
+      {
+        "id": "l-mwjsz05krycf",
+        "nombre": "El Cristo Restaurant",
+        "direccion": "1543 SW 8th street",
+        "nota": "",
+        "lat": 25.765812,
+        "lng": -80.220411,
+        "fotos": [
+          {
+            "id": "f-mwjt4ubzxuha",
+            "url": "https://drive.google.com/file/d/1zI9gzZShCtwWhEvNHgqrUNctKGwbaGn2/view?usp=drive_link",
+            "tipo": "fotografía",
+            "nota": "",
+            "desde": null
+          }
+        ]
+      },
+      {
+        "id": "l-mwjtoe35uttf",
+        "nombre": "semaforo 1",
+        "direccion": "",
+        "nota": "",
+        "lat": 25.765772,
+        "lng": -80.220643,
+        "fotos": []
+      },
+      {
+        "id": "l-mwjubijer638",
+        "nombre": "Mr. Cigars",
+        "direccion": "1601 SW 8 Sth ",
+        "nota": "",
+        "lat": 25.7657885,
+        "lng": -80.2212548,
+        "fotos": [
+          {
+            "id": "f-mwjue0hy0v31",
+            "url": "https://drive.google.com/file/d/1yWyLqexNzncVffeApth4paEY4UqqTj86/view?usp=drive_link",
+            "tipo": "fotografía",
+            "nota": "",
+            "desde": null
+          }
+        ]
+      },
+      {
+        "id": "l-mwjuj8eyl4jp",
+        "nombre": "Los Montaditos bar",
+        "direccion": "1643 SW 8 Sth",
+        "nota": "",
+        "lat": 25.7659282,
+        "lng": -80.2220306,
+        "fotos": []
+      }
+    ],
+    "marcas": [
+      {
+        "id": "m-mwjrq780hvh3",
+        "audio": "deriva_calle_8",
+        "t": 46.7,
+        "hasta": null,
+        "lat": null,
+        "lng": null,
+        "lugar": "l-mwjrrhzhj195",
+        "oye": "Guantanamera",
+        "aprox": false
+      },
+      {
+        "id": "m-mwjs3k4k43qs",
+        "audio": "deriva_calle_8",
+        "t": 117.7,
+        "hasta": null,
+        "lat": 25.765815,
+        "lng": -80.219765,
+        "lugar": "l-mwjmzmw5rvak",
+        "oye": "",
+        "aprox": false
+      },
+      {
+        "id": "m-mwjtg1rms44t",
+        "audio": "deriva_calle_8",
+        "t": 238.2,
+        "hasta": null,
+        "lat": null,
+        "lng": null,
+        "lugar": "l-mwjsz05krycf",
+        "oye": "El Cristo Restaurant",
+        "aprox": false
+      },
+      {
+        "id": "m-mwjtkel7hp5l",
+        "audio": "deriva_calle_8",
+        "t": 269.5,
+        "hasta": null,
+        "lat": null,
+        "lng": null,
+        "lugar": "l-mwjmzmw59tdc",
+        "oye": "",
+        "aprox": false
+      },
+      {
+        "id": "m-mwjtndqozgcw",
+        "audio": "deriva_calle_8",
+        "t": 286.8,
+        "hasta": null,
+        "lat": null,
+        "lng": null,
+        "lugar": "l-mwjtoe35uttf",
+        "oye": "semaforo",
+        "aprox": false
+      },
+      {
+        "id": "m-mwjtxv3p7ksf",
+        "audio": "deriva_calle_8",
+        "t": 338.4,
+        "hasta": null,
+        "lat": 25.7657972,
+        "lng": -80.2211411,
+        "lugar": null,
+        "oye": "Un Bus ",
+        "aprox": false
+      },
+      {
+        "id": "m-mwju35o9qznp",
+        "audio": "deriva_calle_8",
+        "t": 369.3,
+        "hasta": null,
+        "lat": null,
+        "lng": null,
+        "lugar": "l-mwjuj8eyl4jp",
+        "oye": "Los Montaditos Bar ",
+        "aprox": false
+      },
+      {
+        "id": "m-mwju68ucwmmh",
+        "audio": "deriva_calle_8",
+        "t": 353.1,
+        "hasta": null,
+        "lat": null,
+        "lng": null,
+        "lugar": "l-mwjubijer638",
+        "oye": "Mr. Cigars",
+        "aprox": false
+      }
+    ]
+  }
+}
