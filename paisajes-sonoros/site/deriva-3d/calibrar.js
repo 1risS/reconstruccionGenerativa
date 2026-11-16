@@ -38,8 +38,11 @@ function abrirTrabajo(item) {
   if (trabajo[img]) return trabajo[img];
   const guardada = (borrador && borrador.vistas && borrador.vistas[img]) || (ARCHIVO.vistas || {})[img];
   let v = C.normalizar(guardada ? { ...item.def, ...guardada, imagen: img } : item.def, aLocal);
-  // protección: una cámara absurda (muy lejos o con zoom extremo) vuelve a la de recorrido.js, conservando los pares
-  if (v.apertura < 2 || v.pos[2] > 1500 || Math.hypot(v.pos[0] - v.mira[0], v.pos[1] - v.mira[1]) > 3000) {
+  // protección: una cámara absurda (muy lejos o con zoom extremo) vuelve a la de recorrido.js, conservando los pares.
+  // Las vistas isométricas (dioramas de IA, ver camara.js) están lejos y con teleobjetivo a propósito.
+  const iso = !!item.def.isometrica;
+  if (iso ? v.apertura < 0.3 || v.pos[2] > 3000 || Math.hypot(v.pos[0] - v.mira[0], v.pos[1] - v.mira[1]) > 4000
+    : v.apertura < 2 || v.pos[2] > 1500 || Math.hypot(v.pos[0] - v.mira[0], v.pos[1] - v.mira[1]) > 3000) {
     v = C.normalizar(item.def, aLocal);
     setTimeout(() => aviso('La cámara guardada de esta vista era absurda (muy lejos o con zoom extremo); volví a la original. Tus pares se conservan.', 7000), 500);
   }
@@ -713,8 +716,15 @@ function cambio({ pares, manual, calculo } = {}) {
   guardarBorrador();
 }
 
+// límites del ajuste: las vistas isométricas pueden (y deben) irse lejos con un teleobjetivo
+function limitesPara(item) {
+  const iso = !!item.def.isometrica;
+  $('#dist-max').value = iso ? Math.round(C.DIST_ISO * 1.25) : 300;
+  $('#ap-min').value = iso ? 0.5 : 12;
+}
 function abrirVista(i) {
   const item = LISTA[i];
+  limitesPara(item);
   T = abrirTrabajo(item);
   activo = T.pares.length ? 0 : -1;
   edificioSel = null; $('#edificio').hidden = true; marcarEdificioMapa(null);
@@ -725,7 +735,9 @@ function abrirVista(i) {
     encuadrar();
     cambio();
     const cam = aLngLat(T.v.pos[0], T.v.pos[1]), m = aLngLat(T.v.mira[0], T.v.mira[1]);
-    const b = new maplibregl.LngLatBounds(cam, cam).extend(m);
+    // vistas isométricas: la cámara está a ~1 km; el mapa se encuadra en el lugar, que es donde se marcan los pares
+    const b = item.def.isometrica ? new maplibregl.LngLatBounds(m, m) : new maplibregl.LngLatBounds(cam, cam).extend(m);
+    if (item.def.isometrica && !T.pares.some((q) => q.ll)) b.extend([m.lng - 0.0006, m.lat - 0.0005]).extend([m.lng + 0.0006, m.lat + 0.0005]);
     T.pares.forEach((q) => q.ll && b.extend(q.ll));
     mapa.fitBounds(b, { padding: 70, maxZoom: 18.3, duration: 600 });
   };

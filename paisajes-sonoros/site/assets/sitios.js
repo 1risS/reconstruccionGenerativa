@@ -1,5 +1,6 @@
 // ─────────────────────────────────────────────────────────────
 // Configuración de los cuatro puntos sonoros.
+// Los colores salen de la paleta del flyer (ver assets/estilo.css) y tienen contraste ≥ 4:1 sobre el papel.
 // Para cambiar textos, colores o audios, editar SOLO este archivo.
 //
 //  slug     → nombre de la carpeta / URL (no cambiar una vez impresos los QR)
@@ -9,9 +10,9 @@
 
 window.MUESTRA = {
   titulo: 'Little Havana',
-  subtitulo: 'estudios en simulación y reconstrucción generativa',
+  subtitulo: 'Studies in Simulation and Generative Reconstruction',
   artista: 'Viviana Zargón',
-  sede: 'Aluma Art Center · Miami'
+  sede: 'Miami Photographic Observatory · Aluna Art Foundation'
 }
 
 window.SITIOS = {
@@ -22,7 +23,7 @@ window.SITIOS = {
     texto:
       '' +
       '[Texto provisorio: podemos incluir datos de color o alguna reflexión poética sobre el lugar]',
-    color: '#c9a26b',
+    color: '#9a5a4a',
     loop: true,
     pistas: [
       { titulo: 'I', src: '../audio/tower_00.m4a' },
@@ -38,7 +39,7 @@ window.SITIOS = {
     texto:
       'Sala de música y entretenimiento de la Calle Ocho. ' +
       '[Texto provisorio: reemplazar por el texto curatorial.]',
-    color: '#d0574a',
+    color: '#8a4f37',
     loop: true,
     pistas: [
       { titulo: 'I', src: '../audio/ball_and_chain_00.m4a' },
@@ -54,7 +55,7 @@ window.SITIOS = {
     texto:
       'Un local de torcido y venta de tabaco. ' +
       '[Texto provisorio: reemplazar por el texto curatorial.]',
-    color: '#a0784a',
+    color: '#8a6a1c',
     loop: true,
     pistas: [{ titulo: 'I', src: '../audio/casa_tabaco.m4a' }]
   },
@@ -66,7 +67,7 @@ window.SITIOS = {
     texto:
       'El parque donde se juega dominó en la Calle Ocho. ' +
       '[Texto provisorio: reemplazar por el texto curatorial.]',
-    color: '#7fa68a',
+    color: '#455830',
     loop: true,
     pistas: [{ titulo: 'I', src: '../audio/domino_park.m4a' }]
   },
@@ -78,7 +79,7 @@ window.SITIOS = {
     texto:
       'Una deriva a lo largo de la Calle Ocho. ' +
       '[Texto provisorio: reemplazar por el texto curatorial.]',
-    color: '#8c9fc4',
+    color: '#685236',
     loop: true,
     pistas: [{ titulo: 'I', src: '../audio/deriva_calle_8.m4a' }]
   }

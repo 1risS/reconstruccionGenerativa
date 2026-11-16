@@ -3,14 +3,15 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#121010">
+  <meta name="theme-color" content="#eaeaea">
   <title>Deriva Calle 8 · Little Havana</title>
+  <script src="../assets/marco.js"></script>
   <script>
     // si se abrió como /deriva-3d (sin barra final), las rutas relativas fallan: corregir la URL
     if (!location.pathname.endsWith('/') && !/\.html?$/.test(location.pathname))
       location.replace(location.pathname + '/' + location.search + location.hash);
   </script>
-  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.css">
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.css">
   <link rel="stylesheet" href="../assets/estilo.css">
   <link rel="stylesheet" href="mapa.css">
 </head>
@@ -20,12 +21,11 @@
 
   <!-- pantalla de inicio: la interacción habilita el audio -->
   <section class="inicio" id="inicio">
-    <header class="muestra" id="muestra"></header>
     <div class="sitio">
-      <span class="numero">05</span>
       <h1 class="nombre">Deriva Calle 8</h1>
       <p class="lugar">De 13 a 17 Avenida por una vereda, volviendo por la otra hasta la 15</p>
     </div>
+    <footer class="muestra" id="muestra"></footer>
     <button class="comenzar" id="comenzar" disabled>Cargando mapa…</button>
     <p class="aviso">Se recomienda usar auriculares.</p>
   </section>
@@ -41,7 +41,13 @@
     <b id="pie-lugar"></b><span id="pie-tipo"></span><span id="pie-n"></span>
   </div>
 
-  <p class="fin" id="fin">fin del recorrido</p>
+  <div class="fin" id="fin">
+    <p>fin del recorrido</p>
+    <button class="reiniciar" id="reiniciar" tabindex="-1">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5V2L7 6l5 4V7a6 6 0 1 1-6 6H4a8 8 0 1 0 8-8z"/></svg>
+      volver a empezar
+    </button>
+  </div>
 
   <button class="seguir" id="seguir" hidden>Seguir recorrido</button>
 
@@ -69,13 +75,9 @@
     </div>
     <div class="fila sec">
       <button class="texto-btn" id="anterior" aria-label="Punto anterior">‹ anterior</button>
-      <div class="modos" role="radiogroup" aria-label="Vista">
-        <button role="radio" data-modo="calle" aria-checked="true">Calle</button>
-        <button role="radio" data-modo="aerea" aria-checked="false">Aérea</button>
-        <button role="radio" data-modo="general" aria-checked="false">Mapa</button>
-      </div>
       <button class="texto-btn" id="siguiente" aria-label="Punto siguiente">siguiente ›</button>
     </div>
+    <p class="creditos" id="creditos"></p>
   </section>
 
   <!-- modo edición (?editar) -->
@@ -85,7 +87,7 @@
     <pre id="lista-puntos"></pre>
   </aside>
 
-  <script src="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.js"></script>
+  <script src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
   <script src="../assets/sitios.js"></script>
   <script src="recorrido.js"></script>
   <script src="calibracion.js"></script>

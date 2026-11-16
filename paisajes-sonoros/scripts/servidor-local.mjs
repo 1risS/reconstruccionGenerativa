@@ -60,7 +60,8 @@ http.createServer((req, res) => {
       "Content-Range": `bytes ${ini}-${fin}/${st.size}`, "Content-Length": fin - ini + 1 });
     createReadStream(archivo, { start: ini, end: fin }).pipe(res);
   } else {
-    res.writeHead(200, { "Content-Type": tipo, "Accept-Ranges": "bytes", "Content-Length": st.size });
+    // no-cache: el navegador vuelve a pedir cada archivo; si no, Safari sigue usando módulos JS viejos al recargar
+    res.writeHead(200, { "Content-Type": tipo, "Accept-Ranges": "bytes", "Content-Length": st.size, "Cache-Control": "no-cache" });
     createReadStream(archivo).pipe(res);
   }
 }).listen(PORT, () => {

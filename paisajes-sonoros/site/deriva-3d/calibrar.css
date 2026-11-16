@@ -1,4 +1,6 @@
-:root { --accent: #8c9fc4; --marca: #ffd23f; --pred: #ff4fa3; --contorno: #5ff0ff; --panel: rgba(18, 16, 16, 0.82); }
+:root { /* herramienta interna: mantiene el tema oscuro */
+  --bg: #121010; --fg: #efe8dc; --muted: #9a9187; --line: #2c2725;
+  --accent: #8c9fc4; --marca: #ffd23f; --pred: #ff4fa3; --contorno: #5ff0ff; --panel: rgba(18, 16, 16, 0.82); }
 [hidden] { display: none !important; }
 html, body { height: 100%; overflow: hidden; }
 body { display: flex; flex-direction: column; font-size: 13px; }

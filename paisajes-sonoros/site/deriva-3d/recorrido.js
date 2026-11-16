@@ -22,15 +22,32 @@
 // PROYECCIONES (imágenes que se proyectan sobre la ciudad 3D como un video-mapping anamórfico)
 //  Cada imagen se proyecta desde el punto de vista donde fue tomada (la "camara"): desde ahí la
 //  imagen se recompone entera sobre los volúmenes; desde la vereda se ve fragmentada en las paredes.
-//  desde/hasta → tramo del audio en que la cámara deja al caminante y sube a esos puntos de vista
-//  vistas      → una o más imágenes del lugar, en orden; la cámara viaja de una a otra
+//  El caminante va descubriendo las proyecciones de la VEREDA DE ENFRENTE: desde unos 20 s antes
+//  gira la cabeza hacia ellas (se ven fragmentadas) y la cámara se corre hasta el punto de vista.
+//  desde/hasta → tramo del audio en que la cámara deja al caminante, va al punto de vista y vuelve.
+//                El viaje de ida y el de vuelta duran 5–8 s cada uno (según la distancia): lo que
+//                sobra del tramo es la contemplación de la imagen recompuesta (hoy ≈ 5 s).
+//  vistas      → una o más imágenes del lugar, en orden; la cámara viaja de una a otra y se ven DE A UNA
+//                (cada imagen sólo se recompone desde su propio punto de vista; entre una y otra, una "ola" sale
+//                del lugar y se expande por la ciudad reemplazando una imagen por la otra).
+//                El tramo se reparte en partes iguales: cada vista pide ≈ 10 s (4 s quieta + 6 s de viaje)
+//                además de la ida y la vuelta. Si no alcanza, la consola avisa cuántos segundos hacen falta.
 //    imagen    → archivo en registros/ (PNG o WebP con fondo transparente = sólo se proyecta la figura)
 //    camara    → posición del dron/fotógrafo: lat, lng y alt (metros sobre el piso)
 //    mira      → punto al que apunta el centro de la imagen (lat, lng, alt)
 //    apertura  → ángulo horizontal de la imagen, en grados (más chico = la imagen cubre menos ciudad)
-//  Fuera de su tramo, la primera vista de cada lugar queda proyectada (tenue) como huella.
+//    tipo      → qué es esta imagen (fotografía, fotografía aérea, diorama generado por IA…). El pie
+//                muestra el de la vista que se está viendo; si una vista no lo tiene, usa el tipo del lugar.
+//    huella    → (opcional) true en la vista que queda proyectada (tenue) fuera del tramo; si ninguna lo
+//                tiene, la huella es la primera. Hay una sola huella por lugar, para que no se superpongan.
+//    isometrica→ (opcional) true en los dioramas de IA, que casi no tienen perspectiva. La cámara se aleja a ~1,2 km
+//                por el mismo eje con un teleobjetivo (camara/mira/apertura se dan como si fuera una cámara cercana;
+//                lo calibrado en calibrar.html ya queda lejos). Al ir a ese punto de vista, la cámara hace un dolly
+//                zoom: se aleja mientras cierra el campo de visión y la ciudad se aplana hasta volverse maqueta.
 //  vuelve      → (opcional) otros tramos en que la cámara regresa al mismo lugar: [{ desde, hasta }, …]
-//                 (p. ej. cuando el recorrido vuelve a pasar frente a la huella). Usa las mismas vistas.
+//                 (p. ej. cuando el recorrido vuelve a pasar frente a la huella). Usa las mismas vistas, o sólo
+//                 algunas con vistas: [0, 2] (posiciones en la lista de vistas del lugar, desde 0).
+//  No hay máximo de imágenes: se proyectan a la vez sólo las que se están viendo (hasta 6 simultáneas).
 //
 // Abrí la página con ?editar al final de la URL para marcar puntos sobre el mapa
 // mientras escuchás (clic en el mapa = punto en el momento actual del audio).
@@ -73,12 +90,27 @@ window.RECORRIDO = {
       // drone/tower_theatre_00.jpeg — captura aérea desde la esquina de Calle 8 y 15 Av, mirando al suroeste.
       // Cámara calculada a partir de esquinas del teatro y del cruce peatonal (ver calibracion.js, se puede
       // retocar en calibrar.html). El volumen del teatro en edificios.json se midió sobre esta misma foto.
-      // Ida: pausa en la vereda norte, 15 Av. Vuelta: pausa final frente al teatro, en la vereda sur.
-      desde: '4:12', hasta: '4:48', lugar: 'Tower Theater', tipo: 'captura de dron',
-      vuelve: [{ desde: '11:52', hasta: '12:32' }],
+      // Después del dron, la cámara sigue subiendo: diorama de día, la foto cenital sobre el techo y diorama de noche.
+      // Las cámaras de los dioramas están calibradas en calibracion.js con las esquinas del teatro (techo y base):
+      // dan casi ortográficas (apertura ≈ 3,4°), con ~22 px de error por las proporciones inventadas por la IA.
+      // El teatro está en la vereda sur. Ida: pausa enfrente, en la vereda norte (15 Av.); el tramo sigue un poco
+      // después de la pausa (el caminante retoma la marcha mientras la cámara está arriba).
+      // Vuelta: última imagen del recorrido, durante la pausa final en la esquina (vereda sur), sólo el dron.
+      desde: '4:12', hasta: '5:04', lugar: 'Tower Theater',
+      vuelve: [{ desde: '12:06', hasta: '12:27', vistas: [0] }],
       vistas: [
-        { imagen: 'registros/tower-theatre-dron-00.webp', apertura: 73.7, rumbo: -137.2, cabeceo: 22.2, giro: -0.1,
-          camara: { lat: 25.7657892, lng: -80.2194265, alt: 19.5 }, mira: { lat: 25.7655532, lng: -80.2196669, alt: 5 } }
+        { imagen: 'registros/tower-theatre-dron-00.webp', tipo: 'fotografía aérea', apertura: 73.7, rumbo: -137.2, cabeceo: 22.2, giro: -0.1,
+          camara: { lat: 25.7657892, lng: -80.2194265, alt: 19.5 }, mira: { lat: 25.7655532, lng: -80.2196669, alt: 5 } },
+        { imagen: 'registros/tower-theater-diorama-00.webp', tipo: 'diorama generado por IA', isometrica: true, apertura: 42,
+          camara: { lat: 25.765945, lng: -80.219124, alt: 60 }, mira: { lat: 25.76546, lng: -80.21966, alt: 4 } },
+        // cenital/tower_hotel_00.jpf — dron a 54,9 m justo encima del teatro, cámara a −90° (datos del XMP de DJI).
+        // Rumbo −97,8° = el borde de arriba de la foto mira al oeste (Calle 8 queda a la derecha). Cabeceo 89 y no 90
+        // (a 90 el rumbo queda indefinido); la mira está 1 m al oeste del nadir, en la dirección del eje óptico.
+        { imagen: 'registros/tower-theatre-cenital-00.webp', tipo: 'fotografía aérea cenital', apertura: 73.7,
+          rumbo: -97.8, cabeceo: 89, giro: 0,
+          camara: { lat: 25.7654547, lng: -80.2197256, alt: 54.9 }, mira: { lat: 25.7654535, lng: -80.2197355, alt: 0 } },
+        { imagen: 'registros/tower-theater-diorama-02.webp', tipo: 'diorama generado por IA', isometrica: true, apertura: 40,
+          camara: { lat: 25.76546, lng: -80.218962, alt: 72 }, mira: { lat: 25.76546, lng: -80.21966, alt: 4 } }
       ]
     },
     {
@@ -86,11 +118,18 @@ window.RECORRIDO = {
       // (teleobjetivo, sin EXIF). Fachada en edificios.json: lat ≈ 25.765815, a ~22 m de la cámara.
       // Escala por las personas en la puerta (≈ 8 m de ancho en la pared); las cabezas quedan apenas
       // debajo del centro → la cámara mira casi horizontal, un poco hacia arriba.
-      // Ida: el caminante pasa pegado a la fachada (vereda norte) y la cámara cruza a la vereda de enfrente.
-      // (A la vuelta no regresa: ese tramo lo ocupa Cuban Cigars Corp, en la vereda sur.)
-      desde: '5:08', hasta: '5:38', lugar: 'Ball & Chain', tipo: 'fotografía',
+      // Fachada en la vereda norte → se descubre a la vuelta, desde la vereda sur: el caminante pasa
+      // a ~2 m del punto donde se tomó la foto hacia las 11:37.
+      // Primero los dos dioramas de IA (fachadas/25.765975736679938, -80.21976477493762_00/_01.jpg, vistas
+      // frontales desde lo alto de la vereda sur), uno por vez; al final la cámara baja a la altura de los
+      // ojos y se recompone la foto de la artista, que queda como huella. ⚠ Cámaras de los dioramas estimadas.
+      desde: '11:05', hasta: '11:48', lugar: 'Ball & Chain',
       vistas: [
-        { imagen: 'registros/ball-and-chain-foto-00.webp', apertura: 21,
+        { imagen: 'registros/ball-and-chain-fachada-00.webp', tipo: 'diorama generado por IA', isometrica: true, apertura: 46,
+          camara: { lat: 25.76512, lng: -80.219765, alt: 22 }, mira: { lat: 25.765976, lng: -80.219765, alt: 5 } },
+        { imagen: 'registros/ball-and-chain-fachada-01.webp', tipo: 'diorama generado por IA', isometrica: true, apertura: 44,
+          camara: { lat: 25.765076, lng: -80.219765, alt: 38 }, mira: { lat: 25.765976, lng: -80.219765, alt: 5 } },
+        { imagen: 'registros/ball-and-chain-foto-00.webp', tipo: 'fotografía', apertura: 21, huella: true,
           camara: { lat: 25.76562, lng: -80.219765, alt: 1.6 }, mira: { lat: 25.765815, lng: -80.219765, alt: 2 } }
       ]
     },
@@ -100,8 +139,9 @@ window.RECORRIDO = {
       // Fachada en edificios.json: lat ≈ 25.765782 (polígono de Kung Fu Chicken + Top Cigars + Skinny Louie).
       // Por las personas: ≈ 15,6 m de ancho en la pared y las cabezas bien debajo del centro → cámara
       // a 1,6 m inclinada ~8° hacia arriba (el centro de la foto cae a ~4,3 m en la pared).
-      desde: '6:02', hasta: '6:28', lugar: 'Top Cigars · Skinny Louie', tipo: 'fotografía',
-      vuelve: [{ desde: '10:40', hasta: '11:04' }],
+      // Fachada en la vereda norte → se descubre a la vuelta, desde la vereda sur: el caminante pasa
+      // por el punto donde se tomó la foto hacia las 10:51.
+      desde: '10:43', hasta: '10:58', lugar: 'Top Cigars · Skinny Louie', tipo: 'fotografía',
       vistas: [
         { imagen: 'registros/top-cigars-foto-00.webp', apertura: 43,
           camara: { lat: 25.765605, lng: -80.220608, alt: 1.6 }, mira: { lat: 25.765782, lng: -80.220608, alt: 4.3 } }
@@ -113,46 +153,24 @@ window.RECORRIDO = {
       // Fachada en edificios.json: lat ≈ 25.765604 (la coordenada del nombre cae 5 m adentro del local).
       // Escala por la puerta "1520" (≈ 7 m de ancho en la pared) → cámara a ~6 m, apertura ~62°;
       // verticales paralelas → mira casi horizontal (el centro de la foto cae a ~2 m de altura).
-      // Sólo a la vuelta: el caminante va por esta vereda y pasa por el lugar de la artista hacia las 11:24.
-      desde: '11:10', hasta: '11:34', lugar: 'Cuban Cigars Corp', tipo: 'fotografía',
+      // Fachada en la vereda sur → se descubre a la ida, desde la vereda norte: el caminante pasa
+      // enfrente hacia las 5:27 y la cámara cruza la calle hasta el punto de vista.
+      desde: '5:18', hasta: '5:36', lugar: 'Cuban Cigars Corp', tipo: 'fotografía',
       vistas: [
         { imagen: 'registros/cuban-cigars-foto-00.webp', apertura: 62,
           camara: { lat: 25.765658, lng: -80.220001, alt: 1.6 }, mira: { lat: 25.765604, lng: -80.220001, alt: 2 } }
       ]
     }
   ]
-  // ── DIORAMAS EN PAUSA ── todavía no calzan bien sobre la ciudad; para reactivarlos, descomentar y
-  // volver a ponerlos dentro de proyecciones: [ … ] (máximo 6 vistas en total).
-  // proyecciones_dioramas: [
-  //   {
-  //     desde: '4:12', hasta: '4:48', lugar: 'Tower Theater', tipo: 'diorama generado por IA',
-  //     vistas: [
-  //       { imagen: 'registros/tower-theater-diorama-00.webp', apertura: 42,
-  //         camara: { lat: 25.765945, lng: -80.219124, alt: 60 }, mira: { lat: 25.76546, lng: -80.21966, alt: 4 } },
-  //       { imagen: 'registros/tower-theater-diorama-02.webp', apertura: 40,
-  //         camara: { lat: 25.76546, lng: -80.218962, alt: 72 }, mira: { lat: 25.76546, lng: -80.21966, alt: 4 } }
-  //     ]
-  //   },
-  //   {
-  //     // ⚠ Ball & Chain ya está activo con la foto: para sumar estos dioramas, poner sus dos vistas
-  //     //   ANTES de la foto en la proyección activa (no agregar una segunda entrada "Ball & Chain").
-  //     // fachadas/25.765975736679938, -80.21976477493762_00/_01.jpg — vista frontal desde la vereda sur
-  //     // a la vuelta, desde la vereda sur, la huella se ve en la pared: la cámara vuelve a subir para revelarla
-  //     desde: '5:15', hasta: '5:51', lugar: 'Ball & Chain', tipo: 'diorama generado por IA',
-  //     vuelve: [{ desde: '10:52', hasta: '11:22' }],
-  //     vistas: [
-  //       { imagen: 'registros/ball-and-chain-fachada-00.webp', apertura: 46,
-  //         camara: { lat: 25.76512, lng: -80.219765, alt: 22 }, mira: { lat: 25.765976, lng: -80.219765, alt: 5 } },
-  //       { imagen: 'registros/ball-and-chain-fachada-01.webp', apertura: 44,
-  //         camara: { lat: 25.765076, lng: -80.219765, alt: 38 }, mira: { lat: 25.765976, lng: -80.219765, alt: 5 } }
-  //     ]
-  //   },
+  // ── DIORAMA EN PAUSA ── 336 SW 15 Av. queda unos 400 m al norte del recorrido. Para sumarlo, ponerlo
+  // dentro de proyecciones: [ … ] con un tramo propio que no se pise con otro lugar.
+  // proyecciones_pendientes: [
   //   {
   //     desde: '11:52', hasta: '12:32', lugar: '336 SW 15 Av.', tipo: 'diorama generado por IA',
   //     vistas: [
-  //       { imagen: 'registros/336-sw15-diorama-00.webp', apertura: 40,
+  //       { imagen: 'registros/336-sw15-diorama-00.webp', isometrica: true, apertura: 40,
   //         camara: { lat: 25.769374, lng: -80.219364, alt: 48 }, mira: { lat: 25.76975, lng: -80.21978, alt: 2 } },
-  //       { imagen: 'registros/336-sw15-diorama-01.webp', apertura: 38,
+  //       { imagen: 'registros/336-sw15-diorama-01.webp', isometrica: true, apertura: 38,
   //         camara: { lat: 25.76975, lng: -80.219321, alt: 57 }, mira: { lat: 25.76975, lng: -80.21978, alt: 2 } }
   //     ]
   //   }

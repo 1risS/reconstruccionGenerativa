@@ -1,11 +1,34 @@
+/* ─────────────────────────────────────────────────────────────
+   MARCA · tomada del flyer de Aluna (flyer.jpeg en la raíz del repo)
+
+   Papel   #EAEAEA  fondo gris claro parejo, sin textura (la maqueta "flota" sobre él)
+   Tinta   #111111  títulos y textos
+   Tierra  #685236  el nombre de la artista; color de acento
+   Gris    #727375  datos secundarios (la fecha del flyer)
+   Línea   #C0C0C0  filete de 1 px que separa los créditos
+   Colores de la imagen, para los puntos: rosa fachada, estratos de tierra, ocre del taxi, verde.
+
+   Tipografía: grotesca condensada (Barlow Condensed / Barlow Semi Condensed).
+   - nombre de la artista: condensada 500, minúsculas, muy grande, interlineado cerrado, tierra
+   - título de la muestra: condensada 300 (light), mayúsculas y minúsculas, tinta
+   - fecha / datos: condensada 600, gris, cifras tabulares
+   - sede y dirección: semicondensada 400–500, minúsculas, tinta
+   Composición: mucho aire, sin cajas ni sombras; los créditos van al pie, bajo un filete.
+   ───────────────────────────────────────────────────────────── */
+@import url("https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Barlow+Semi+Condensed:wght@400;500;600&display=swap");
+
 :root {
-  --bg: #121010;
-  --fg: #efe8dc;
-  --muted: #9a9187;
-  --line: #2c2725;
-  --accent: #c9a26b;
-  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
-  --sans: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --bg: #eaeaea;
+  --fg: #111111;
+  --texto: #2b2a29;
+  --muted: #727375;
+  --line: #c0c0c0;
+  --tierra: #685236;
+  --accent: var(--tierra);
+  --sobre-acento: #f4f3f1;   /* texto sobre botones de color */
+  --display: "Barlow Condensed", "Arial Narrow", "Helvetica Neue", sans-serif;
+  --sans: "Barlow Semi Condensed", "Barlow Condensed", "Helvetica Neue", Arial, sans-serif;
+  --serif: var(--display);   /* compatibilidad: antes había una serif; ahora todo es la condensada */
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -24,38 +47,47 @@ body {
   min-height: 100dvh;
   max-width: 34rem;
   margin: 0 auto;
-  padding: max(1.5rem, env(safe-area-inset-top)) 1.5rem max(1.5rem, env(safe-area-inset-bottom));
+  padding: max(1.75rem, env(safe-area-inset-top)) 1.5rem max(1.5rem, env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
   gap: 2rem;
 }
 
-/* ── cabecera de la muestra ───────────────────────── */
+/* ── créditos de la muestra (como el pie del flyer) ──
+   artista en tierra, título light, sede en minúsculas, bajo un filete. En las páginas va al final. */
 .muestra {
-  font-size: 0.72rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--muted);
-  line-height: 1.5;
+  order: 99;
+  border-top: 1px solid var(--line);
+  padding-top: 1rem;
+  display: flex; flex-direction: column; gap: 0.35rem;
+  color: var(--fg);
 }
-.muestra strong { color: var(--fg); font-weight: 600; }
+.muestra .m-artista {
+  font-family: var(--display); font-weight: 500; text-transform: lowercase;
+  font-size: 2.6rem; line-height: 0.85; letter-spacing: -0.01em; color: var(--tierra);
+}
+.muestra .m-titulo { font-family: var(--display); font-weight: 300; font-size: 1.15rem; line-height: 1.15; }
+.muestra .m-sede { font-family: var(--sans); font-weight: 500; font-size: 0.95rem; line-height: 1.25; text-transform: lowercase; }
 
 /* ── sitio ────────────────────────────────────────── */
 .sitio { display: flex; flex-direction: column; gap: 0.6rem; }
 .numero {
-  font-family: var(--serif);
-  font-size: 0.95rem;
-  color: var(--accent);
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 1.05rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
 }
 .nombre {
-  font-family: var(--serif);
+  font-family: var(--display);
   font-weight: 400;
-  font-size: clamp(2.4rem, 11vw, 3.4rem);
-  line-height: 1;
+  font-size: clamp(3rem, 15vw, 4.4rem);
+  line-height: 0.92;
   letter-spacing: -0.01em;
+  color: var(--fg);
 }
-.lugar { color: var(--muted); font-size: 0.9rem; }
-.texto { font-size: 1rem; line-height: 1.55; color: #d6cec2; max-width: 30rem; }
+.lugar { color: var(--muted); font-size: 1rem; font-weight: 500; line-height: 1.3; }
+.texto { font-size: 1.05rem; line-height: 1.5; color: var(--texto); max-width: 30rem; }
 
 /* ── reproductor ──────────────────────────────────── */
 .reproductor {
@@ -79,7 +111,7 @@ body {
 .boton svg.anillo { position: absolute; inset: 0; transform: rotate(-90deg); }
 .anillo circle { fill: none; stroke-width: 2; }
 .anillo .pista { stroke: var(--line); }
-.anillo .avance { stroke: var(--accent); stroke-linecap: round; transition: stroke-dashoffset 0.25s linear; }
+.anillo .avance { stroke: var(--accent); stroke-width: 3; stroke-linecap: butt; transition: stroke-dashoffset 0.25s linear; }
 .boton .icono {
   position: absolute;
   inset: 0;
@@ -107,11 +139,11 @@ body {
   height: 2rem;
   background: transparent;
 }
-.barra input[type="range"]::-webkit-slider-runnable-track { height: 2px; background: var(--line); }
-.barra input[type="range"]::-moz-range-track { height: 2px; background: var(--line); }
+.barra input[type="range"]::-webkit-slider-runnable-track { height: 1px; background: var(--line); }
+.barra input[type="range"]::-moz-range-track { height: 1px; background: var(--line); }
 .barra input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 14px; height: 14px; margin-top: -6px;
+  width: 14px; height: 14px; margin-top: -6.5px;
   border-radius: 50%; background: var(--accent); border: none;
 }
 .barra input[type="range"]::-moz-range-thumb {
@@ -120,7 +152,9 @@ body {
 .tiempos {
   display: flex;
   justify-content: space-between;
-  font-size: 0.78rem;
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 0.95rem;
   font-variant-numeric: tabular-nums;
   color: var(--muted);
 }
@@ -134,14 +168,15 @@ body {
   border-radius: 999px;
   background: transparent;
   color: var(--muted);
-  font-family: var(--serif);
-  font-size: 0.95rem;
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 1rem;
   cursor: pointer;
 }
-.pistas button[aria-current="true"] { color: var(--bg); background: var(--accent); border-color: var(--accent); }
+.pistas button[aria-current="true"] { color: var(--sobre-acento); background: var(--accent); border-color: var(--accent); }
 
-.aviso { font-size: 0.8rem; color: var(--muted); text-align: center; }
-.error { color: #e48a7e; }
+.aviso { font-size: 0.9rem; color: var(--muted); text-align: center; }
+.error { color: #9a3b2c; }
 
 /* ── índice ───────────────────────────────────────── */
 .lista { list-style: none; border-top: 1px solid var(--line); }
@@ -154,6 +189,6 @@ body {
   color: var(--fg);
   text-decoration: none;
 }
-.lista .n { font-family: var(--serif); color: var(--c, var(--accent)); width: 1.6rem; }
-.lista .t { font-family: var(--serif); font-size: 1.6rem; line-height: 1.1; }
-.lista .l { margin-left: auto; font-size: 0.8rem; color: var(--muted); text-align: right; }
+.lista .n { font-family: var(--display); font-weight: 600; font-variant-numeric: tabular-nums; color: var(--c, var(--accent)); width: 1.6rem; }
+.lista .t { font-family: var(--display); font-weight: 400; font-size: 1.9rem; line-height: 1; }
+.lista .l { margin-left: auto; font-size: 0.9rem; color: var(--muted); text-align: right; }

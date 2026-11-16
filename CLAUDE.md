@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-Proyecto de la muestra de Viviana Zargón "Little Havana" (Aluma Art Center, Miami). Todo el código, los comentarios,
+Proyecto de la muestra de Viviana Zargón "Little Havana" (Miami Photographic Observatory y Aluna Art Foundation, Miami). Todo el código, los comentarios,
 los nombres de variables y los mensajes de commit están en **español**: mantener esa convención.
 
 ## Qué hay en el repo

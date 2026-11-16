@@ -1,6 +1,6 @@
 # Little Havana — paisajes sonoros (QR)
 
-Muestra de Viviana Zargón en Aluma Art Center, Miami.
+Muestra de Viviana Zargón "Little Havana: Studies on Simulation and Generative Reconstruction", en Miami Photographic Observatory y Aluna Art Foundation (Miami).
 Cada QR abre una página que reproduce el paisaje sonoro de uno de los cinco puntos.
 
 | # | Punto | URL |
@@ -75,14 +75,18 @@ sin claves ni costo) que reproduce el recorrido sincronizado con `deriva_calle_8
   **Excepción:** el Tower Theatre (en OSM era un solo bloque de 5 m) se reemplazó por volúmenes medidos sobre la foto del dron:
   auditorio de 10 m, cuerpo curvo del frente de 5 m, torre de entrada de 8 m y aguja de 18 m.
 - **Proyección activa:** la captura de dron del Tower Theatre (`registros/tower-theatre-dron-00.webp`, original en `../drone/`),
-  en la pausa de 15 Av a la ida (4:12) y en la pausa final frente al teatro (11:52). Los dioramas de IA quedan comentados
-  en `recorrido.js` hasta que calcen.
+  en la pausa de 15 Av a la ida (4:12), seguida de los dos dioramas de IA del teatro, y otra vez en la pausa final (12:06).
+  Ball & Chain (vuelta, 11:05): los dos dioramas de la fachada y después la foto de la artista. Los dioramas tienen cámaras
+  estimadas: calibrarlos en `calibrar.html`. Los dos del Tower ya están calibrados (esquinas del teatro, ~22 px de
+  error medio por las proporciones inventadas por la IA). El diorama de 336 SW 15 Av queda comentado.
 - **Proyecciones anamórficas** (`proyecciones` en `recorrido.js`): cada imagen se proyecta sobre la ciudad desde el
   punto de vista donde fue tomada (`camara`, `mira`, `apertura`). La cámara deja al caminante, sube a ese punto y ahí
-  la imagen se recompone; desde la vereda queda fragmentada en las paredes. Máximo 6 vistas en total. Con `vuelve: [{ desde, hasta }]` la cámara
-  regresa a un lugar en otro momento del audio (mismas vistas, no suma al máximo).
+  la imagen se recompone; desde la vereda queda fragmentada en las paredes. Las vistas de un mismo lugar se muestran de a una (la cámara viaja de un punto de vista al siguiente); no hay máximo de imágenes, pero se proyectan a la vez como mucho 6. Con `vuelve: [{ desde, hasta, vistas: [0] }]` la cámara
+  regresa a un lugar en otro momento del audio (todas sus vistas o sólo las indicadas).
   Fotos tomadas desde la vereda: `camara` a la altura de los ojos (alt ≈ 1,6). Si miran al frente o hacia arriba,
   el vuelo abre el encuadre para que entren enteras (MapLibre no inclina la cámara más de 84°).
+  Al llegar, cada imagen queda centrada entre el indicador de arriba y el pie del registro: la cámara mira por el eje
+  de la foto y lo que se corre es el centro óptico de la pantalla (`padding` de MapLibre), sin mover el punto de vista.
   Si el cartel o la parte alta de la foto pasan por encima del volumen, corregir la altura en `calibracion.js` → `alturas`.
 - **Calibrar las proyecciones** (`/deriva-3d/calibrar.html`, con `npm run local`): se marcan pares
   "este punto de la imagen = esta esquina de la ciudad" (imagen a la izquierda, satélite con los edificios a la derecha)
@@ -92,9 +96,29 @@ sin claves ni costo) que reproduce el recorrido sincronizado con `deriva_calle_8
   **Guardar** escribe `site/deriva-3d/calibracion.js`, que tiene prioridad sobre los valores de `recorrido.js`.
   **Probar en la página** abre el recorrido con lo que todavía no se guardó (`?prueba&t=…`).
   Puntos ideales: esquinas de edificios al nivel del piso, 8–12 por imagen, cerca y lejos, en varias fachadas.
+- **Portada** (`site/index.html` + `site/portada/`): la panorámica del dron (`../panoramica_little_havana.tif`, tomada sobre
+  Calle 8 y SW 37 Av. a 118 m, mirando al norte) proyectada sobre la ciudad 3D con la misma lógica anamórfica. La cámara
+  está en `portada/portada.js`; los edificios (`portada/edificios.json`) se regeneran con `node scripts/edificios-portada.mjs`
+  (baja de OSM sólo los que caen dentro del cono de la foto). El cielo cae sobre un telón curvo a 2,75 km.
+- **Transiciones entre imágenes de un mismo lugar:** no son fundidos sino una "ola" que sale del lugar y se expande por
+  la ciudad, cambiando una imagen por la otra grano a grano (`ola()` en `ciudad.js`, `intensidades()` en `mapa.js`).
+- **Dioramas isométricos:** las vistas con `isometrica: true` (recorrido.js) usan una cámara a ~1,2 km con teleobjetivo,
+  porque las imágenes de IA casi no tienen perspectiva; al ir a ese punto de vista la cámara hace un dolly zoom. En
+  `calibrar.html` esas vistas abren solas con distancia máx. 1500 m y apertura mín. 0,5°.
+- Para quitar el bloque de tierra de los dioramas: `.venv/bin/python scripts/recortar-tierra.py` (los polígonos de cada
+  imagen están en el script; la versión con tierra queda en git).
 - Para recortar el fondo liso de un diorama: `.venv/bin/python scripts/recortar-diorama.py entrada.jpg site/deriva-3d/registros/salida.webp`
 - Abrir con `?editar` (p. ej. `/deriva-3d/?editar`) para marcar puntos haciendo clic en el mapa mientras suena el audio
 - QR de prueba en `qrs/prueba-3d/` (wifi local y URL en línea)
+
+## Vista en computadora (marco de celular)
+
+La obra está pensada para el teléfono. En una computadora (mouse o trackpad y ventana apaisada), `assets/marco.js`
+redirige cada página a `/marco/`, que la muestra en un iframe con forma de celular que ocupa el alto de la ventana,
+con una nota y un QR de la página para abrirla en el teléfono. La barra de direcciones conserva la URL real.
+Como adentro del iframe el viewport es de celular, los encuadres de la cámara y de las proyecciones son los mismos
+que verá el público. Para ver una página sin el marco: `?sin-marco` (con `?editar` nunca se enmarca).
+Toda página nueva tiene que cargar `assets/marco.js` en el `<head>`.
 
 ## Publicar
 

@@ -80,6 +80,27 @@ export function configurarThree(THREE, cam, v, aspecto) {
   cam.updateMatrixWorld(true);
 }
 
+// ── vistas ISOMÉTRICAS (dioramas de IA) ──
+// Las imágenes de IA "en isometría" casi no tienen perspectiva: sus verticales y sus paralelas no convergen. Ninguna
+// cámara cercana las reproduce; una cámara MUY lejos con un teleobjetivo, sí (en el límite, es una proyección
+// ortográfica). Con isometrica: true la vista se aleja a DIST_ISO metros de la mira por su mismo eje y cierra la
+// apertura en la misma proporción: sobre el lugar la imagen cubre lo mismo, pero sin perspectiva.
+export const DIST_ISO = 1200;
+// apertura de la cámara cercana "equivalente" (la que usa el vuelo antes del dolly zoom, ver mapa.js)
+export const APERTURA_EQ = 40;
+export function alejar(n, dist = DIST_ISO) {
+  const d = Math.hypot(n.pos[0] - n.mira[0], n.pos[1] - n.mira[1], n.pos[2] - n.mira[2]);
+  if (d >= dist * 0.5) return n; // ya está lejos (p. ej. calibrada)
+  const k = dist / d;
+  return { ...n, pos: [0, 1, 2].map((i) => n.mira[i] + (n.pos[i] - n.mira[i]) * k),
+    apertura: (2 * Math.atan(Math.tan((n.apertura / 2) * RAD) / k)) / RAD };
+}
+// cuánto más lejos que su equivalente cercana (APERTURA_EQ) está una vista: 1 = vista común
+export function factorIso(n) {
+  if (!n.isometrica) return 1;
+  return Math.max(1, Math.tan((APERTURA_EQ / 2) * RAD) / Math.tan((n.apertura / 2) * RAD));
+}
+
 // vista de recorrido.js (+ calibración) → vista normalizada. local([lng, lat]) → [x, y]
 export function normalizar(v, local) {
   const [cx, cy] = local([v.camara.lng, v.camara.lat]);
@@ -88,10 +109,10 @@ export function normalizar(v, local) {
   if (v.mira) { const [mx, my] = local([v.mira.lng, v.mira.lat]); mira = [mx, my, v.mira.alt || 0]; }
   const o = v.rumbo != null && v.cabeceo != null ? { rumbo: v.rumbo, cabeceo: v.cabeceo } : orientacion(pos, mira);
   const n = { imagen: v.imagen, pos, rumbo: o.rumbo, cabeceo: o.cabeceo, giro: v.giro || 0,
-    apertura: v.apertura || 40, centro: v.centro || [0, 0] };
+    apertura: v.apertura || 40, centro: v.centro || [0, 0], isometrica: !!v.isometrica };
   if (!mira) { const d = rayoCentro(n, 1.45); mira = [0, 1, 2].map((i) => pos[i] + d[i] * 80); }
   n.mira = mira;
-  return n;
+  return n.isometrica ? alejar(n) : n;
 }
 
 // ─────────────────────────────────────────────────────────────

@@ -3,11 +3,20 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#121010">
+  <meta name="theme-color" content="#eaeaea">
   <title>Little Havana · Paisajes sonoros</title>
+  <script src="assets/marco.js"></script>
+  <link rel="preload" as="image" href="portada/panoramica.webp">
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.css">
   <link rel="stylesheet" href="assets/estilo.css">
+  <link rel="stylesheet" href="portada/portada.css">
 </head>
-<body>
+<body class="con-portada">
+  <!-- portada: la panorámica (mientras carga) y la misma foto proyectada sobre la ciudad 3D -->
+  <div class="portada" id="portada" aria-hidden="true">
+    <img class="portada-foto" src="portada/panoramica.webp" alt="">
+    <div class="portada-mapa" id="portada-mapa"></div>
+  </div>
   <main class="pagina">
     <header class="muestra" id="muestra"></header>
     <h1 class="nombre">Paisajes sonoros</h1>
@@ -17,10 +26,12 @@
   <script>
     const M = window.MUESTRA;
     document.getElementById("muestra").innerHTML =
-      `<strong>${M.titulo}</strong><br>${M.subtitulo}<br>${M.artista} · ${M.sede}`;
+      `<span class="m-artista">${M.artista}</span><span class="m-titulo">${M.titulo}: ${M.subtitulo}</span><span class="m-sede">${M.sede}</span>`;
     document.getElementById("lista").innerHTML = Object.entries(window.SITIOS).map(([slug, s]) =>
       `<li><a href="${slug}/" style="--c:${s.color}"><span class="n">${s.numero}</span>` +
       `<span class="t">${s.nombre}</span><span class="l">${s.lugar}</span></a></li>`).join("");
   </script>
+  <script src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
+  <script type="module" src="portada/portada.js"></script>
 </body>
 </html>

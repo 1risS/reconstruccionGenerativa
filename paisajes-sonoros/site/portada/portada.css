@@ -1,0 +1,40 @@
+/* Portada: la panorámica proyectada sobre la ciudad 3D queda fija detrás del índice.
+   Arriba, el título sobre un velo de papel; abajo, la lista sobre papel translúcido; en el medio, la imagen. */
+
+.portada { position: fixed; inset: 0; z-index: 0; overflow: hidden; background: var(--bg); }
+/* la foto fija: portada.js la ubica exactamente donde el 3D va a dibujar la proyección vista desde el dron */
+.portada-foto { position: absolute; left: 0; top: 0; width: 100%; height: 100%; object-fit: cover; transition: opacity 2.5s ease; }
+.portada-mapa { position: absolute; inset: 0; opacity: 0; transition: opacity 2.5s ease; }
+.portada.lista .portada-mapa { opacity: 1; }
+.portada.lista .portada-foto { opacity: 0; }
+.portada .maplibregl-ctrl-attrib { background: rgba(234, 234, 234, 0.7); font-size: 10px; }
+
+.con-portada .pagina {
+  position: relative; z-index: 1;
+  justify-content: space-between;
+  pointer-events: none;   /* el mapa no es interactivo, pero así se puede tocar la atribución */
+}
+.con-portada .pagina > * { pointer-events: auto; }
+
+/* título arriba, sobre un velo de papel que se desvanece hacia el cielo */
+/* la primera pantalla es la imagen: la lista asoma abajo y se descubre al deslizar */
+.con-portada .nombre { order: -1; position: relative; padding-bottom: 1.5rem; min-height: calc(100svh - 9.5rem); }
+.con-portada .nombre::before {
+  content: ""; position: fixed; z-index: -1; left: 0; right: 0; top: 0; height: 13rem;
+  background: linear-gradient(var(--bg) 35%, rgba(234, 234, 234, 0.75) 60%, rgba(234, 234, 234, 0));
+  pointer-events: none;
+}
+
+/* lista y créditos abajo, sobre papel translúcido */
+.con-portada .lista, .con-portada .muestra {
+  background: rgba(234, 234, 234, 0.86);
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  margin: 0 -1.5rem; padding-left: 1.5rem; padding-right: 1.5rem;
+}
+.con-portada .lista { margin-top: auto; border-top: none; border-radius: 14px 14px 0 0; padding-top: 0.25rem; }
+.con-portada .muestra { margin-top: -2rem; padding-bottom: 1.25rem; border-top: none; }
+.con-portada .muestra::before { content: ""; display: block; border-top: 1px solid var(--line); margin-bottom: 1rem; }
+@media (min-width: 34rem) {
+  .con-portada .lista { border-radius: 14px 14px 0 0; }
+  .con-portada .muestra { border-radius: 0 0 14px 14px; }
+}
