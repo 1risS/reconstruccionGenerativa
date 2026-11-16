@@ -685,8 +685,8 @@ $('#guardar').addEventListener('click', async () => {
 });
 $('#probar').addEventListener('click', () => {
   guardarBorrador();
-  const t = Math.max(0, aSeg(T.item.p.desde) - 22);
-  window.open(`./?prueba&t=${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`, '_blank');
+  // los tramos se calculan en la página del recorrido (por cercanía del caminante): se pide el lugar
+  window.open(`./?prueba&lugar=${encodeURIComponent(T.item.p.lugar || '')}`, '_blank');
 });
 $('#copiar').addEventListener('click', async () => {
   const e = exportarVista(T);

@@ -1,0 +1,14 @@
+{
+  "name": "little-havana-carga-puntos",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "local": "wrangler pages dev site --port 8788",
+    "picos": "node scripts/picos.mjs",
+    "traer": "node scripts/traer.mjs",
+    "deploy": "wrangler pages deploy site --project-name=little-havana-carga --branch=main --commit-dirty=true"
+  },
+  "devDependencies": {
+    "wrangler": "^4.161.0"
+  }
+}

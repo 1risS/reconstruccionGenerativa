@@ -80,9 +80,12 @@ sin claves ni costo) que reproduce el recorrido sincronizado con `deriva_calle_8
   estimadas: calibrarlos en `calibrar.html`. Los dos del Tower ya están calibrados (esquinas del teatro, ~22 px de
   error medio por las proporciones inventadas por la IA). El diorama de 336 SW 15 Av queda comentado.
 - **Proyecciones anamórficas** (`proyecciones` en `recorrido.js`): cada imagen se proyecta sobre la ciudad desde el
-  punto de vista donde fue tomada (`camara`, `mira`, `apertura`). La cámara deja al caminante, sube a ese punto y ahí
-  la imagen se recompone; desde la vereda queda fragmentada en las paredes. Las vistas de un mismo lugar se muestran de a una (la cámara viaja de un punto de vista al siguiente); no hay máximo de imágenes, pero se proyectan a la vez como mucho 6. Con `vuelve: [{ desde, hasta, vistas: [0] }]` la cámara
-  regresa a un lugar en otro momento del audio (todas sus vistas o sólo las indicadas).
+  punto de vista donde fue tomada (`camara`, `mira`, `apertura`). Las fotos quedan siempre como textura tenue en
+  las paredes. **Travelling por cercanía**: cuando el caminante pasa a menos de `radio` m (15 por defecto) del punto
+  donde se tomó la foto, gira la cabeza, la cámara lo deja, recorre los puntos de vista del lugar (desde cada uno su
+  imagen se recompone; entre una y otra, la ola) y vuelve a sus ojos. Los tramos no se escriben: se calculan de la
+  caminata (`?tramos` los muestra en la consola). Cada lugar se dispara una vez; con `repite: [0]` también en las
+  pasadas siguientes, sólo con esas vistas. No hay máximo de imágenes, pero se proyectan a la vez como mucho 6.
   Fotos tomadas desde la vereda: `camara` a la altura de los ojos (alt ≈ 1,6). Si miran al frente o hacia arriba,
   el vuelo abre el encuadre para que entren enteras (MapLibre no inclina la cámara más de 84°).
   Al llegar, cada imagen queda centrada entre el indicador de arriba y el pie del registro: la cámara mira por el eje
@@ -94,7 +97,7 @@ sin claves ni costo) que reproduce el recorrido sincronizado con `deriva_calle_8
   (`camara.js`). Sobre la imagen se dibujan los contornos de la ciudad vistos desde esa cámara; donde calzan, la
   proyección calza. Después se puede retocar a mano y corregir alturas de edificios (⇧ clic en el mapa).
   **Guardar** escribe `site/deriva-3d/calibracion.js`, que tiene prioridad sobre los valores de `recorrido.js`.
-  **Probar en la página** abre el recorrido con lo que todavía no se guardó (`?prueba&t=…`).
+  **Probar en la página** abre el recorrido con lo que todavía no se guardó (`?prueba&lugar=…`, 22 s antes del travelling de ese lugar).
   Puntos ideales: esquinas de edificios al nivel del piso, 8–12 por imagen, cerca y lejos, en varias fachadas.
 - **Portada** (`site/index.html` + `site/portada/`): la panorámica del dron (`../panoramica_little_havana.tif`, tomada sobre
   Calle 8 y SW 37 Av. a 118 m, mirando al norte) proyectada sobre la ciudad 3D con la misma lógica anamórfica. La cámara

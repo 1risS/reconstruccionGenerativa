@@ -729,6 +729,15 @@ export async function crearCiudad(THREE, { url, local, sol, vistas, alturas = []
       matEdificios.blendSrc = THREE.OneFactor; matEdificios.blendDst = THREE.OneMinusSrcAlphaFactor;
       matEdificios.needsUpdate = true;
     },
+    // suelta la memoria de la GPU (geometría, materiales, mapas de profundidad, imágenes). Sacar antes `grupo` de la escena.
+    liberar() {
+      grupo.traverse((o) => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); });
+      for (const rt of [rtSol, rtCerca, ...ranuras.map((r) => r.rt)]) if (rt) { rt.depthTexture.dispose(); rt.dispose(); }
+      for (const p of proys) p.tex.dispose();
+      escenaProf.children[0].material.dispose();
+      rtSol = rtCerca = null;
+      ranuras.forEach((r) => { r.p = null; r.rt = null; });
+    },
     setCamara(x, y, z) { uniforms.uCamara.value.set(x, y, z); },
     setTiempo(s) { uniforms.uTiempo.value = s; },
     // opacidad del piso propio (0 = se ven las calles del mapa, 1 = piso opaco); con dt, se acerca de a poco

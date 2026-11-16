@@ -1,0 +1,13 @@
+# Configuración de Cloudflare Pages para la herramienta de carga (proyecto little-havana-carga).
+# El KV "CARGA" guarda los datos que carga la artista. Antes del primer deploy:
+#   npx wrangler kv namespace create CARGA      → copiar el id que devuelve en "id" abajo
+#   npx wrangler pages project create little-havana-carga --production-branch=main
+#   npx wrangler pages secret put CLAVE --project-name=little-havana-carga
+# En local (npm run local) el KV se simula y la clave sale de .dev.vars.
+name = "little-havana-carga"
+pages_build_output_dir = "site"
+compatibility_date = "2026-11-01"
+
+[[kv_namespaces]]
+binding = "CARGA"
+id = "4e0b225c7d154966bd0956ab4bf80112"

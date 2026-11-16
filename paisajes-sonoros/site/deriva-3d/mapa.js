@@ -4,6 +4,7 @@
 
 import { normalizar, factorIso } from './camara.js';
 import { iniciarEstilos } from './estilos.js';
+import { FOTO as PANO, telonDe, encuadre as encuadrePano } from '../portada/panoramica.js';
 
 const $ = (s) => document.querySelector(s);
 const M = window.MUESTRA;
@@ -41,6 +42,14 @@ function fovCalle() {
   return Math.min(FOV_CALLE, (2 * Math.atan(Math.tan((FOV_CALLE_H / 2) * RAD) / aspecto)) / RAD);
 }
 const FOV_MAPA = 36.87;
+// Pantalla de inicio: la panorámica del dron (la misma de la portada) proyectada sobre la ciudad, vista desde el
+// punto donde se tomó. En un celular vertical se ve una franja y la cámara la recorre girando sobre sí misma; al
+// girar el celular, la foto entra casi entera. Al comenzar, la proyección se apaga y la cámara vuela a la vereda.
+// No se usa al editar (ahí hace falta ver el recorrido desde el principio).
+const INICIO_PANO = !EDITAR;
+const QUIETA = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const PANEO_SEG = 80;       // segundos de una ida y vuelta del paneo
+const PANO_APAGA = 2.5;     // segundos que tarda en apagarse la proyección al comenzar
 const PASO = 0.75;          // largo del paso, en metros (para el balanceo)
 
 // ── utilidades ─────────────────────────────────────
@@ -146,7 +155,8 @@ const miradaEn = (t) => {
 // ── proyecciones anamórficas y vuelos de cámara ────
 // No hay límite de vistas: ciudad.js proyecta a la vez sólo las que se están viendo (máximo 6 simultáneas).
 const VISTAS = [];
-const PROYS = (R.proyecciones || []).map((p, grupo) => {
+const RADIO_LUGAR = 15; // m alrededor del punto de la foto en que el caminante dispara el travelling
+const LUGARES = (R.proyecciones || []).map((p, grupo) => {
   const vistas = p.vistas.map((v) => {
     const c = CAL.vistas[v.imagen];
     const vista = { ...normalizar(c ? { ...v, ...c, imagen: v.imagen } : v, aLocal), idx: VISTAS.length, aspecto: 1.45,
@@ -164,37 +174,58 @@ const PROYS = (R.proyecciones || []).map((p, grupo) => {
     return vista;
   });
   // huella: la vista que queda proyectada (tenue) fuera del tramo; la marcada con huella: true, o la primera
-  const huella = vistas[Math.max(0, p.vistas.findIndex((v) => v.huella))];
-  // "vuelve": otros tramos en que la cámara regresa al mismo lugar (mismas texturas). Con vistas: [i, …]
-  // recorre sólo esas vistas (índices dentro de la lista del lugar).
-  return [p, ...(p.vuelve || [])].map((tr) => ({
-    ...p, grupo, huella, desde: aSeg(tr.desde), hasta: aSeg(tr.hasta),
-    vistas: tr !== p && tr.vistas ? tr.vistas.map((i) => vistas[i]).filter(Boolean) : vistas,
-  }));
-}).flat().sort((a, b) => a.desde - b.desde);
-// La cámara "presta atención" al lugar desde ANTICIPA segundos antes de su tramo: el caminante gira la
-// cabeza hacia la vereda de enfrente y ve la proyección fragmentada en las fachadas. Durante el viaje la
-// cámara va en línea recta (primero sube si el punto de vista está alto) sin dejar de apuntarle; al llegar
-// al punto de vista exacto la imagen se recompone. Al volver a la vereda suelta la mirada de a poco (SUELTA).
+  const iHuella = Math.max(0, p.vistas.findIndex((v) => v.huella)), huella = vistas[iHuella];
+  // punto que dispara el travelling: donde se tomó la foto que queda como huella (o `punto` en recorrido.js)
+  const ref = p.punto || (CAL.vistas[huella.imagen] || {}).camara || p.vistas[iHuella].camara;
+  return { ...p, grupo, huella, vistas, centro: aLocal([ref.lng, ref.lat]), radio: p.radio || RADIO_LUGAR,
+    repite: (p.repite || []).map((i) => vistas[i]).filter(Boolean) };
+});
+// TRAVELLING POR CERCANÍA: cuando el caminante entra a RADIO_LUGAR metros del punto de una foto, la cámara lo deja,
+// recorre los puntos de vista del lugar (una sola excursión, con la ola entre una imagen y otra) y vuelve a sus ojos.
+// Como la caminata está fijada en el tiempo (puntos de recorrido.js), los tramos se calculan de antemano: cada
+// lugar se dispara la primera vez que el caminante se acerca; en las pasadas siguientes sólo si tiene `repite`
+// (con esas vistas). Si dos lugares se pisan, el segundo espera a que la cámara haya vuelto del primero.
+// La cámara "presta atención" al lugar desde ANTICIPA segundos antes: el caminante gira la cabeza hacia él y ve la
+// proyección fragmentada en las fachadas. Al volver a la vereda suelta la mirada de a poco (SUELTA).
 const ANTICIPA = 20, SUELTA = 5;
 const TRASLADO = 6, POST = 3, REPOSO = 0.7;
-const CONTEMPLA = 4; // segundos mínimos quieto en cada punto de vista intermedio
-PROYS.forEach((p, i) => {
-  // viaje de ida y de vuelta: 5–8 s según la distancia entre los ojos del caminante y el punto de vista
-  // (ida: hasta la primera vista desde donde está el caminante al empezar; vuelta: desde la última)
-  const viaje = (t, v) => {
+const CONTEMPLA = 6; // segundos quieto en cada punto de vista
+const PASO_T = 0.5;
+function pasadas(L) {
+  const fin = K[K.length - 1].t, res = [];
+  let dentro = false;
+  for (let t = 0; t <= fin; t += PASO_T) {
     const e = estado(t), [x, y] = aLocal([e.lng, e.lat]);
-    return clamp(4 + Math.hypot(v.posEq[0] - x, v.posEq[1] - y, v.posEq[2] - OJO) / 6, 5, 8);
-  };
+    const d = Math.hypot(x - L.centro[0], y - L.centro[1]);
+    if (!dentro && d < L.radio) { dentro = true; res.push(t); }
+    else if (dentro && d > L.radio * 1.4) dentro = false; // histéresis: no se dispara dos veces en el borde
+  }
+  return res;
+}
+// viaje de ida y de vuelta: 5–8 s según la distancia entre los ojos del caminante y el punto de vista
+const viaje = (t, v) => {
+  const e = estado(t), [x, y] = aLocal([e.lng, e.lat]);
+  return clamp(4 + Math.hypot(v.posEq[0] - x, v.posEq[1] - y, v.posEq[2] - OJO) / 6, 5, 8);
+};
+const PROYS = LUGARES.flatMap((L) => pasadas(L).map((t, i) => ({ ...L, desde: t, vistas: i === 0 ? L.vistas : L.repite })))
+  .filter((p) => p.vistas.length).sort((a, b) => a.desde - b.desde);
+PROYS.forEach((p, i) => {
+  const prev = PROYS[i - 1];
+  if (prev) p.desde = Math.max(p.desde, prev.hasta + SUELTA + 2);
+  const n = p.vistas.length, ult = p.vistas[n - 1];
   p.subida = viaje(p.desde, p.vistas[0]);
-  p.bajada = viaje(p.hasta, p.vistas[p.vistas.length - 1]);
-  const n = p.vistas.length, falta = p.subida + p.bajada + (n - 1) * (CONTEMPLA + TRASLADO);
-  if (p.hasta - p.desde < falta) console.warn(`recorrido.js: el tramo de ${p.lugar} es corto para ${n} vistas (pide ≈ ${Math.ceil(falta)} s)`);
+  const resto = n * CONTEMPLA + (n - 1) * TRASLADO;
+  p.bajada = viaje(p.desde + p.subida + resto + 6, ult);
+  p.hasta = p.desde + p.subida + resto + p.bajada;
   p.inicio = p.desde;
   // la anticipación no empieza antes de que termine de soltarse el lugar anterior (si no, la cabeza salta de uno a otro)
-  const prev = PROYS[i - 1];
-  p.anticipa = prev ? clamp(p.inicio - (prev.hasta + SUELTA), 4, ANTICIPA) : ANTICIPA;
+  p.anticipa = prev ? clamp(p.inicio - (prev.hasta + SUELTA), 2, ANTICIPA) : ANTICIPA;
 });
+// el último puede terminar después del audio: el recorrido cierra con la imagen recompuesta. Pero si la cámara ni
+// siquiera llegaría al primer punto de vista antes del final, ese travelling no se hace.
+for (let i = PROYS.length - 1; i >= 0; i--) if (PROYS[i].desde + PROYS[i].subida > K[K.length - 1].t - 2) PROYS.splice(i, 1);
+const mmss = (t) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
+if (PARAMS.has('tramos')) console.log('travellings:\n' + PROYS.map((p) => `${mmss(p.desde)}–${mmss(p.hasta)}  ${p.lugar} (${p.vistas.length} vista${p.vistas.length > 1 ? 's' : ''})`).join('\n'));
 
 // peso de cada vista de una proyección en el momento t (una a la vez, con fundidos). El tiempo entre la
 // llegada (después de la subida) y la partida (antes de la bajada) se reparte en partes iguales.
@@ -385,6 +416,9 @@ const map = window.__map = new maplibregl.Map({ // DEPURAR-QUITAR
 });
 window.__mapa = map; // para depurar desde la consola
 
+// panorámica del inicio: { vista, ciudad (cuando cargó), listo (momento en que se vio), apagando (al comenzar) }
+let pano = INICIO_PANO ? { vista: { ...normalizar(PANO, aLocal), lejos: PANO.lejos }, ciudad: null, listo: 0, cuadros: 0, apagando: 0 } : null;
+
 const elCaminante = document.createElement('div');
 elCaminante.className = 'caminante';
 const marcador = new maplibregl.Marker({ element: elCaminante }).setLngLat([K[0].lng, K[0].lat]);
@@ -466,7 +500,8 @@ map.on('load', async () => {
   marcador.addTo(map);
   const attrib = document.querySelector('.maplibregl-ctrl-attrib');
   if (attrib) attrib.classList.remove('maplibregl-compact-show');
-  vistaGeneral(0);
+  if (pano) etiquetas(false);   // los nombres de las calles no van sobre la foto
+  else vistaGeneral(0);
 
   // ciudad dibujada + proyecciones + registros en las fachadas (Three.js).
   // Si algo falla, quedan los volúmenes simples de MapLibre y la experiencia sigue.
@@ -474,6 +509,20 @@ map.on('load', async () => {
     const THREE = await import('https://unpkg.com/three@0.169.0/build/three.module.js');
     try {
       const { crearCiudad } = await import('./ciudad.js');
+      // la ciudad de la panorámica (otros edificios, 3,5 km al oeste) se arma en paralelo y no demora el inicio
+      if (pano) crearCiudad(THREE, {
+        url: PANO.edificios, local: aLocal, sol: PANO.sol, vistas: [pano.vista], telon: telonDe(pano.vista),
+        repintar: () => map.triggerRepaint(),
+      }).then((c) => {
+        if (!pano) return c.liberar();   // ya se comenzó y se apagó antes de que terminara de cargar
+        c.setRadio(1700, 2700);
+        c.uniforms.uFoco.value.set(pano.vista.pos[0] - 60, pano.vista.pos[1] + 1100);
+        if (estilos) c.setEstilo(estilos.actual);
+        pano.ciudad = c;
+        const sumar = () => (capaRegistros ? capaRegistros.escena.add(c.grupo) : setTimeout(sumar, 100));
+        sumar();
+        map.triggerRepaint();
+      }).catch((e) => { console.warn('No se pudo armar la panorámica 3D; queda la foto', e); });
       ciudad = await crearCiudad(THREE, {
         url: 'edificios.json', local: aLocal, sol: { azimut: 235, elevacion: 14 },
         vistas: VISTAS, alturas: CAL.alturas, repintar: () => map.triggerRepaint(),
@@ -484,7 +533,9 @@ map.on('load', async () => {
     capaRegistros = crearCapaRegistros(THREE);
     map.addLayer(capaRegistros, 'ruta-base'); // la línea del recorrido queda sobre el piso dibujado
   } catch (e) { console.warn('No se pudieron cargar los registros 3D', e); }
-  try { estilos = iniciarEstilos(map, ciudad); } catch (e) { console.warn('No se pudieron armar los estilos', e); }
+  // los estilos se aplican a la ciudad del recorrido y a la de la panorámica (si ya está)
+  const ambas = { setEstilo: (est) => { if (ciudad) ciudad.setEstilo(est); if (pano && pano.ciudad) pano.ciudad.setEstilo(est); } };
+  try { estilos = iniciarEstilos(map, ambas); } catch (e) { console.warn('No se pudieron armar los estilos', e); }
 
   const btn = $('#comenzar');
   btn.disabled = false;
@@ -567,7 +618,7 @@ function crearCapaRegistros(THREE) {
   let modoActual = 'general', tActualCapa = 0;
 
   return {
-    id: 'registros', type: 'custom', renderingMode: '3d',
+    id: 'registros', type: 'custom', renderingMode: '3d', escena,
     onAdd(mapa, gl) {
       renderer = new THREE.WebGLRenderer({ canvas: mapa.getCanvas(), context: gl, antialias: true });
       renderer.autoClear = false;
@@ -579,12 +630,18 @@ function crearCapaRegistros(THREE) {
       // posición de la cámara en metros locales: el punto que la proyección manda a (0, 0, z, 0)
       camH.set(0, 0, 1, 0).applyMatrix4(inversa.copy(camara.projectionMatrix).invert());
       if (Math.abs(camH.w) > 1e-12) camPos.set(camH.x / camH.w, camH.y / camH.w, camH.z / camH.w);
-      if (ciudad) { ciudad.setCamara(camPos.x, camPos.y, camPos.z); ciudad.setTiempo((performance.now() / 1000) % 3600); }
+      const ciudades = [ciudad, pano && pano.ciudad].filter(Boolean);
+      for (const c of ciudades) { c.setCamara(camPos.x, camPos.y, camPos.z); c.setTiempo((performance.now() / 1000) % 3600); }
       opacidadesCuadros();
       renderer.resetState();
       renderer.setViewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
-      if (ciudad) ciudad.prepasar(renderer, gl.drawingBufferWidth, gl.drawingBufferHeight);
+      for (const c of ciudades) c.prepasar(renderer, gl.drawingBufferWidth, gl.drawingBufferHeight);
       renderer.render(escena, camara);
+      // la panorámica ya está proyectada: se deja ver el 3D (desde el punto de vista calza con la foto fija)
+      if (pano && pano.ciudad && !pano.listo && pano.ciudad.ranuras()[0] && ++pano.cuadros > 3 && map.areTilesLoaded()) {
+        pano.listo = performance.now();
+        document.body.classList.add('pano-lista');
+      }
       if (estilos && estilos.actual.animado) map.triggerRepaint();
     },
     // opacidades según el momento del audio y el modo de vista
@@ -831,6 +888,46 @@ function setModo(nuevo, { dur } = {}) {
   window.addEventListener('pointerup', () => { if (ini) ultimoToque = performance.now(); ini = null; });
 })();
 
+// ── panorámica del inicio ──────────────────────────
+// La cámara queda en el punto de vista del dron, con el campo de visión justo para que la foto cubra la pantalla.
+// Con la pantalla vertical gira despacio de un lado a otro (sin moverse de lugar, así la imagen sigue entera).
+let encuadrePanoCache = null;
+function encuadreActual() {
+  const W = window.innerWidth, H = window.innerHeight;
+  if (!encuadrePanoCache || encuadrePanoCache.W !== W || encuadrePanoCache.H !== H)
+    encuadrePanoCache = { W, H, ...encuadrePano(W, H, PITCH_CALLE) };
+  return encuadrePanoCache;
+}
+function camaraPano(ahora) {
+  const e = encuadreActual();
+  const s = pano.listo ? (ahora - pano.listo) / 1000 : 0;   // el paneo arranca centrado, donde está la foto fija
+  const desvio = QUIETA ? 0 : e.paneo * Math.sin((2 * Math.PI * s) / PANEO_SEG);
+  if (Math.abs(map.getVerticalFieldOfView() - e.fov) > 0.01) map.setVerticalFieldOfView(e.fov);
+  map.jumpTo({ ...map.calculateCameraOptionsFromCameraLngLatAltRotation([PANO.camara.lng, PANO.camara.lat], PANO.camara.alt,
+    pano.vista.rumbo + desvio, PITCH_CALLE, 0), padding: SIN_RELLENO });
+}
+// foto fija mientras carga el 3D, ubicada exactamente donde la va a dibujar la proyección
+function ubicarFotoPano() {
+  const el = $('#pano-foto');
+  if (!el) return;
+  const f = encuadreActual().foto;
+  Object.assign(el.style, { width: `${f.ancho}px`, height: `${f.alto}px`, left: `${f.x}px`, top: `${f.y}px` });
+}
+// intensidad de la proyección; al comenzar se apaga y después se suelta la memoria
+function panoCuadro(ahora) {
+  if (!pano.ciudad) return;
+  const s = pano.apagando ? (ahora - pano.apagando) / 1000 : 0;
+  pano.ciudad.setIntensidades([1 - suave(clamp(s / PANO_APAGA, 0, 1))]);
+  if (s > PANO_APAGA + 0.5) {
+    if (capaRegistros) capaRegistros.escena.remove(pano.ciudad.grupo);
+    pano.ciudad.liberar();
+    pano = null;
+    const el = $('#pano-foto');
+    if (el) el.remove();
+    map.triggerRepaint();
+  }
+}
+
 // ── bucle de animación ─────────────────────────────
 function cuadro(ahora) {
   const dt = Math.min(0.1, (ahora - ultimoCuadro) / 1000);
@@ -895,14 +992,16 @@ function cuadro(ahora) {
       elCaminante.style.display = op > 0 ? '' : 'none';
       elCaminante.style.opacity = op;
     }
-    if (modo !== 'calle' && !enTransicion && !map.isMoving()) {
+    if (modo !== 'calle' && !enTransicion && !map.isMoving() && !(pano && !iniciado)) {
       const fov = map.getVerticalFieldOfView();
       if (Math.abs(fov - FOV_MAPA) > 0.05) map.setVerticalFieldOfView(fov + (FOV_MAPA - fov) * (1 - Math.exp(-dt * 2.5)));
     }
     if (!etiquetasVisibles && modo !== 'calle' && !enTransicion && !map.isMoving() && map.getPitch() < 70) etiquetas(true);
 
     const k = 1 - Math.exp(-dt * 1.6);
-    if (!iniciado || (modo === 'general' && terminado)) {
+    if (pano) panoCuadro(ahora);
+    if (pano && !iniciado) camaraPano(ahora);
+    else if (!iniciado || (modo === 'general' && terminado)) {
       if (!map.isMoving()) map.setBearing(map.getBearing() + dt * 2.5);
     } else if (!enTransicion && modo === 'calle') {
       // hacia dónde mira: adelante, o la fachada del registro, o alrededor durante la escucha
@@ -947,6 +1046,16 @@ function cuadro(ahora) {
   }
   requestAnimationFrame(cuadro);
 }
+// arranque de la panorámica (acá, cuando ya están definidas todas las constantes que usa)
+if (pano) {
+  document.body.classList.add('con-pano');
+  ubicarFotoPano();
+  addEventListener('resize', ubicarFotoPano);
+  camaraPano(performance.now());
+} else {
+  const el = document.getElementById('pano-foto');
+  if (el) el.remove();
+}
 requestAnimationFrame(cuadro);
 
 // ── comenzar ───────────────────────────────────────
@@ -960,8 +1069,10 @@ document.addEventListener('visibilitychange', () => {
 
 $('#comenzar').addEventListener('click', () => {
   // ?t=4:00 → empezar en ese momento del audio (lo usa "Probar en la página" de calibrar.html)
-  if (PARAMS.get('t')) {
-    const t0 = aSeg(PARAMS.get('t'));
+  // ?lugar=Tower Theater → 22 s antes del travelling de ese lugar (lo usa "Probar en la página" de calibrar.html)
+  const tramo = PARAMS.get('lugar') && PROYS.find((p) => p.lugar === PARAMS.get('lugar'));
+  if (PARAMS.get('t') || tramo) {
+    const t0 = tramo ? Math.max(0, tramo.desde - 22) : aSeg(PARAMS.get('t'));
     if (audio.readyState >= 1) audio.currentTime = t0;
     else audio.addEventListener('loadedmetadata', () => (audio.currentTime = t0), { once: true });
   }
@@ -970,7 +1081,9 @@ $('#comenzar').addEventListener('click', () => {
   $('#inicio').classList.add('oculto');
   $('#panel').hidden = false;
   pintarMarcas();
-  setModo(VISTA, { dur: 4200 }); // descenso a la vereda
+  if (pano) { pano.apagando = performance.now(); document.body.classList.add('pano-fuera'); }
+  // descenso a la vereda (desde el dron de la panorámica, un vuelo más largo)
+  setModo(VISTA, { dur: pano ? 6500 : 4200 });
   setTimeout(() => $('#inicio').remove(), 900);
 });
 

@@ -1,25 +1,16 @@
 // Portada: la panorámica de Little Havana proyectada sobre la ciudad 3D, con la misma lógica anamórfica de la deriva.
-//
-// La foto se tomó con un dron sobre Calle 8 y SW 37 Av. (Douglas Rd.), el borde oeste de Little Havana, a 118 m
-// de altura y mirando al norte, hacia Flagler y el Magic City Casino. Posición, altura y cabeceo salen del XMP de
-// DJI; el rumbo se corrigió superponiendo los edificios de OSM sobre la foto (el compás del dron marcaba +1,7°).
+// La cámara del dron y el encuadre están en panoramica.js (los comparte con el inicio de la deriva 3D).
 //
 // Recorrido de la cámara (en bucle): arranca en el punto de vista del dron, donde la imagen está entera (y calza
 // con la foto fija que se ve mientras carga); se aparta y la imagen se deshace sobre techos y fachadas; vuelve.
 // Lo que de la foto no cae sobre la ciudad (el cielo, el horizonte lejano) cae sobre un telón curvo a 2,75 km.
-// Los edificios (edificios.json) se generan con scripts/edificios-portada.mjs.
 //
 // Usa ciudad.js, camara.js y estilos.js de la deriva 3D.
 
 import { normalizar } from '../deriva-3d/camara.js';
 import { iniciarEstilos } from '../deriva-3d/estilos.js';
+import { FOTO, telonDe, encuadre as encuadrePanoramica } from './panoramica.js';
 
-const FOTO = {
-  imagen: 'portada/panoramica.webp', tipo: 'fotografía aérea',
-  camara: { lat: 25.76510167, lng: -80.25260167, alt: 118 },
-  rumbo: -3.7, cabeceo: 4.4, giro: 0, apertura: 73.74,   // 24 mm equivalentes → 73,7° horizontales
-  lejos: 3300,
-};
 const PITCH_MAX = 84;   // más que eso MapLibre dibuja hasta el horizonte y se cuelga
 const RAD = Math.PI / 180;
 const suave = (x) => x * x * (3 - 2 * x);
@@ -40,24 +31,14 @@ const aLocal = ([lng, lat]) => {
 const aLngLat = (x, y) => new maplibregl.MercatorCoordinate(ORIGEN.x + x * ESCALA, ORIGEN.y - y * ESCALA, 0).toLngLat();
 
 const VISTA = { ...normalizar(FOTO, aLocal), lejos: FOTO.lejos, idx: 0 };
-const ASPECTO = 16 / 9;
 
 // ── encuadre en el punto de vista ──
-// MapLibre no inclina más de PITCH_MAX: la cámara mira 6° hacia abajo y la foto 4,4°, así que la foto queda un
-// poco por encima del centro. Se elige el campo de visión para que la foto cubra la pantalla entera, y la foto
-// fija de la carga se ubica exactamente donde la va a dibujar el 3D (así el paso de una a otra no se nota).
-function encuadre() {
-  const W = innerWidth, H = innerHeight;
-  const tH = Math.tan((VISTA.apertura / 2) * RAD), tV = tH / ASPECTO;
-  const d = Math.tan(((90 - PITCH_MAX) - VISTA.cabeceo) * RAD);  // la foto sube d·f píxeles respecto del centro
-  const f = 1.015 * Math.max(W / 2 / tH, H / 2 / (tV - d));        // distancia focal en píxeles
-  const ancho = 2 * f * tH, alto = ancho / ASPECTO;
-  return { fov: (2 * Math.atan(H / 2 / f)) / RAD, ancho, alto, x: (W - ancho) / 2, y: H / 2 - f * d - alto / 2 };
-}
+// La foto cubre la pantalla entera, y la foto fija de la carga se ubica exactamente donde la va a dibujar el 3D
+// (así el paso de una a otra no se nota).
+const encuadre = () => encuadrePanoramica(innerWidth, innerHeight, PITCH_MAX);
 function ubicarFoto() {
-  const e = encuadre();
+  const e = encuadre().foto;
   Object.assign(foto.style, { width: `${e.ancho}px`, height: `${e.alto}px`, left: `${e.x}px`, top: `${e.y}px` });
-  return e;
 }
 ubicarFoto();
 addEventListener('resize', ubicarFoto);
@@ -121,9 +102,9 @@ map.on('load', async () => {
     const THREE = await import('https://unpkg.com/three@0.169.0/build/three.module.js');
     const { crearCiudad } = await import('../deriva-3d/ciudad.js');
     ciudad = await crearCiudad(THREE, {
-      url: 'portada/edificios.json', local: aLocal, sol: { azimut: 235, elevacion: 14 },
+      url: FOTO.edificios, local: aLocal, sol: FOTO.sol,
       vistas: [VISTA], repintar: () => map.triggerRepaint(),
-      telon: { centro: [0, 0], radio: 2750, desde: VISTA.rumbo - 44, hasta: VISTA.rumbo + 44, alto: 1150 },
+      telon: telonDe(VISTA),
     });
     ciudad.setRadio(1700, 2700);
     ciudad.uniforms.uFoco.value.set(-60, 1100);

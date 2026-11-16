@@ -8,6 +8,7 @@ los nombres de variables y los mensajes de commit están en **español**: manten
 ## Qué hay en el repo
 
 - `paisajes-sonoros/`: el proyecto principal. Es un sitio estático: cada QR impreso abre una página que reproduce el paisaje sonoro de un punto de la Calle Ocho, y hay además una deriva en un mapa 3D. **Leer `paisajes-sonoros/README.md`**, que documenta el uso, los formatos de datos y el deploy.
+- `carga-puntos/`: web app aparte (Cloudflare Pages `little-havana-carga`, datos en KV) para que la artista cargue los edificios con links de Drive a sus fotos y los momentos del audio con su ubicación. `npm run traer` baja lo cargado y arma un borrador de `puntos`/`proyecciones` para `recorrido.js`. **Leer `carga-puntos/README.md`.**
 - `tests-video/`: experimentos aparte (partículas a partir de imagen o video). No dependen del sitio.
 - `foto_profundidad.toe`: archivo de TouchDesigner (binario).
 - `audios/`, `fachadas/`, `dioramas/`, `drone/`: originales pesados que están **fuera de git** (ver `.gitignore`). Los scripts los leen desde `../` respecto de `paisajes-sonoros/`.
@@ -48,6 +49,7 @@ Usa MapLibre 5.6 desde unpkg y Three.js dentro del mapa. Los datos se cargan com
 - `camara.js` tiene el modelo de cámara que comparten `ciudad.js`, `mapa.js` y `calibrar.js`. Coordenadas locales en metros: x = este, y = norte, z = arriba, con origen en `RECORRIDO.puntos[0]`. Una vista es `{ pos, rumbo, cabeceo, giro, apertura, centro }`, y las convenciones de signo están en su encabezado. `mapa.js` y `calibrar.js` tienen que usar la misma conversión de coordenadas.
 - `ciudad.js` dibuja los volúmenes de `edificios.json`, una copia fija de OSM ya editada (el Tower Theatre se modeló a mano con medidas tomadas de la foto del dron). Agrega sombras de sol y las proyecciones anamórficas en shaders GLSL.
 - `mapa.js` sincroniza el audio con la cámara y maneja las vistas Calle, Aérea y Mapa. Parámetros de URL: `?editar` (marcar puntos), `?prueba&t=…` (probar una calibración sin guardar).
+- La pantalla de inicio de la deriva muestra la panorámica del dron proyectada desde su punto de vista (Calle 8 y SW 37 Av., 3,5 km al oeste del recorrido), con una segunda ciudad (`portada/edificios.json`) que se libera al comenzar. Los datos de esa cámara y el cálculo del encuadre están en `site/portada/panoramica.js`, que comparten la portada y la deriva.
 
 Límites fijos que hay que respetar:
 - `MAX_PROY = 6` proyecciones. Cada una usa 2 texturas y los celulares admiten 16 en total.

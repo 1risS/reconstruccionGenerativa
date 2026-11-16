@@ -11,12 +11,15 @@
     if (!location.pathname.endsWith('/') && !/\.html?$/.test(location.pathname))
       location.replace(location.pathname + '/' + location.search + location.hash);
   </script>
+  <link rel="preload" as="image" href="../portada/panoramica.webp">
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.css">
   <link rel="stylesheet" href="../assets/estilo.css">
   <link rel="stylesheet" href="mapa.css">
 </head>
 <body>
   <div id="mapa" aria-label="Mapa 3D del recorrido"></div>
+  <!-- la panorámica fija mientras carga el 3D; mapa.js la ubica donde la va a proyectar la ciudad -->
+  <img class="pano-foto" id="pano-foto" src="../portada/panoramica.webp" alt="" aria-hidden="true">
   <div class="vineta" aria-hidden="true"></div>
 
   <!-- pantalla de inicio: la interacción habilita el audio -->

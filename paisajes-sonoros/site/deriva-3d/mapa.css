@@ -23,6 +23,21 @@ button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent
 .inicio .muestra { order: 0; max-width: 30rem; }   /* acá va pegada a la descripción */
 .inicio .lugar { max-width: 22rem; line-height: 1.45; }
 .inicio.oculto { opacity: 0; pointer-events: none; }
+/* con la panorámica detrás: el velo de papel queda arriba (título, sobre el cielo) y abajo (botón), y en el medio
+   se ve la ciudad. En una pantalla apaisada y baja el texto ocupa casi todo: el velo se mantiene más parejo. */
+body.con-pano .inicio {
+  background: linear-gradient(to bottom, rgba(234,234,234,0.94) 0%, rgba(234,234,234,0.78) 28%,
+    rgba(234,234,234,0) 50%, rgba(234,234,234,0) 74%, rgba(234,234,234,0.9) 100%);
+}
+@media (orientation: landscape) and (max-height: 32rem) {
+  body.con-pano .inicio {
+    background: linear-gradient(to top, rgba(234,234,234,0.88) 0%, rgba(234,234,234,0) 32%),
+      linear-gradient(to right, rgba(234,234,234,0.92) 0%, rgba(234,234,234,0.7) 40%, rgba(234,234,234,0) 70%);
+  }
+}
+/* la foto fija: se funde con la proyección cuando el 3D está listo, o al comenzar si todavía no estaba */
+.pano-foto { position: fixed; z-index: 0; max-width: none; pointer-events: none; transition: opacity 2.5s ease; }
+body.pano-lista .pano-foto, body.pano-fuera .pano-foto { opacity: 0; }
 .comenzar {
   margin-top: auto; align-self: center;
   min-width: 13rem; height: 3.4rem; padding: 0 2rem;

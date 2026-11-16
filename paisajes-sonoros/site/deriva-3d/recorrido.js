@@ -22,16 +22,19 @@
 // PROYECCIONES (imágenes que se proyectan sobre la ciudad 3D como un video-mapping anamórfico)
 //  Cada imagen se proyecta desde el punto de vista donde fue tomada (la "camara"): desde ahí la
 //  imagen se recompone entera sobre los volúmenes; desde la vereda se ve fragmentada en las paredes.
-//  El caminante va descubriendo las proyecciones de la VEREDA DE ENFRENTE: desde unos 20 s antes
-//  gira la cabeza hacia ellas (se ven fragmentadas) y la cámara se corre hasta el punto de vista.
-//  desde/hasta → tramo del audio en que la cámara deja al caminante, va al punto de vista y vuelve.
-//                El viaje de ida y el de vuelta duran 5–8 s cada uno (según la distancia): lo que
-//                sobra del tramo es la contemplación de la imagen recompuesta (hoy ≈ 5 s).
+//  Las fotos están siempre pegadas como textura (tenue, la "huella") en las paredes. TRAVELLING POR CERCANÍA:
+//  cuando el caminante pasa a menos de `radio` metros del punto donde se tomó la foto, gira la cabeza
+//  hacia el lugar, la cámara lo deja, recorre los puntos de vista (ahí cada imagen se recompone) y vuelve
+//  a sus ojos. No hay tiempos que poner a mano: salen de la caminata (puntos de arriba). Ida y vuelta
+//  duran 5–8 s cada una; cada vista, 6 s quieta + 6 s de viaje a la siguiente. Si dos lugares se pisan,
+//  el segundo espera. Para ver los tramos calculados: abrir la página con ?tramos (tabla en la consola).
+//  radio       → (opcional) metros alrededor del punto que disparan el travelling (por defecto 15)
+//  punto       → (opcional) { lat, lng } que dispara el travelling; por defecto, la cámara de la vista huella
+//  repite      → (opcional) se dispara también en las pasadas siguientes, sólo con esas vistas: [0, 2]
+//                (posiciones en la lista de vistas del lugar, desde 0). Sin repite, una sola vez.
 //  vistas      → una o más imágenes del lugar, en orden; la cámara viaja de una a otra y se ven DE A UNA
 //                (cada imagen sólo se recompone desde su propio punto de vista; entre una y otra, una "ola" sale
 //                del lugar y se expande por la ciudad reemplazando una imagen por la otra).
-//                El tramo se reparte en partes iguales: cada vista pide ≈ 10 s (4 s quieta + 6 s de viaje)
-//                además de la ida y la vuelta. Si no alcanza, la consola avisa cuántos segundos hacen falta.
 //    imagen    → archivo en registros/ (PNG o WebP con fondo transparente = sólo se proyecta la figura)
 //    camara    → posición del dron/fotógrafo: lat, lng y alt (metros sobre el piso)
 //    mira      → punto al que apunta el centro de la imagen (lat, lng, alt)
@@ -44,9 +47,6 @@
 //                por el mismo eje con un teleobjetivo (camara/mira/apertura se dan como si fuera una cámara cercana;
 //                lo calibrado en calibrar.html ya queda lejos). Al ir a ese punto de vista, la cámara hace un dolly
 //                zoom: se aleja mientras cierra el campo de visión y la ciudad se aplana hasta volverse maqueta.
-//  vuelve      → (opcional) otros tramos en que la cámara regresa al mismo lugar: [{ desde, hasta }, …]
-//                 (p. ej. cuando el recorrido vuelve a pasar frente a la huella). Usa las mismas vistas, o sólo
-//                 algunas con vistas: [0, 2] (posiciones en la lista de vistas del lugar, desde 0).
 //  No hay máximo de imágenes: se proyectan a la vez sólo las que se están viendo (hasta 6 simultáneas).
 //
 // Abrí la página con ?editar al final de la URL para marcar puntos sobre el mapa
@@ -96,8 +96,9 @@ window.RECORRIDO = {
       // El teatro está en la vereda sur. Ida: pausa enfrente, en la vereda norte (15 Av.); el tramo sigue un poco
       // después de la pausa (el caminante retoma la marcha mientras la cámara está arriba).
       // Vuelta: última imagen del recorrido, durante la pausa final en la esquina (vereda sur), sólo el dron.
-      desde: '4:12', hasta: '5:04', lugar: 'Tower Theater',
-      vuelve: [{ desde: '12:06', hasta: '12:27', vistas: [0] }],
+      // El punto que dispara el travelling es el del dron (sobre la esquina); con radio 20 se dispara a la ida
+      // (~3:47) y otra vez a la vuelta, en la pausa final de la esquina, sólo con el dron (repite).
+      lugar: 'Tower Theater', radio: 20, repite: [0],
       vistas: [
         { imagen: 'registros/tower-theatre-dron-00.webp', tipo: 'fotografía aérea', apertura: 73.7, rumbo: -137.2, cabeceo: 22.2, giro: -0.1,
           camara: { lat: 25.7657892, lng: -80.2194265, alt: 19.5 }, mira: { lat: 25.7655532, lng: -80.2196669, alt: 5 } },
@@ -123,7 +124,7 @@ window.RECORRIDO = {
       // Primero los dos dioramas de IA (fachadas/25.765975736679938, -80.21976477493762_00/_01.jpg, vistas
       // frontales desde lo alto de la vereda sur), uno por vez; al final la cámara baja a la altura de los
       // ojos y se recompone la foto de la artista, que queda como huella. ⚠ Cámaras de los dioramas estimadas.
-      desde: '11:05', hasta: '11:48', lugar: 'Ball & Chain',
+      lugar: 'Ball & Chain',
       vistas: [
         { imagen: 'registros/ball-and-chain-fachada-00.webp', tipo: 'diorama generado por IA', isometrica: true, apertura: 46,
           camara: { lat: 25.76512, lng: -80.219765, alt: 22 }, mira: { lat: 25.765976, lng: -80.219765, alt: 5 } },
@@ -141,7 +142,7 @@ window.RECORRIDO = {
       // a 1,6 m inclinada ~8° hacia arriba (el centro de la foto cae a ~4,3 m en la pared).
       // Fachada en la vereda norte → se descubre a la vuelta, desde la vereda sur: el caminante pasa
       // por el punto donde se tomó la foto hacia las 10:51.
-      desde: '10:43', hasta: '10:58', lugar: 'Top Cigars · Skinny Louie', tipo: 'fotografía',
+      lugar: 'Top Cigars · Skinny Louie', tipo: 'fotografía',
       vistas: [
         { imagen: 'registros/top-cigars-foto-00.webp', apertura: 43,
           camara: { lat: 25.765605, lng: -80.220608, alt: 1.6 }, mira: { lat: 25.765782, lng: -80.220608, alt: 4.3 } }
@@ -155,7 +156,7 @@ window.RECORRIDO = {
       // verticales paralelas → mira casi horizontal (el centro de la foto cae a ~2 m de altura).
       // Fachada en la vereda sur → se descubre a la ida, desde la vereda norte: el caminante pasa
       // enfrente hacia las 5:27 y la cámara cruza la calle hasta el punto de vista.
-      desde: '5:18', hasta: '5:36', lugar: 'Cuban Cigars Corp', tipo: 'fotografía',
+      lugar: 'Cuban Cigars Corp', tipo: 'fotografía',
       vistas: [
         { imagen: 'registros/cuban-cigars-foto-00.webp', apertura: 62,
           camara: { lat: 25.765658, lng: -80.220001, alt: 1.6 }, mira: { lat: 25.765604, lng: -80.220001, alt: 2 } }
@@ -163,10 +164,10 @@ window.RECORRIDO = {
     }
   ]
   // ── DIORAMA EN PAUSA ── 336 SW 15 Av. queda unos 400 m al norte del recorrido. Para sumarlo, ponerlo
-  // dentro de proyecciones: [ … ] con un tramo propio que no se pise con otro lugar.
+  // dentro de proyecciones: [ … ] con un `punto` sobre el recorrido (o un `radio` que alcance) para dispararlo.
   // proyecciones_pendientes: [
   //   {
-  //     desde: '11:52', hasta: '12:32', lugar: '336 SW 15 Av.', tipo: 'diorama generado por IA',
+  //     lugar: '336 SW 15 Av.', tipo: 'diorama generado por IA',
   //     vistas: [
   //       { imagen: 'registros/336-sw15-diorama-00.webp', isometrica: true, apertura: 40,
   //         camara: { lat: 25.769374, lng: -80.219364, alt: 48 }, mira: { lat: 25.76975, lng: -80.21978, alt: 2 } },
