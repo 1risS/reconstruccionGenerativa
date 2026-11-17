@@ -50,6 +50,34 @@ function focal(W, H, pitch, desvio) {
   return b;
 }
 
+// Transformación CSS (matrix3d, con transform-origin 0 0) que lleva una imagen de ancho × alto píxeles exactamente
+// adonde la dibuja la proyección vista desde el dron: cámara de MapLibre con ese pitch y campo de visión vertical,
+// sin padding, mirando por el eje de la foto. Se proyectan las cuatro esquinas de la foto con esa cámara y se arma
+// la homografía rectángulo → cuadrilátero (la cámara mira más abajo que la foto: el cuadro queda apenas trapezoidal).
+export function homografia(W, H, pitch, fov, ancho, alto) {
+  const cam = ejes({ rumbo: FOTO.rumbo, cabeceo: 90 - pitch, giro: 0 });
+  const foto = ejes(FOTO);
+  const tH = Math.tan((FOTO.apertura / 2) * RAD), tV = tH / FOTO.aspecto;
+  const f = H / 2 / Math.tan((fov / 2) * RAD);
+  const p = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  // esquinas de la foto en el orden (0,0) (1,0) (1,1) (0,1) de la imagen (y hacia abajo)
+  const [q0, q1, q2, q3] = [[-1, 1], [1, 1], [1, -1], [-1, -1]].map(([sx, sy]) => {
+    const r = [0, 1, 2].map((i) => foto.f[i] + foto.der[i] * sx * tH + foto.arr[i] * sy * tV);
+    const z = p(r, cam.f);
+    return [W / 2 + (f * p(r, cam.der)) / z, H / 2 - (f * p(r, cam.arr)) / z];
+  });
+  // cuadrado unitario → cuadrilátero (Heckbert)
+  const dx1 = q1[0] - q2[0], dx2 = q3[0] - q2[0], dx3 = q0[0] - q1[0] + q2[0] - q3[0];
+  const dy1 = q1[1] - q2[1], dy2 = q3[1] - q2[1], dy3 = q0[1] - q1[1] + q2[1] - q3[1];
+  const den = dx1 * dy2 - dx2 * dy1;
+  const g = (dx3 * dy2 - dx2 * dy3) / den, h = (dx1 * dy3 - dx3 * dy1) / den;
+  const a = q1[0] - q0[0] + g * q1[0], b = q3[0] - q0[0] + h * q3[0], c = q0[0];
+  const d = q1[1] - q0[1] + g * q1[1], e = q3[1] - q0[1] + h * q3[1], k = q0[1];
+  // de píxeles de la imagen al cuadrado unitario, y a matrix3d (por columnas)
+  const m = [a / ancho, d / ancho, 0, g / ancho, b / alto, e / alto, 0, h / alto, 0, 0, 1, 0, c, k, 0, 1];
+  return `matrix3d(${m.map((x) => +x.toFixed(9)).join(',')})`;
+}
+
 // Encuadre para una pantalla: { fov (vertical, grados), paneo (grados a cada lado del eje), foto (rectángulo donde
 // queda la foto en pantalla con la cámara en el eje: para ubicar la imagen fija mientras carga el 3D) }.
 // En una pantalla vertical se ve una franja de la panorámica, y la cámara la recorre girando sobre sí misma

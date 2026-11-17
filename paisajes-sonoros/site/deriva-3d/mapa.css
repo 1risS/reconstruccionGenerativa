@@ -36,7 +36,7 @@ body.con-pano .inicio {
   }
 }
 /* la foto fija: se funde con la proyección cuando el 3D está listo, o al comenzar si todavía no estaba */
-.pano-foto { position: fixed; z-index: 0; max-width: none; pointer-events: none; transition: opacity 2.5s ease; }
+.pano-foto { position: fixed; z-index: 0; max-width: none; pointer-events: none; transition: opacity 1.5s ease; }
 body.pano-lista .pano-foto, body.pano-fuera .pano-foto { opacity: 0; }
 .comenzar {
   margin-top: auto; align-self: center;

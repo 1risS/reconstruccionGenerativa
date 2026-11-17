@@ -4,7 +4,7 @@
 
 import { normalizar, factorIso } from './camara.js';
 import { iniciarEstilos } from './estilos.js';
-import { FOTO as PANO, telonDe, encuadre as encuadrePano } from '../portada/panoramica.js';
+import { FOTO as PANO, telonDe, encuadre as encuadrePano, homografia } from '../portada/panoramica.js';
 
 const $ = (s) => document.querySelector(s);
 const M = window.MUESTRA;
@@ -49,6 +49,8 @@ const FOV_MAPA = 36.87;
 const INICIO_PANO = !EDITAR;
 const QUIETA = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const PANEO_SEG = 80;       // segundos de una ida y vuelta del paneo
+const PANEO_ENTRA = 10;     // segundos en que el paneo pasa de quieto a su amplitud (arranca sin sacudón)
+const FUNDIDO_FOTO = 1.5;   // segundos del fundido de la foto fija al 3D (igual que .pano-foto en mapa.css)
 const PANO_APAGA = 2.5;     // segundos que tarda en apagarse la proyección al comenzar
 const VUELTA_SEG = 9;       // segundos del vuelo de vuelta al dron al terminar el recorrido
 const VUELTA_ALTO = 400;    // altura (m) a la que cruza la ciudad en ese vuelo
@@ -889,9 +891,11 @@ function camaraPano(ahora) {
   let f = 1;
   if (v && !v.llega) { f = clamp((ahora - v.ini) / 1000 / VUELTA_SEG, 0, 1); if (f >= 1) v.llega = ahora; }
   // el paneo arranca centrado: al aparecer la proyección (donde está la foto fija) o al llegar el vuelo
-  const desde = v ? v.llega : pano.listo;
-  const s = desde ? (ahora - desde) / 1000 : 0;
-  const desvio = QUIETA ? 0 : e.paneo * Math.sin((2 * Math.PI * s) / PANEO_SEG);
+  // (al inicio, recién cuando terminó el fundido de la foto fija: mientras se funden, la cámara no se mueve y la foto
+  // y la proyección calzan exactas). La amplitud crece de a poco, así el giro arranca con velocidad cero.
+  const desde = v ? v.llega : pano.listo && pano.listo + FUNDIDO_FOTO * 1000 + 300;
+  const s = desde ? Math.max(0, (ahora - desde) / 1000) : 0;
+  const desvio = QUIETA ? 0 : e.paneo * suave(clamp(s / PANEO_ENTRA, 0, 1)) * Math.sin((2 * Math.PI * s) / PANEO_SEG);
   let pos = P, rumboCam = pano.vista.rumbo + desvio, pitch = PITCH_CALLE, fov = e.fov;
   if (f < 1) {
     // sube primero en vertical (en la vereda hay edificios pegados), cruza alto y baja hasta el dron
@@ -956,8 +960,10 @@ const panoActiva = () => pano && !pano.apagando;
 function ubicarFotoPano() {
   const el = $('#pano-foto');
   if (!el) return;
-  const f = encuadreActual().foto;
-  Object.assign(el.style, { width: `${f.ancho}px`, height: `${f.alto}px`, left: `${f.x}px`, top: `${f.y}px` });
+  // homografía exacta con la cámara de MapLibre (no un rectángulo aproximado): el fundido al 3D no se nota
+  const e = encuadreActual(), w = 1600, h = w / PANO.aspecto;
+  Object.assign(el.style, { width: `${w}px`, height: `${h}px`, left: '0px', top: '0px', transformOrigin: '0 0',
+    transform: homografia(e.W, e.H, PITCH_CALLE, e.fov, w, h) });
 }
 // intensidad de la proyección; al comenzar se apaga y después se suelta la memoria
 function panoCuadro(ahora) {

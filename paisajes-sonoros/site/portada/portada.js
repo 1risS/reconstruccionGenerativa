@@ -9,7 +9,7 @@
 
 import { normalizar } from '../deriva-3d/camara.js';
 import { iniciarEstilos } from '../deriva-3d/estilos.js';
-import { FOTO, telonDe, encuadre as encuadrePanoramica } from './panoramica.js';
+import { FOTO, telonDe, encuadre as encuadrePanoramica, homografia } from './panoramica.js';
 
 const PITCH_MAX = 84;   // más que eso MapLibre dibuja hasta el horizonte y se cuelga
 const RAD = Math.PI / 180;
@@ -36,9 +36,11 @@ const VISTA = { ...normalizar(FOTO, aLocal), lejos: FOTO.lejos, idx: 0 };
 // La foto cubre la pantalla entera, y la foto fija de la carga se ubica exactamente donde la va a dibujar el 3D
 // (así el paso de una a otra no se nota).
 const encuadre = () => encuadrePanoramica(innerWidth, innerHeight, PITCH_MAX);
+// homografía exacta con la cámara de MapLibre en el punto de vista (ver panoramica.js)
 function ubicarFoto() {
-  const e = encuadre().foto;
-  Object.assign(foto.style, { width: `${e.ancho}px`, height: `${e.alto}px`, left: `${e.x}px`, top: `${e.y}px` });
+  const w = 1600, h = w / FOTO.aspecto;
+  Object.assign(foto.style, { width: `${w}px`, height: `${h}px`, left: '0px', top: '0px', transformOrigin: '0 0',
+    objectFit: 'fill', transform: homografia(innerWidth, innerHeight, PITCH_MAX, encuadre().fov, w, h) });
 }
 ubicarFoto();
 addEventListener('resize', ubicarFoto);
