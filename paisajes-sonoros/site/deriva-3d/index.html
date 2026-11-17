@@ -56,31 +56,22 @@
 
   <!-- controles -->
   <section class="panel" id="panel" hidden>
+    <!-- la línea es el recorrido: el punto avanza con el audio y se puede arrastrar -->
     <div class="linea">
-      <div class="marcas" id="marcas" aria-hidden="true"></div>
-      <input id="rango" type="range" min="0" max="1000" step="1" value="0" aria-label="Posición en el audio y el recorrido">
+      <input id="rango" type="range" min="0" max="1000" step="1" value="0" aria-label="Posición en el recorrido">
     </div>
     <div class="fila">
-      <span class="tiempo" id="actual">0:00</span>
-      <div class="botones">
-        <button class="chico" id="atras" aria-label="Retroceder 15 segundos">
-          <svg viewBox="0 0 24 24"><path d="M12 5V2L7 6l5 4V7a6 6 0 1 1-6 6H4a8 8 0 1 0 8-8z"/><text x="12" y="16.2" text-anchor="middle">15</text></svg>
-        </button>
-        <button class="grande" id="play" aria-pressed="false" aria-label="Reproducir">
-          <svg class="play" viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5z"/></svg>
-          <svg class="pausa" viewBox="0 0 24 24"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg>
-        </button>
-        <button class="chico" id="adelante" aria-label="Adelantar 15 segundos">
-          <svg viewBox="0 0 24 24"><path d="M12 5V2l5 4-5 4V7a6 6 0 1 0 6 6h2a8 8 0 1 1-8-8z"/><text x="12" y="16.2" text-anchor="middle">15</text></svg>
-        </button>
-      </div>
-      <span class="tiempo" id="total">–:––</span>
+      <button class="paso" id="anterior" aria-label="Punto anterior">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.4 5.4 14 4l-8 8 8 8 1.4-1.4L8.8 12z"/></svg>anterior
+      </button>
+      <button class="grande" id="play" aria-pressed="false" aria-label="Reproducir">
+        <svg class="play" viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5z"/></svg>
+        <svg class="pausa" viewBox="0 0 24 24"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg>
+      </button>
+      <button class="paso" id="siguiente" aria-label="Punto siguiente">
+        siguiente<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.6 5.4 10 4l8 8-8 8-1.4-1.4 6.6-6.6z"/></svg>
+      </button>
     </div>
-    <div class="fila sec">
-      <button class="texto-btn" id="anterior" aria-label="Punto anterior">‹ anterior</button>
-      <button class="texto-btn" id="siguiente" aria-label="Punto siguiente">siguiente ›</button>
-    </div>
-    <p class="creditos" id="creditos"></p>
   </section>
 
   <!-- modo edición (?editar) -->

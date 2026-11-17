@@ -28,7 +28,6 @@ const COLOR = (window.SITIOS && window.SITIOS['deriva-calle-8'] && window.SITIOS
 document.documentElement.style.setProperty('--accent', COLOR);
 // artista, muestra y espacios que la auspician, debajo de la descripción
 if (M) $('#muestra').innerHTML = `<span class="m-artista">${M.artista}</span><span class="m-titulo">${M.titulo}: ${M.subtitulo}</span><span class="m-sede">${M.sede}</span>`;
-if (M) $('#creditos').textContent = `${M.artista} · ${M.titulo}: ${M.subtitulo} · ${M.sede}`;
 
 // cámara de calle
 const OJO = 1.65;           // altura de los ojos, en metros
@@ -54,11 +53,6 @@ const PASO = 0.75;          // largo del paso, en metros (para el balanceo)
 
 // ── utilidades ─────────────────────────────────────
 const aSeg = (v) => (typeof v === 'number' ? v : String(v).split(':').map(Number).reduce((a, b) => a * 60 + b, 0));
-const fmt = (s) => {
-  if (!isFinite(s)) return '–:––';
-  s = Math.max(0, Math.floor(s));
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
-};
 const RAD = Math.PI / 180;
 const metros = (a, b) => {
   const x = (b.lng - a.lng) * RAD * Math.cos(((a.lat + b.lat) / 2) * RAD);
@@ -77,15 +71,10 @@ const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
 
 // ── fotogramas clave del recorrido ─────────────────
 const K = [];
-const PAUSAS = [];
 R.puntos.forEach((p) => {
   const t = aSeg(p.t);
   K.push({ t, lng: p.lng, lat: p.lat, nota: p.nota || '' });
-  if (p.hasta != null) {
-    const h = aSeg(p.hasta);
-    K.push({ t: h, lng: p.lng, lat: p.lat, nota: p.nota || '' });
-    PAUSAS.push([t, h]);
-  }
+  if (p.hasta != null) K.push({ t: aSeg(p.hasta), lng: p.lng, lat: p.lat, nota: p.nota || '' });
 });
 for (let i = 1; i < K.length; i++) if (K[i].t < K[i - 1].t) console.warn('recorrido.js: tiempos fuera de orden en', K[i]);
 
@@ -1040,7 +1029,6 @@ function cuadro(ahora) {
       const d = duracion();
       rango.value = (t / d) * 1000;
       rango.style.setProperty('--p', (t / d) * 100 + '%');
-      $('#actual').textContent = fmt(t);
     }
     if (terminado && t < duracion() - 1) ocultarFin();
   }
@@ -1080,7 +1068,7 @@ $('#comenzar').addEventListener('click', () => {
   iniciado = true;
   $('#inicio').classList.add('oculto');
   $('#panel').hidden = false;
-  pintarMarcas();
+  altoPanel();
   if (pano) { pano.apagando = performance.now(); document.body.classList.add('pano-fuera'); }
   // descenso a la vereda (desde el dron de la panorámica, un vuelo más largo)
   setModo(VISTA, { dur: pano ? 6500 : 4200 });
@@ -1103,8 +1091,6 @@ function ir(t) {
 }
 
 btnPlay.addEventListener('click', () => (audio.paused ? play() : audio.pause()));
-$('#atras').addEventListener('click', () => ir(audio.currentTime - 15));
-$('#adelante').addEventListener('click', () => ir(audio.currentTime + 15));
 const tiemposPuntos = R.puntos.map((p) => aSeg(p.t));
 $('#siguiente').addEventListener('click', () => {
   const t = tiemposPuntos.find((x) => x > audio.currentTime + 0.5);
@@ -1120,7 +1106,6 @@ rango.addEventListener('input', () => {
   arrastrando = true;
   tPrevia = (rango.value / 1000) * duracion();
   rango.style.setProperty('--p', rango.value / 10 + '%');
-  $('#actual').textContent = fmt(tPrevia);
 });
 rango.addEventListener('change', () => {
   audio.currentTime = (rango.value / 1000) * duracion();
@@ -1140,7 +1125,7 @@ audio.addEventListener('pause', () => {
   btnPlay.setAttribute('aria-pressed', 'false');
   btnPlay.setAttribute('aria-label', 'Reproducir');
 });
-audio.addEventListener('loadedmetadata', () => { $('#total').textContent = fmt(audio.duration); pintarMarcas(); });
+audio.addEventListener('loadedmetadata', () => altoPanel());
 audio.addEventListener('error', () => console.warn('No se pudo cargar el audio', audio.error));
 // final: la cámara se eleva y muestra el recorrido completo
 audio.addEventListener('ended', () => {
@@ -1159,16 +1144,6 @@ $('#reiniciar').addEventListener('click', () => {
   audio.currentTime = 0;
   play();
 });
-
-// marcas en la línea de tiempo: pausas (franjas) y puntos (rayitas)
-function pintarMarcas() {
-  const d = duracion();
-  const pct = (t) => Math.min(100, (t / d) * 100) + '%';
-  $('#marcas').innerHTML =
-    PAUSAS.map(([a, b]) => `<span style="left:${pct(a)};width:calc(${pct(b)} - ${pct(a)})"></span>`).join('') +
-    tiemposPuntos.map((t) => `<i style="left:${pct(t)}"></i>`).join('');
-  altoPanel();
-}
 
 // tocar la ruta en el mapa (vistas aérea y mapa) → saltar a ese momento
 function tiempoEnRuta(punto) {
