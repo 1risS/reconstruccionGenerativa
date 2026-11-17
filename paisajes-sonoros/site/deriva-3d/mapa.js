@@ -578,14 +578,7 @@ function crearCapaRegistros(THREE) {
       return mesh;
     });
 
-    // marco fino
-    const w = m.ancho / 2 + 0.12, h = m.alto / 2 + 0.12;
-    const marco = new THREE.LineLoop(
-      new THREE.BufferGeometry().setFromPoints([[-w, -h], [w, -h], [w, h], [-w, h]].map(([a, b]) => new THREE.Vector3(a, -0.02, b))),
-      new THREE.LineBasicMaterial({ color: COLOR, transparent: true, opacity: 0 }));
-    grupo.add(marco);
-
-    return { m, halo, capas, marco, centro: new THREE.Vector3(x, y, m.zc) };
+    return { m, halo, capas, centro: new THREE.Vector3(x, y, m.zc) };
   });
   const camPos = new THREE.Vector3(), camH = new THREE.Vector4(), inversa = new THREE.Matrix4();
   window.__camPos = camPos; // para depurar: posición real de la cámara, en metros locales
@@ -594,7 +587,7 @@ function crearCapaRegistros(THREE) {
     const est = estilos ? estilos.actual : null, cfg = (est && est.cuadros) || { k: 1 };
     for (const c of cuadros) {
       const k = cfg.k * (cfg.cerca ? suave(clamp((58 - c.centro.distanceTo(camPos)) / 38, 0, 1)) : 1);
-      for (const o of [...c.capas, c.halo, c.marco]) {
+      for (const o of [...c.capas, c.halo]) {
         o.material.opacity = (o.userData.op || 0) * k;
         o.visible = o.material.opacity > 0.001;
         if (o.material.map && o !== c.halo) o.material.color.setRGB(...(cfg.tinte || [1, 1, 1]));
@@ -654,7 +647,6 @@ function crearCapaRegistros(THREE) {
           if (visto && j > 0) w = 0;
           mesh.userData.op = op * w;
         });
-        c.marco.userData.op = Math.max(op * 0.9, modo === 'calle' ? 0 : 0.5);
         c.halo.userData.op = 0.55 * i;
       }
       map.triggerRepaint();
