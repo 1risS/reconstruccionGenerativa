@@ -58,6 +58,12 @@ float lineal(float d, vec2 nf) { float z = d * 2.0 - 1.0; return 2.0 * nf.x * nf
 // tol: cuánto puede estar el punto detrás de lo que ve el proyector (por metro de distancia), según el tamaño del texel
 vec4 proy(vec3 p, vec3 n, mat4 vp, vec3 pos, vec2 nf, float inten, sampler2D tex, sampler2D prof, float tol) {
   if (inten < 0.002) return vec4(0.0);
+  // gradientes de la imagen ANTES de cualquier descarte: en el borde de la proyección, si un vecino del bloque de
+  // 2×2 píxeles ya salió, dFdx da cualquier cosa, la GPU lee un mipmap chico (el promedio oscuro de la foto) y queda
+  // una raya punteada en el contorno de la imagen
+  vec4 c0 = vp * vec4(p, 1.0);
+  vec2 uv0 = c0.xy / (abs(c0.w) < 1e-6 ? 1e-6 : c0.w) * 0.5 + 0.5;
+  vec2 gx = dFdx(uv0), gy = dFdy(uv0);
   vec3 h = pos - p; float dh = length(h);
   float fr = dot(n, h / dh);
   if (fr < 0.01) return vec4(0.0);
@@ -72,7 +78,7 @@ vec4 proy(vec3 p, vec3 n, mat4 vp, vec3 pos, vec2 nf, float inten, sampler2D tex
   vec4 c2 = vp * vec4(p + n * 0.12, 1.0);
   float visto = lineal(texture2D(prof, uv).r, nf);
   if (lineal(c2.z / c2.w * 0.5 + 0.5, nf) > visto + 0.35 + tol * visto) return vec4(0.0);
-  vec4 col = texture2D(tex, uv);
+  vec4 col = textureGrad(tex, uv, gx, gy);
   // las superficies que reciben la imagen muy de costado se atenúan (vistas desde otro lugar son estiramientos).
   // Desde el punto de vista del proyector no hay estiramiento: ahí la imagen va entera, aunque caiga rasante
   // (p. ej. la vereda en las fotos tomadas a la altura de los ojos, que si no quedaba grisada).
@@ -529,10 +535,11 @@ export async function crearCiudad(THREE, { url, local, sol, vistas, alturas = []
     // ángulo de un texel para las demás. Con un teleobjetivo a 1 km, un 0,4 % fijo dejaría pasar la imagen a paredes tapadas.
     const tol = 0.004 * Math.min(1, Math.tan(((v.apertura || 40) / 2) * Math.PI / 180) / Math.tan(20 * Math.PI / 180));
     const p = { v, idx, cam, tol, listo: false, vp: new THREE.Matrix4(), int: 0 };
-    // FONDO: la imagen pegada en un plano dentro del cono del proyector, detrás del lugar. Desde el punto de vista
-    // exacto coincide con la proyección y completa lo que cae en el cielo o donde la maqueta no tiene volúmenes
-    // (un local que falta en OSM, el cielo de una foto); los edificios de adelante lo tapan. Sólo se enciende
-    // cuando la cámara está en el punto de vista (desde otro lugar no coincidiría): ver setCamara.
+    // FONDO (sólo dioramas, vistas isometrica): la imagen pegada en un plano dentro del cono del proyector, detrás
+    // del lugar. Desde el punto de vista exacto coincide con la proyección y completa lo que la maqueta no tiene. Sólo
+    // se enciende cuando la cámara está en el punto de vista (desde otro lugar no coincidiría): ver setCamara.
+    // En las FOTOS nunca: la reconstrucción tiene que ser sólo la ilusión óptica de la textura vista desde el punto
+    // justo (pedido de la artista); una foto plana insertada se delata.
     const D = dist + 40;
     p.fondo = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.ShaderMaterial({
       uniforms: { uMapa: { value: vacia }, uOp: { value: 0 } },
@@ -768,12 +775,12 @@ export async function crearCiudad(THREE, { url, local, sol, vistas, alturas = []
     },
     setCamara(x, y, z) {
       uniforms.uCamara.value.set(x, y, z);
-      // fondos: sólo en el punto de vista exacto (entero a menos de 5 cm, apagado a 40 cm). Apenas la cámara se
+      // fondos (sólo dioramas): sólo en el punto de vista exacto (entero a menos de 5 cm, apagado a 40 cm). Apenas la cámara se
       // mueve, el fondo ya no coincide y se vería como la foto plana mezclada sobre la ciudad (atraviesa el piso, que es
       // transparente): tiene que apagarse para que se aprecie cómo la imagen se desarma en las texturas de los edificios.
       for (const p of proys) {
         const d = Math.hypot(x - p.v.pos[0], y - p.v.pos[1], z - p.v.pos[2]);
-        const t = Math.min(1, Math.max(0, (0.4 - d) / 0.35)), k = p.int * t * t * (3 - 2 * t);
+        const t = p.v.isometrica ? Math.min(1, Math.max(0, (0.4 - d) / 0.35)) : 0, k = p.int * t * t * (3 - 2 * t);
         p.fondo.material.uniforms.uOp.value = k;
         p.fondo.visible = p.listo && k > 0.003;
         // el fondo usa una COPIA de la imagen: si comparte el objeto textura con el proyector, la proyección sobre los
