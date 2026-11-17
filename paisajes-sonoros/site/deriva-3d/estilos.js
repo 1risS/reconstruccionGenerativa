@@ -126,6 +126,9 @@ export function iniciarEstilos(map, ciudad, { fijo = null } = {}) {
     base(est.base);
     try { map.setSky(est.cielo); } catch (e) {}
     document.body.dataset.tono = est.tono || 'oscuro';
+    // detrás del canvas: a la altura del horizonte MapLibre deja una franja sin dibujar (transparente) y se veía el
+    // fondo claro de la página como una raya blanca en los estilos oscuros. Se pinta con el color de la niebla.
+    map.getContainer().style.background = `rgb(${est.niebla.map((c) => Math.round(c * 255)).join(',')})`;
     map.triggerRepaint();
     if (fijo) return;
     try { localStorage.setItem(CLAVE, est.id); } catch (e) {}

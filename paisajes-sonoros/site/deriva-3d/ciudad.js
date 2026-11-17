@@ -61,13 +61,17 @@ vec4 proy(vec3 p, vec3 n, mat4 vp, vec3 pos, vec2 nf, float inten, sampler2D tex
   vec3 h = pos - p; float dh = length(h);
   float fr = dot(n, h / dh);
   if (fr < 0.01) return vec4(0.0);
-  vec4 c = vp * vec4(p + n * 0.12, 1.0);
+  // la imagen se lee en el punto EXACTO (si no, desde el punto de vista la vereda y la pared no empalman: un
+  // corrimiento sobre la normal desplaza distinto el piso que las paredes). El corrimiento de 12 cm sobre la
+  // normal es sólo para la prueba de profundidad (evita que la superficie se tape a sí misma).
+  vec4 c = vp * vec4(p, 1.0);
   if (c.w <= 0.0) return vec4(0.0);
   vec3 q = c.xyz / c.w;
   if (abs(q.x) > 1.0 || abs(q.y) > 1.0) return vec4(0.0);
   vec2 uv = q.xy * 0.5 + 0.5;
+  vec4 c2 = vp * vec4(p + n * 0.12, 1.0);
   float visto = lineal(texture2D(prof, uv).r, nf);
-  if (lineal(q.z * 0.5 + 0.5, nf) > visto + 0.35 + tol * visto) return vec4(0.0);
+  if (lineal(c2.z / c2.w * 0.5 + 0.5, nf) > visto + 0.35 + tol * visto) return vec4(0.0);
   vec4 col = texture2D(tex, uv);
   // las superficies que reciben la imagen muy de costado se atenúan (vistas desde otro lugar son estiramientos).
   // Desde el punto de vista del proyector no hay estiramiento: ahí la imagen va entera, aunque caiga rasante
@@ -522,11 +526,31 @@ export async function crearCiudad(THREE, { url, local, sol, vistas, alturas = []
     // tolerancia de profundidad: 0,004 por metro con una apertura de 40° (el valor de siempre), y proporcional al
     // ángulo de un texel para las demás. Con un teleobjetivo a 1 km, un 0,4 % fijo dejaría pasar la imagen a paredes tapadas.
     const tol = 0.004 * Math.min(1, Math.tan(((v.apertura || 40) / 2) * Math.PI / 180) / Math.tan(20 * Math.PI / 180));
-    const p = { v, idx, cam, tol, listo: false, vp: new THREE.Matrix4() };
+    const p = { v, idx, cam, tol, listo: false, vp: new THREE.Matrix4(), int: 0 };
+    // FONDO: la imagen pegada en un plano dentro del cono del proyector, detrás del lugar. Desde el punto de vista
+    // exacto coincide con la proyección y completa lo que cae en el cielo o donde la maqueta no tiene volúmenes
+    // (un local que falta en OSM, el cielo de una foto); los edificios de adelante lo tapan. Sólo se enciende
+    // cuando la cámara está en el punto de vista (desde otro lugar no coincidiría): ver setCamara.
+    const D = dist + 40;
+    p.fondo = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.ShaderMaterial({
+      uniforms: { uMapa: { value: vacia }, uOp: { value: 0 } },
+      vertexShader: 'varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+      fragmentShader: 'uniform sampler2D uMapa; uniform float uOp; varying vec2 vUv; void main() { vec4 c = texture2D(uMapa, vUv); gl_FragColor = vec4(c.rgb, c.a * uOp); }',
+      transparent: true, depthWrite: false, side: THREE.DoubleSide,
+    }));
+    p.fondo.matrixAutoUpdate = false;
+    p.fondo.frustumCulled = false;
+    p.fondo.renderOrder = 2;
+    p.fondo.visible = false;
     const ajustar = (aspecto) => {
       configurarThree(THREE, cam, v, aspecto); // posición, orientación con giro, apertura y centro óptico
       p.vp.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
       for (const r of ranuras) if (r.p === p) r.sucio = true;
+      const th = Math.tan(((v.apertura || 40) / 2) * Math.PI / 180), tv = th / aspecto, c = v.centro || [0, 0];
+      p.fondo.matrix.copy(cam.matrixWorld)
+        .multiply(new THREE.Matrix4().makeTranslation(-c[0] * th * D, -c[1] * tv * D, -D))
+        .multiply(new THREE.Matrix4().makeScale(2 * th * D, 2 * tv * D, 1));
+      p.fondo.matrixWorldNeedsUpdate = true;
     };
     ajustar(1.45);
     p.tex = cargador.load(v.imagen, (tx) => { ajustar(tx.image.width / tx.image.height); p.listo = true; repintar(); });
@@ -584,6 +608,7 @@ export async function crearCiudad(THREE, { url, local, sol, vistas, alturas = []
 
   const grupo = new THREE.Group();
   grupo.add(oclusor, edificios, piso);
+  for (const p of proys) grupo.add(p.fondo);
 
   // telón: arco de cilindro vertical alrededor de `centro`, con la cara hacia adentro
   if (telon) {
@@ -699,6 +724,7 @@ export async function crearCiudad(THREE, { url, local, sol, vistas, alturas = []
         }
         r.p = p; r.sucio = true; // el mapa de profundidad y las texturas se cambian en prepasar, antes de dibujar
       }
+      for (const p of proys) p.int = w(p);
       ranuras.forEach((r, i) => {
         uniforms.uProyInt.value[i] = r.p && !r.sucio ? w(r.p) : 0;
         uniforms.uProyLado.value[i] = (ola && r.p && ola.lados[r.p.idx]) || 0;
@@ -733,12 +759,32 @@ export async function crearCiudad(THREE, { url, local, sol, vistas, alturas = []
     liberar() {
       grupo.traverse((o) => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); });
       for (const rt of [rtSol, rtCerca, ...ranuras.map((r) => r.rt)]) if (rt) { rt.depthTexture.dispose(); rt.dispose(); }
-      for (const p of proys) p.tex.dispose();
+      for (const p of proys) { p.tex.dispose(); if (p.texFondo) p.texFondo.dispose(); }
       escenaProf.children[0].material.dispose();
       rtSol = rtCerca = null;
       ranuras.forEach((r) => { r.p = null; r.rt = null; });
     },
-    setCamara(x, y, z) { uniforms.uCamara.value.set(x, y, z); },
+    setCamara(x, y, z) {
+      uniforms.uCamara.value.set(x, y, z);
+      // fondos: se encienden al llegar al punto de vista (a menos de ~0,5 m) y se apagan antes de 3 m
+      for (const p of proys) {
+        const d = Math.hypot(x - p.v.pos[0], y - p.v.pos[1], z - p.v.pos[2]);
+        const t = Math.min(1, Math.max(0, (3 - d) / 2.5)), k = p.int * t * t * (3 - 2 * t);
+        p.fondo.material.uniforms.uOp.value = k;
+        p.fondo.visible = p.listo && k > 0.003;
+        // el fondo usa una COPIA de la imagen: si comparte el objeto textura con el proyector, la proyección sobre los
+        // volúmenes se pierde (lo comprobé en Chrome). La copia vive sólo mientras el fondo está encendido.
+        if (p.fondo.visible && !p.texFondo) {
+          p.texFondo = p.tex.clone();
+          p.texFondo.needsUpdate = true;
+          p.fondo.material.uniforms.uMapa.value = p.texFondo;
+        } else if (!p.fondo.visible && p.texFondo) {
+          p.fondo.material.uniforms.uMapa.value = vacia;
+          p.texFondo.dispose();
+          p.texFondo = null;
+        }
+      }
+    },
     setTiempo(s) { uniforms.uTiempo.value = s; },
     // opacidad del piso propio (0 = se ven las calles del mapa, 1 = piso opaco); con dt, se acerca de a poco
     setSuelo(v, dt) {

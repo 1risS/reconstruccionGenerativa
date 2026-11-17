@@ -264,6 +264,10 @@ function intensidades(t) {
       : t <= p.hasta ? 1 : 1 - suave((t - p.hasta) / POST);
     foco = Math.max(foco, f);
   }
+  // las huellas aparecen de a poco a medida que el caminante se acerca (entre 150 y 70 m de la fachada): así no
+  // saltan de golpe y, como se ordenan por intensidad, las 6 ranuras quedan para los lugares más cercanos
+  const e = estado(t), [cx, cy] = aLocal([e.lng, e.lat]);
+  const cerca = (p) => suave(clamp((150 - Math.hypot(p.huella.mira[0] - cx, p.huella.mira[1] - cy)) / 80, 0, 1));
   const hechos = new Set();
   for (const p of PROYS) {
     if (activo(p) ? false : enCurso.has(p.grupo) || hechos.has(p.grupo)) continue;
@@ -295,7 +299,7 @@ function intensidades(t) {
         arr[v0] = REPOSO + (1 - REPOSO) * f;
         ola = olaEntre(p, p.huella, p.vistas[0], f);
       } else arr[h] = REPOSO + (1 - REPOSO) * f; // la huella es la primera vista: sube de REPOSO a 1
-    } else arr[h] = REPOSO * (1 - foco);
+    } else arr[h] = REPOSO * (1 - foco) * cerca(p);
   }
   return { arr, ola };
 }
@@ -725,7 +729,6 @@ const elEstado = $('#estado');
 const elNota = $('#nota');
 const elPie = $('#pie');
 const rango = $('#rango');
-const btnPlay = $('#play');
 const btnSeguir = $('#seguir');
 
 function altoPanel() {
@@ -735,7 +738,12 @@ function altoPanel() {
 }
 const SIN_RELLENO = { top: 0, bottom: 0, left: 0, right: 0 };
 const rellenoAereo = () => ({ top: window.innerHeight * 0.28, bottom: altoPanel(), left: 0, right: 0 });
-const tActual = () => (arrastrando ? tPrevia : audio.currentTime || 0);
+// EPÍLOGO: si al terminar el audio hay un travelling en curso (el último lugar, en la esquina), el tiempo sigue
+// corriendo con el reloj hasta que la cámara vuelve a la vereda; recién entonces aparece "fin del recorrido".
+let epilogo = null;   // { desde: performance.now() al terminar el audio, base: duración, hasta: momento de cierre }
+const tActual = () => (arrastrando ? tPrevia
+  : epilogo ? Math.min(epilogo.hasta, epilogo.base + (performance.now() - epilogo.desde) / 1000)
+  : audio.currentTime || 0);
 
 function vistaGeneral(dur = 1600) {
   map.fitBounds(bounds, {
@@ -1095,10 +1103,11 @@ function cuadro(ahora) {
 
     if (!arrastrando) {
       const d = duracion();
-      rango.value = (t / d) * 1000;
-      rango.style.setProperty('--p', (t / d) * 100 + '%');
+      rango.value = Math.min(1, t / d) * 1000;
+      rango.style.setProperty('--p', Math.min(1, t / d) * 100 + '%');
     }
     if (terminado && t < duracion() - 1) ocultarFin();
+    if (epilogo && t >= epilogo.hasta) terminar();
   }
   requestAnimationFrame(cuadro);
 }
@@ -1143,29 +1152,49 @@ $('#comenzar').addEventListener('click', () => {
 });
 
 // ── controles ──────────────────────────────────────
+// No hay play/pausa: el audio arranca con "Comenzar" (o "volver a empezar") y sigue solo. Saltar de punto
+// o soltar la línea lo retoma si se había cortado (final del audio, una llamada, el celular que lo pausó).
 function play() {
-  btnPlay.classList.add('cargando');
-  audio.play().catch((e) => { btnPlay.classList.remove('cargando'); console.warn(e); });
+  audio.play().catch((e) => console.warn(e));
   mantenerPantalla();
 }
 function ir(t) {
+  epilogo = null;
   t = Math.max(0, Math.min(duracion() - 0.1, t));
   audio.currentTime = t;
+  if (iniciado && audio.paused) play();
   if (modo !== 'calle' && !(modo === 'aerea' && seguir) && !panoActiva()) {
     const e = estado(t);
     map.easeTo({ center: [e.lng, e.lat], duration: 800 });
   }
 }
 
-btnPlay.addEventListener('click', () => (audio.paused ? play() : audio.pause()));
-const tiemposPuntos = R.puntos.map((p) => aSeg(p.t));
+// PUNTOS DE INTERÉS para anterior / siguiente: los momentos que marcó la artista (puntos con nota en
+// recorrido.js) y el comienzo de cada travelling. Si un momento cae dentro de un travelling, se salta al
+// comienzo del travelling (si no, se entraría con la cámara a mitad de camino).
+const INTERES = (() => {
+  const tr = PROYS.map((p) => ({ t: p.desde, hasta: p.hasta, nombre: p.lugar }));
+  const notas = R.puntos.filter((p) => p.nota).map((p) => ({ t: aSeg(p.t), nombre: p.nota }))
+    .filter((n) => !tr.some((x) => n.t >= x.t - 1 && n.t <= x.hasta));
+  const lista = [...tr, ...notas].sort((a, b) => a.t - b.t);
+  // momentos a menos de 3 s (o dos pasadas del mismo lugar): queda uno, y si uno es un travelling, ése
+  const final = [];
+  for (const x of lista) {
+    const u = final[final.length - 1];
+    if (!u || x.t - u.t > 3) final.push(x);
+    else if (x.hasta != null && u.hasta == null) final[final.length - 1] = x;
+  }
+  return final;
+})();
+if (PARAMS.has('tramos')) console.log('puntos de interés:\n' + INTERES.map((x) => `${mmss(x.t)}  ${x.nombre}`).join('\n'));
 $('#siguiente').addEventListener('click', () => {
-  const t = tiemposPuntos.find((x) => x > audio.currentTime + 0.5);
-  if (t != null) ir(t);
+  const x = INTERES.find((x) => x.t > audio.currentTime + 0.5);
+  if (x) ir(x.t);
 });
 $('#anterior').addEventListener('click', () => {
-  const t = [...tiemposPuntos].reverse().find((x) => x < audio.currentTime - 2);
-  ir(t != null ? t : 0);
+  // si se está a poco de empezar un punto, va al anterior; si no, vuelve al comienzo del actual
+  const x = [...INTERES].reverse().find((x) => x.t < audio.currentTime - 3);
+  ir(x ? x.t : 0);
 });
 btnSeguir.addEventListener('click', () => setModo('aerea'));
 
@@ -1175,34 +1204,31 @@ rango.addEventListener('input', () => {
   rango.style.setProperty('--p', rango.value / 10 + '%');
 });
 rango.addEventListener('change', () => {
-  audio.currentTime = (rango.value / 1000) * duracion();
   arrastrando = false;
+  ir((rango.value / 1000) * duracion());
 });
 
 audio.addEventListener('playing', () => {
-  // si se vuelve a reproducir después del final (play, anterior, la línea de tiempo…), se baja otra vez a la vereda
+  // si se vuelve a reproducir después del final (anterior, la línea, volver a empezar), se baja otra vez a la vereda
   // (desde la panorámica, con el mismo vuelo largo que al comenzar)
   if (iniciado && (modo !== VISTA || panoActiva())) { ocultarFin(); setModo(VISTA, { dur: salirDePano() ? 6500 : 3500 }); }
-  btnPlay.classList.remove('cargando');
-  btnPlay.setAttribute('aria-pressed', 'true');
-  btnPlay.setAttribute('aria-label', 'Pausar');
-});
-audio.addEventListener('waiting', () => btnPlay.classList.add('cargando'));
-audio.addEventListener('pause', () => {
-  btnPlay.classList.remove('cargando');
-  btnPlay.setAttribute('aria-pressed', 'false');
-  btnPlay.setAttribute('aria-label', 'Reproducir');
 });
 audio.addEventListener('loadedmetadata', () => altoPanel());
 audio.addEventListener('error', () => console.warn('No se pudo cargar el audio', audio.error));
 // final: la cámara vuelve al dron de la panorámica (al editar, se eleva y muestra el recorrido completo)
 audio.addEventListener('ended', () => {
+  const d = duracion(), ult = PROYS.filter((p) => p.hasta > d && p.inicio < d).pop();
+  if (ult && !epilogo) { epilogo = { desde: performance.now(), base: d, hasta: ult.hasta + POST }; return; }
+  terminar();
+});
+function terminar() {
+  epilogo = null;
   terminado = true;
   $('#fin').classList.add('visible');
   $('#reiniciar').tabIndex = 0;
   if (INICIO_PANO) volverAPano();
   else setModo('general', { dur: 6000 });
-});
+}
 function ocultarFin() {
   terminado = false;
   $('#fin').classList.remove('visible');

@@ -79,10 +79,14 @@ sin claves ni costo) que reproduce el recorrido sincronizado con `deriva_calle_8
   la vereda norte desde Pajaritos (1421 SW 8 St) hasta enfrente de Tumba'o, cruce, y vuelta por la sur hasta El Exquisito.
   Los criterios están en el encabezado de `recorrido.js`.
 - **Proyecciones activas** (abrir con `?tramos` para ver la tabla): a la ida, en el momento en que ella marcó que se oyen,
-  Guantanamera (0:45), Ball & Chain (1:53: dos dioramas de IA y la foto), El Cristo (3:51), Top Cigars (4:23) y
-  Mr. Cigars (5:48); a la vuelta, el Tower Theatre (11:06: dron, dos dioramas y la cenital) y Cuban Cigars, que cierra
-  (12:11). Guantanamera, El Cristo y Mr. Cigars son fotos de Drive (originales en `../fachadas/drive/`) con cámaras
-  estimadas: calibrarlas en `calibrar.html`, igual que los dioramas de Ball & Chain. Los dos del Tower ya están
+  Guantanamera (0:45), Ball & Chain (1:53: la foto y después dos dioramas de IA), El Cristo (3:51), Top Cigars (4:23) y
+  Mr. Cigars (5:48); a la vuelta, en el orden en que se los cruza, Cuban Cigars (11:29) y el Tower Theatre, que cierra
+  (11:52: dron, dos dioramas y la cenital). El Tower termina después del audio: el **epílogo** (`mapa.js`) deja correr
+  el tiempo con el reloj hasta que la cámara vuelve a la vereda, y recién ahí aparece "fin del recorrido".
+  Guantanamera, El Cristo y Mr. Cigars son fotos de Drive (originales en `../fachadas/drive/`): las cámaras se
+  ubicaron analizando cada foto contra los volúmenes (qué local es cuál, dónde empieza el edificio vecino, la línea del
+  piso; los criterios están en los comentarios de `recorrido.js`), sin pares en `calibrar.html`. Los dioramas de Ball &
+  Chain siguen estimados. Los dos del Tower ya están
   calibrados (esquinas del teatro, ~22 px de error medio por las proporciones inventadas por la IA). El diorama de
   336 SW 15 Av queda comentado.
 - **Proyecciones anamórficas** (`proyecciones` en `recorrido.js`): cada imagen se proyecta sobre la ciudad desde el
@@ -97,6 +101,9 @@ sin claves ni costo) que reproduce el recorrido sincronizado con `deriva_calle_8
   Al llegar, cada imagen queda centrada entre el indicador de arriba y el pie del registro: la cámara mira por el eje
   de la foto y lo que se corre es el centro óptico de la pantalla (`padding` de MapLibre), sin mover el punto de vista.
   Si el cartel o la parte alta de la foto pasan por encima del volumen, corregir la altura en `calibracion.js` → `alturas`.
+  **Fondo**: cada imagen tiene además un plano dentro del cono de su proyector, detrás del lugar (`ciudad.js`), que se
+  enciende sólo cuando la cámara está en el punto de vista. Completa lo que cae en el cielo o donde la maqueta no tiene
+  volúmenes, para que la foto se vea entera al recomponerse. Las huellas aparecen de a poco al acercarse (150 → 70 m).
 - **Calibrar las proyecciones** (`/deriva-3d/calibrar.html`, con `npm run local`): se marcan pares
   "este punto de la imagen = esta esquina de la ciudad" (imagen a la izquierda, satélite con los edificios a la derecha)
   y se calcula la cámara que los explica: posición, rumbo, inclinación, giro, apertura y, opcionalmente, centro óptico
