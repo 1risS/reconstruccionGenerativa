@@ -768,10 +768,12 @@ export async function crearCiudad(THREE, { url, local, sol, vistas, alturas = []
     },
     setCamara(x, y, z) {
       uniforms.uCamara.value.set(x, y, z);
-      // fondos: se encienden al llegar al punto de vista (a menos de ~0,5 m) y se apagan antes de 3 m
+      // fondos: sólo en el punto de vista exacto (entero a menos de 5 cm, apagado a 40 cm). Apenas la cámara se
+      // mueve, el fondo ya no coincide y se vería como la foto plana mezclada sobre la ciudad (atraviesa el piso, que es
+      // transparente): tiene que apagarse para que se aprecie cómo la imagen se desarma en las texturas de los edificios.
       for (const p of proys) {
         const d = Math.hypot(x - p.v.pos[0], y - p.v.pos[1], z - p.v.pos[2]);
-        const t = Math.min(1, Math.max(0, (3 - d) / 2.5)), k = p.int * t * t * (3 - 2 * t);
+        const t = Math.min(1, Math.max(0, (0.4 - d) / 0.35)), k = p.int * t * t * (3 - 2 * t);
         p.fondo.material.uniforms.uOp.value = k;
         p.fondo.visible = p.listo && k > 0.003;
         // el fondo usa una COPIA de la imagen: si comparte el objeto textura con el proyector, la proyección sobre los

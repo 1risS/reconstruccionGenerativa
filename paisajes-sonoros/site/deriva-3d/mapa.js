@@ -490,11 +490,6 @@ map.on('load', async () => {
   // ancho fijo en pantalla de lejos; de cerca, ancho real en metros sobre la vereda
   const anchoLinea = (minPx, m) => ['interpolate', ['exponential', 2], ['zoom'], 14, minPx, 18, Math.max(minPx, m * 3.7), 24, m * 238];
   map.addLayer({
-    id: 'ruta-base', type: 'line', source: 'ruta',
-    layout: { 'line-cap': 'round', 'line-join': 'round' },
-    paint: { 'line-color': COLOR, 'line-opacity': 0.4, 'line-width': anchoLinea(2, 0.14), 'line-dasharray': [2, 3] },
-  });
-  map.addLayer({
     id: 'ruta-hecha', type: 'line', source: 'ruta',
     layout: { 'line-cap': 'round', 'line-join': 'round' },
     paint: { 'line-width': anchoLinea(4, 0.3), 'line-gradient': gradiente(0), 'line-blur': anchoLinea(0, 0.15) },
@@ -523,7 +518,7 @@ map.on('load', async () => {
       window.__ciudad = ciudad; // para depurar desde la consola
     } catch (e) { console.warn('No se pudo armar la ciudad 3D', e); }
     capaRegistros = crearCapaRegistros(THREE);
-    map.addLayer(capaRegistros, 'ruta-base'); // la línea del recorrido queda sobre el piso dibujado
+    map.addLayer(capaRegistros, 'ruta-hecha'); // la línea del recorrido queda sobre el piso dibujado
   } catch (e) { console.warn('No se pudieron cargar los registros 3D', e); }
   // los estilos se aplican a la ciudad del recorrido y a la de la panorámica (si ya está)
   const ambas = { setEstilo: (est) => { if (ciudad) ciudad.setEstilo(est); if (pano && pano.ciudad) pano.ciudad.setEstilo(est); } };

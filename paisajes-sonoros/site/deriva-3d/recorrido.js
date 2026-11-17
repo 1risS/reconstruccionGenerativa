@@ -139,7 +139,14 @@ window.RECORRIDO = {
       // `punto` es la posición del caminante en ese momento y el radio chico hace que se dispare ahí (~1:53;
       // si Tower Theater todavía está en el aire, espera a que vuelva).
       // Después de la foto, los dos dioramas de IA (fachadas/25.765975736679938, -80.21976477493762_00/_01.jpg, vistas
-      // frontales desde lo alto de la vereda sur), uno por vez. La foto queda como huella. ⚠ Cámaras de los dioramas estimadas.
+      // frontales desde lo alto de la vereda sur), uno por vez. La foto queda como huella.
+      // Los dioramas muestran tres locales: Ball & Chain, la heladería Azúcar y la tabaquería de la esquina de la 15 Av.
+      // (la IA le puso "SW 14 Ave"). En edificios.json son un solo volumen de 60 m (de la 15 Av. hacia el oeste,
+      // frente en lat ≈ 25.76582). Los tres juntos se encajan en sus ~28 m del lado de la esquina: el borde derecho del
+      // dibujo cae en la esquina (lng −80.219545) y así el centro de Ball & Chain queda en −80.21977, donde lo marcó la
+      // artista. Escala ≈ 0,0266 m/px → la imagen entera mide ≈ 42,5 m sobre la fachada. Inclinación de 16° (por lo que
+      // se ve de vereda en el dibujo); el eje cruza la fachada a ≈ 4 m de altura, perpendicular a ella (rumbo 358°).
+      // La cámara está a 80 m: camara/mira/apertura salen de esas medidas (ancho = 2 · 83,2 m · tan(apertura / 2)).
       lugar: 'Ball & Chain', punto: { lat: 25.7657893, lng: -80.219765 }, radio: 4,
       // Orden: primero la foto (es la que el caminante viene viendo pegada en la fachada: la cámara cruza la calle y
       // se recompone a la altura de los ojos), después sube a los dos dioramas. Si empezara por un diorama, la foto
@@ -147,10 +154,12 @@ window.RECORRIDO = {
       vistas: [
         { imagen: 'registros/ball-and-chain-foto-00.webp', tipo: 'fotografía', apertura: 21, huella: true,
           camara: { lat: 25.76562, lng: -80.219765, alt: 1.6 }, mira: { lat: 25.765815, lng: -80.219765, alt: 2 } },
-        { imagen: 'registros/ball-and-chain-fachada-00.webp', tipo: 'diorama generado por IA', isometrica: true, apertura: 46,
-          camara: { lat: 25.76512, lng: -80.219765, alt: 22 }, mira: { lat: 25.765976, lng: -80.219765, alt: 5 } },
-        { imagen: 'registros/ball-and-chain-fachada-01.webp', tipo: 'diorama generado por IA', isometrica: true, apertura: 44,
-          camara: { lat: 25.765076, lng: -80.219765, alt: 38 }, mira: { lat: 25.765976, lng: -80.219765, alt: 5 } }
+        // de noche: edificio de x 260 a 1315 px, base en y ≈ 655 px
+        { imagen: 'registros/ball-and-chain-fachada-00.webp', tipo: 'diorama generado por IA', isometrica: true, apertura: 28.6,
+          camara: { lat: 25.7650987, lng: -80.2196536, alt: 27 }, mira: { lat: 25.7658177, lng: -80.2196813, alt: 4.1 } },
+        // de día: edificio de x 290 a 1340 px, base en y ≈ 628 px
+        { imagen: 'registros/ball-and-chain-fachada-01.webp', tipo: 'diorama generado por IA', isometrica: true, apertura: 28.8,
+          camara: { lat: 25.7650985, lng: -80.2196609, alt: 26.8 }, mira: { lat: 25.7658175, lng: -80.2196886, alt: 3.9 } }
       ]
     },
     {
@@ -204,14 +213,18 @@ window.RECORRIDO = {
       ]
     },
     {
-      // fachadas/drive/el-cristo-restaurant/00-_DSC0245.ARW — Sony, 29 mm (≈ 64° en 3:2). Frontal desde el
-      // borde de la vereda sur, con los carriles en primer plano; horizontales paralelas → cámara horizontal.
-      // Fachada a lat ≈ 25.765796; cámara a ~17 m (el toldo ocupa ~3/4 del ancho de la foto).
+      // fachadas/drive/el-cristo-restaurant/00-_DSC0245.ARW — Sony, 29 mm (≈ 64° en 3:2). Frontal desde la calle,
+      // con los carriles en primer plano; horizontales paralelas y verticales rectas → cámara horizontal.
+      // Encajada sobre los volúmenes de edificios.json: el frente del local (de la reja de la izquierda al final del
+      // patio, x 95…1310 px) es el frente del volumen, de lng −80.220451 a −80.220312 (13,9 m), a lat ≈ 25.765791.
+      // Eso da la cámara a 14,7 m del frente y, con la base de las rejas en y ≈ 675 px, a 1,6 m de altura (ojos).
+      // El costado blanco de la izquierda cae sobre la pared este del vecino (lng −80.220462). Las alturas de los dos
+      // volúmenes se corrigieron en calibracion.js → alturas (el local, 4,5 m; el vecino, 7,5 m).
       // Marcada a las 3:58.2.
       lugar: 'El Cristo Restaurant', tipo: 'fotografía', punto: { lat: 25.7657697, lng: -80.220411 }, radio: 4,
       vistas: [
         { imagen: 'registros/el-cristo-foto-00.webp', apertura: 64,
-          camara: { lat: 25.765645, lng: -80.220411, alt: 1.6 }, mira: { lat: 25.765796, lng: -80.220411, alt: 2 } }
+          camara: { lat: 25.765659, lng: -80.220371, alt: 1.6 }, mira: { lat: 25.765791, lng: -80.220371, alt: 1.6 } }
       ]
     },
     {
