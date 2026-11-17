@@ -1,6 +1,6 @@
 {
-  "version": 74,
-  "guardado": "2026-11-16T22:40:22.458Z",
+  "version": 270,
+  "guardado": "2026-11-17T04:49:19.342Z",
   "datos": {
     "lugares": [
       {
@@ -8,8 +8,8 @@
         "nombre": "Tower Theater",
         "direccion": "1508 SW 8 St",
         "nota": "",
-        "lat": 25.76546,
-        "lng": -80.21966,
+        "lat": 25.7654716,
+        "lng": -80.2196503,
         "fotos": []
       },
       {
@@ -26,8 +26,8 @@
         "nombre": "Cuban Cigars Corp",
         "direccion": "1520 SW 8 St",
         "nota": "",
-        "lat": 25.765604,
-        "lng": -80.220001,
+        "lat": 25.7655978,
+        "lng": -80.2199729,
         "fotos": []
       },
       {
@@ -122,8 +122,71 @@
         "nombre": "Los Montaditos bar",
         "direccion": "1643 SW 8 Sth",
         "nota": "",
-        "lat": 25.7659282,
-        "lng": -80.2220306,
+        "lat": 25.7657845,
+        "lng": -80.2220258,
+        "fotos": []
+      },
+      {
+        "id": "l-mwk24g9isenu",
+        "nombre": "Tumba'o",
+        "direccion": "1652 Southwest 8th Street ",
+        "nota": "",
+        "lat": 25.7655288,
+        "lng": -80.2217797,
+        "fotos": []
+      },
+      {
+        "id": "l-mwk3o8prd1xu",
+        "nombre": "Sala'o Cuban Restaurant & Bar",
+        "direccion": "1642 SW 8th Street",
+        "nota": "",
+        "lat": 25.7655329,
+        "lng": -80.2214701,
+        "fotos": []
+      },
+      {
+        "id": "l-mwk47ynr5yay",
+        "nombre": "Ciao Havana Steakhouse ",
+        "direccion": "1620 SW 8th Street",
+        "nota": "",
+        "lat": 25.765526,
+        "lng": -80.2209481,
+        "fotos": []
+      },
+      {
+        "id": "l-mwk5y9dju50f",
+        "nombre": "Alfaro's",
+        "direccion": "1604 SW 8TH Street.",
+        "nota": "",
+        "lat": 25.7655632,
+        "lng": -80.2207178,
+        "fotos": []
+      },
+      {
+        "id": "l-mwk61eedsp60",
+        "nombre": " El Pub Restaurant",
+        "direccion": "1548 SW 8th Street",
+        "nota": "",
+        "lat": 25.7655733,
+        "lng": -80.2203876,
+        "fotos": []
+      },
+      {
+        "id": "l-mwk754if0scx",
+        "nombre": "El Exquisito Restaurant ",
+        "direccion": "1510 SW 8th St",
+        "nota": "",
+        "lat": 25.765543,
+        "lng": -80.2198266,
+        "fotos": []
+      },
+      {
+        "id": "l-mwk7a63nrda8",
+        "nombre": "Little Havana Visitor Center ",
+        "direccion": "1600 8th street ",
+        "nota": "",
+        "lat": 25.7655056,
+        "lng": -80.2205887,
         "fotos": []
       }
     ],
@@ -199,8 +262,8 @@
         "audio": "deriva_calle_8",
         "t": 369.3,
         "hasta": null,
-        "lat": null,
-        "lng": null,
+        "lat": 25.7657728,
+        "lng": -80.2220408,
         "lugar": "l-mwjuj8eyl4jp",
         "oye": "Los Montaditos Bar ",
         "aprox": false
@@ -210,10 +273,109 @@
         "audio": "deriva_calle_8",
         "t": 353.1,
         "hasta": null,
-        "lat": null,
-        "lng": null,
+        "lat": 25.765793,
+        "lng": -80.2212543,
         "lugar": "l-mwjubijer638",
         "oye": "Mr. Cigars",
+        "aprox": false
+      },
+      {
+        "id": "m-mwk1uqde12nh",
+        "audio": "deriva_calle_8",
+        "t": 441,
+        "hasta": null,
+        "lat": 25.7655288,
+        "lng": -80.2217797,
+        "lugar": "l-mwk24g9isenu",
+        "oye": "Tumba'o",
+        "aprox": false
+      },
+      {
+        "id": "m-mwk2tsp6ide6",
+        "audio": "deriva_calle_8",
+        "t": 478,
+        "hasta": null,
+        "lat": 25.7655343,
+        "lng": -80.2215059,
+        "lugar": null,
+        "oye": "Sala'o Cuban Restaurant ",
+        "aprox": false
+      },
+      {
+        "id": "m-mwk41vrwfs2d",
+        "audio": "deriva_calle_8",
+        "t": 567.2,
+        "hasta": null,
+        "lat": 25.7655461,
+        "lng": -80.2208879,
+        "lugar": "l-mwk47ynr5yay",
+        "oye": "Ciao Havana Steakhouse ",
+        "aprox": false
+      },
+      {
+        "id": "m-mwk5nnj0hbmb",
+        "audio": "deriva_calle_8",
+        "t": 591.2,
+        "hasta": null,
+        "lat": 25.7655481,
+        "lng": -80.2206715,
+        "lugar": "l-mwk5y9dju50f",
+        "oye": " Alfaro's",
+        "aprox": false
+      },
+      {
+        "id": "m-mwk64vmcrjm9",
+        "audio": "deriva_calle_8",
+        "t": 602.7,
+        "hasta": null,
+        "lat": 25.765537,
+        "lng": -80.2205937,
+        "lugar": "l-mwk61eedsp60",
+        "oye": "El Pub Restaurant",
+        "aprox": false
+      },
+      {
+        "id": "m-mwk6ee7gljni",
+        "audio": "deriva_calle_8",
+        "t": 633.2,
+        "hasta": null,
+        "lat": 25.7655751,
+        "lng": -80.2203621,
+        "lugar": null,
+        "oye": "",
+        "aprox": false
+      },
+      {
+        "id": "m-mwk6rn31e909",
+        "audio": "deriva_calle_8",
+        "t": 728.1,
+        "hasta": null,
+        "lat": null,
+        "lng": null,
+        "lugar": null,
+        "oye": "Una Moto",
+        "aprox": false
+      },
+      {
+        "id": "m-mwk6sor9tscl",
+        "audio": "deriva_calle_8",
+        "t": 743.9,
+        "hasta": null,
+        "lat": 25.7655507,
+        "lng": -80.219831,
+        "lugar": null,
+        "oye": "Exquisito Restaurant ",
+        "aprox": false
+      },
+      {
+        "id": "m-mwk7kwl6sepj",
+        "audio": "deriva_calle_8",
+        "t": 685.3,
+        "hasta": null,
+        "lat": null,
+        "lng": null,
+        "lugar": null,
+        "oye": "La Colada Gourmet",
         "aprox": false
       }
     ]

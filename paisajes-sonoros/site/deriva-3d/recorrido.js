@@ -52,38 +52,51 @@
 // Abrí la página con ?editar al final de la URL para marcar puntos sobre el mapa
 // mientras escuchás (clic en el mapa = punto en el momento actual del audio).
 //
-// ⚠ PROVISORIO: esquinas reales (OpenStreetMap, ±8 m por vereda) y tiempos inventados.
-//   Vereda norte de ida (13 → 17), vereda sur de vuelta (17 → 15).
+// PUNTOS: salen de los momentos que marcó la artista en la herramienta de carga (carga-puntos/, versión 270
+//   del 17/11/2026; `npm run traer` allí). Ella marcó los momentos sobre los EDIFICIOS que se oyen; acá cada
+//   uno se pasó a la vereda por donde caminó, sobre la línea a 8,5 m del eje de la Calle 8 (las fachadas de
+//   edificios.json quedan a 10–12 m del eje), con la misma longitud que el edificio. Ida por la vereda norte
+//   (desde Pajaritos, 1421 SW 8 St, hacia el oeste) y vuelta por la sur. Entre puntos va a velocidad
+//   constante, así que el caminante avanza al ritmo de la grabación (≈ 0,5–1 m/s). Criterios propios:
+//   · 4:34–4:46 pausa en el semáforo de la 16 Av. (ella marcó el semáforo a las 4:46.8).
+//   · Los Montaditos (6:09) se OYE desde lejos: está a 80 m de Mr. Cigars (5:53), imposible de caminar en 16 s.
+//     Se deja como nota sin mover el recorrido.
+//   · Cruce a la vereda sur enfrente de Tumba'o (7:21), a mitad de cuadra: es lo que mantiene el mismo
+//     ritmo; cruzar en la 17 Av. pediría 2,5 m/s.
+//   · La Colada Gourmet y la moto no tienen ubicación: son notas en el lugar interpolado.
+//   · 0:00 → 0:46.7 da 1,9 m/s (paso rápido): habría que confirmar con ella dónde empieza el audio.
 // ─────────────────────────────────────────────────────────────
 
 window.RECORRIDO = {
   audio: '../audio/deriva_calle_8.m4a',
 
   puntos: [
-    { t: '0:00',                  lat: 25.765875, lng: -80.21640, nota: 'Calle 8 y 13 Av.' },
-    { t: '2:00',  hasta: '2:30',  lat: 25.765825, lng: -80.21810, nota: 'Calle 8 y 14 Av.' },
-    { t: '4:10',  hasta: '4:50',  lat: 25.765795, lng: -80.21953, nota: 'Calle 8 y 15 Av.' },
-    { t: '6:30',  hasta: '7:00',  lat: 25.765755, lng: -80.22080, nota: 'Calle 8 y 16 Av.' },
-    { t: '8:30',                  lat: 25.765705, lng: -80.22251, nota: 'Calle 8 y 17 Av.' },
-    { t: '8:50',  hasta: '9:20',  lat: 25.765555, lng: -80.22251, nota: 'Cruce a la vereda sur' },
-    { t: '10:40',                 lat: 25.765605, lng: -80.22080, nota: 'Calle 8 y 16 Av.' },
-    { t: '11:50', hasta: '12:34', lat: 25.765645, lng: -80.21953, nota: 'Calle 8 y 15 Av.' }
+    // ── ida, vereda norte (hacia el oeste) ──
+    { t: '0:00',                      lat: 25.7658353, lng: -80.2182399, nota: 'Pajaritos · inicio' },
+    { t: '0:46.7',                    lat: 25.765808,  lng: -80.2191451, nota: 'Guantanamera' },
+    { t: '1:57.7',                    lat: 25.7657893, lng: -80.219765,  nota: 'Ball & Chain' },
+    { t: '3:58.2',                    lat: 25.7657697, lng: -80.220411,  nota: 'El Cristo Restaurant' },
+    { t: '4:29.5',                    lat: 25.7657638, lng: -80.220608,  nota: 'Top Cigars · Skinny Louie' },
+    { t: '4:34.5', hasta: '4:46.8',   lat: 25.7657627, lng: -80.220643,  nota: 'Semáforo · Calle 8 y 16 Av.' },
+    { t: '5:38.4',                    lat: 25.7657477, lng: -80.2211411, nota: 'Pasa un bus' },
+    { t: '5:53.1',                    lat: 25.7657443, lng: -80.2212543, nota: 'Mr. Cigars' },
+    { t: '6:09.3',                    lat: 25.7657404, lng: -80.2213823, nota: 'Se oye Los Montaditos Bar' },
+    { t: '6:59.6',                    lat: 25.7657284, lng: -80.2217797, nota: 'Cruce a la vereda sur' },
+    // ── vuelta, vereda sur (hacia el este) ──
+    { t: '7:21.0',                    lat: 25.7655757, lng: -80.2217797, nota: "Tumba'o" },
+    { t: '7:58.0',                    lat: 25.765584,  lng: -80.2215059, nota: "Sala'o" },
+    { t: '9:27.2',                    lat: 25.7656026, lng: -80.2208879, nota: 'Ciao Havana' },
+    { t: '9:51.2',                    lat: 25.7656092, lng: -80.2206715, nota: "Alfaro's" },
+    { t: '10:02.7',                   lat: 25.7656115, lng: -80.2205937, nota: 'El Pub · Calle 8 y 16 Av.' },
+    { t: '10:33.2',                   lat: 25.7656185, lng: -80.2203621 },
+    { t: '11:25.3',                   lat: 25.7656261, lng: -80.2201121, nota: 'La Colada Gourmet' },
+    { t: '12:08.1',                   lat: 25.7656323, lng: -80.2199068, nota: 'Pasa una moto' },
+    { t: '12:23.9',                   lat: 25.7656346, lng: -80.219831,  nota: 'El Exquisito' }
   ],
 
-  miradas: [
-    {
-      desde: '2:02', hasta: '2:28', lugar: 'Vereda sur, 14 Av.', tipo: 'fotografía · material pendiente',
-      lat: 25.765655, lng: -80.21800, rumbo: 0, ancho: 5, alto: 3.4, base: 1.4, imagenes: []
-    },
-    {
-      desde: '6:32', hasta: '6:58', lugar: 'Vereda sur, 16 Av.', tipo: 'captura de dron · material pendiente',
-      lat: 25.765585, lng: -80.22095, rumbo: 0, ancho: 5, alto: 3.4, base: 1.4, imagenes: []
-    },
-    {
-      desde: '8:52', hasta: '9:18', lugar: 'Esquina 17 Av.', tipo: 'celular · material pendiente',
-      lat: 25.765725, lng: -80.22235, rumbo: 180, ancho: 4, alto: 5, base: 1.2, imagenes: []
-    }
-  ],
+  // Los tres cuadros "material pendiente" que había estaban atados al recorrido provisorio (pausas inventadas
+  // en 14, 16 y 17 Av.); se sacaron. El formato está arriba, en MIRADAS.
+  miradas: [],
 
   proyecciones: [
     {
@@ -93,12 +106,12 @@ window.RECORRIDO = {
       // Después del dron, la cámara sigue subiendo: diorama de día, la foto cenital sobre el techo y diorama de noche.
       // Las cámaras de los dioramas están calibradas en calibracion.js con las esquinas del teatro (techo y base):
       // dan casi ortográficas (apertura ≈ 3,4°), con ~22 px de error por las proporciones inventadas por la IA.
-      // El teatro está en la vereda sur. Ida: pausa enfrente, en la vereda norte (15 Av.); el tramo sigue un poco
-      // después de la pausa (el caminante retoma la marcha mientras la cámara está arriba).
-      // Vuelta: última imagen del recorrido, durante la pausa final en la esquina (vereda sur), sólo el dron.
-      // El punto que dispara el travelling es el del dron (sobre la esquina); con radio 20 se dispara a la ida
-      // (~3:47) y otra vez a la vuelta, en la pausa final de la esquina, sólo con el dron (repite).
-      lugar: 'Tower Theater', radio: 20, repite: [0],
+      // El teatro está en la vereda sur. La artista no marcó cuándo se oye. Va al final, en la vuelta: se dispara
+      // por la vereda sur con el teatro ya a la vista, calle abajo (~11:07, a ~70 m), para que sus 4 vistas
+      // terminen antes del audio (al terminar, la cámara sube a la vista general y corta lo que esté en curso);
+      // después viene Cuban Cigars, que cierra. A la ida (cruce de 15 Av., ~1:00) no se dispara: ahí se
+      // superponía con Guantanamera y Ball & Chain, que ella sí marcó, y los corría 15 s.
+      lugar: 'Tower Theater', punto: { lat: 25.7656245, lng: -80.2201663 }, radio: 4,
       vistas: [
         { imagen: 'registros/tower-theatre-dron-00.webp', tipo: 'fotografía aérea', apertura: 73.7, rumbo: -137.2, cabeceo: 22.2, giro: -0.1,
           camara: { lat: 25.7657892, lng: -80.2194265, alt: 19.5 }, mira: { lat: 25.7655532, lng: -80.2196669, alt: 5 } },
@@ -119,12 +132,13 @@ window.RECORRIDO = {
       // (teleobjetivo, sin EXIF). Fachada en edificios.json: lat ≈ 25.765815, a ~22 m de la cámara.
       // Escala por las personas en la puerta (≈ 8 m de ancho en la pared); las cabezas quedan apenas
       // debajo del centro → la cámara mira casi horizontal, un poco hacia arriba.
-      // Fachada en la vereda norte → se descubre a la vuelta, desde la vereda sur: el caminante pasa
-      // a ~2 m del punto donde se tomó la foto hacia las 11:37.
+      // La artista marcó que se oye a las 1:57.7, a la ida, desde la vereda norte (justo enfrente de la puerta):
+      // `punto` es la posición del caminante en ese momento y el radio chico hace que se dispare ahí (~1:53;
+      // si Tower Theater todavía está en el aire, espera a que vuelva).
       // Primero los dos dioramas de IA (fachadas/25.765975736679938, -80.21976477493762_00/_01.jpg, vistas
       // frontales desde lo alto de la vereda sur), uno por vez; al final la cámara baja a la altura de los
       // ojos y se recompone la foto de la artista, que queda como huella. ⚠ Cámaras de los dioramas estimadas.
-      lugar: 'Ball & Chain',
+      lugar: 'Ball & Chain', punto: { lat: 25.7657893, lng: -80.219765 }, radio: 4,
       vistas: [
         { imagen: 'registros/ball-and-chain-fachada-00.webp', tipo: 'diorama generado por IA', isometrica: true, apertura: 46,
           camara: { lat: 25.76512, lng: -80.219765, alt: 22 }, mira: { lat: 25.765976, lng: -80.219765, alt: 5 } },
@@ -140,9 +154,8 @@ window.RECORRIDO = {
       // Fachada en edificios.json: lat ≈ 25.765782 (polígono de Kung Fu Chicken + Top Cigars + Skinny Louie).
       // Por las personas: ≈ 15,6 m de ancho en la pared y las cabezas bien debajo del centro → cámara
       // a 1,6 m inclinada ~8° hacia arriba (el centro de la foto cae a ~4,3 m en la pared).
-      // Fachada en la vereda norte → se descubre a la vuelta, desde la vereda sur: el caminante pasa
-      // por el punto donde se tomó la foto hacia las 10:51.
-      lugar: 'Top Cigars · Skinny Louie', tipo: 'fotografía',
+      // La artista marcó que se oye a las 4:29.5, a la ida (vereda norte, frente a la puerta): se dispara ahí.
+      lugar: 'Top Cigars · Skinny Louie', tipo: 'fotografía', punto: { lat: 25.7657638, lng: -80.220608 }, radio: 4,
       vistas: [
         { imagen: 'registros/top-cigars-foto-00.webp', apertura: 43,
           camara: { lat: 25.765605, lng: -80.220608, alt: 1.6 }, mira: { lat: 25.765782, lng: -80.220608, alt: 4.3 } }
@@ -154,12 +167,52 @@ window.RECORRIDO = {
       // Fachada en edificios.json: lat ≈ 25.765604 (la coordenada del nombre cae 5 m adentro del local).
       // Escala por la puerta "1520" (≈ 7 m de ancho en la pared) → cámara a ~6 m, apertura ~62°;
       // verticales paralelas → mira casi horizontal (el centro de la foto cae a ~2 m de altura).
-      // Fachada en la vereda sur → se descubre a la ida, desde la vereda norte: el caminante pasa
-      // enfrente hacia las 5:27 y la cámara cruza la calle hasta el punto de vista.
-      lugar: 'Cuban Cigars Corp', tipo: 'fotografía',
+      // La artista no marcó cuándo se oye. Se descubre a la VUELTA, por la misma vereda sur: el caminante pasa
+      // a ~3 m del punto de la foto hacia las 11:28 (radio 10 para que no se dispare a la ida, desde la
+      // vereda norte, que queda a ~14 m). Como en ese momento la cámara está en el Tower Theater, espera a
+      // que vuelva y cierra el recorrido justo antes del final del audio.
+      lugar: 'Cuban Cigars Corp', tipo: 'fotografía', radio: 10,
       vistas: [
         { imagen: 'registros/cuban-cigars-foto-00.webp', apertura: 62,
           camara: { lat: 25.765658, lng: -80.220001, alt: 1.6 }, mira: { lat: 25.765604, lng: -80.220001, alt: 2 } }
+      ]
+    },
+    // ── Fotos que la artista subió a Google Drive (carga-puntos/; originales en ../fachadas/drive/) ──
+    // Las tres se disparan en el momento en que ella marcó que se oyen (`punto` = posición del caminante en
+    // ese momento, radio 4). Sin GPS en el EXIF: las cámaras salen de mirar la foto y de la focal equivalente
+    // en 35 mm (apertura horizontal). Las fachadas son las de edificios.json en la vereda norte.
+    // ⚠ Cámaras estimadas, sin calibrar: pasarlas por calibrar.html.
+    {
+      // fachadas/drive/guantanamera/00-IMG_1711.jpeg — iPhone, 24 mm eq. (≈ 72° en 4:3). Tomada de frente y de
+      // cerca, desde la vereda norte, mirando la entrada (galería con el arco, el candelabro y la estatua).
+      // Fachada a lat ≈ 25.765829; cámara ~4 m al sur, a la altura de los ojos, horizontal.
+      // Marcada a las 0:46.7.
+      lugar: 'Guantanamera', tipo: 'fotografía', punto: { lat: 25.765808, lng: -80.2191451 }, radio: 4,
+      vistas: [
+        { imagen: 'registros/guantanamera-foto-00.webp', apertura: 72,
+          camara: { lat: 25.765793, lng: -80.2191451, alt: 1.5 }, mira: { lat: 25.765829, lng: -80.2191451, alt: 1.6 } }
+      ]
+    },
+    {
+      // fachadas/drive/el-cristo-restaurant/00-_DSC0245.ARW — Sony, 29 mm (≈ 64° en 3:2). Frontal desde el
+      // borde de la vereda sur, con los carriles en primer plano; horizontales paralelas → cámara horizontal.
+      // Fachada a lat ≈ 25.765796; cámara a ~17 m (el toldo ocupa ~3/4 del ancho de la foto).
+      // Marcada a las 3:58.2.
+      lugar: 'El Cristo Restaurant', tipo: 'fotografía', punto: { lat: 25.7657697, lng: -80.220411 }, radio: 4,
+      vistas: [
+        { imagen: 'registros/el-cristo-foto-00.webp', apertura: 64,
+          camara: { lat: 25.765645, lng: -80.220411, alt: 1.6 }, mira: { lat: 25.765796, lng: -80.220411, alt: 2 } }
+      ]
+    },
+    {
+      // fachadas/drive/mr-cigars/00-IMG_1375.jpeg — iPhone, 72 mm eq. (≈ 27° en 4:3), de noche. Frontal desde la
+      // vereda sur: entran Mr. Cigars, el 1603 y el Social Club (~11 m de pared) → cámara a ~24 m. El centro de
+      // la foto cae en la franja de los carteles, ~2,8 m.
+      // Marcada a las 5:53.1.
+      lugar: 'Mr. Cigars', tipo: 'fotografía', punto: { lat: 25.7657443, lng: -80.2212543 }, radio: 4,
+      vistas: [
+        { imagen: 'registros/mr-cigars-foto-00.webp', apertura: 27,
+          camara: { lat: 25.765555, lng: -80.2212543, alt: 1.6 }, mira: { lat: 25.765774, lng: -80.2212543, alt: 2.8 } }
       ]
     }
   ]

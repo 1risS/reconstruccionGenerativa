@@ -74,11 +74,17 @@ sin claves ni costo) que reproduce el recorrido sincronizado con `deriva_calle_8
   sombras, tramado en las sombras y ventanas. `edificios.json` es una copia fija de la zona (Calle 8 entre 12 y 18 Av, hasta la calle 2 al norte)
   **Excepción:** el Tower Theatre (en OSM era un solo bloque de 5 m) se reemplazó por volúmenes medidos sobre la foto del dron:
   auditorio de 10 m, cuerpo curvo del frente de 5 m, torre de entrada de 8 m y aguja de 18 m.
-- **Proyección activa:** la captura de dron del Tower Theatre (`registros/tower-theatre-dron-00.webp`, original en `../drone/`),
-  en la pausa de 15 Av a la ida (4:12), seguida de los dos dioramas de IA del teatro, y otra vez en la pausa final (12:06).
-  Ball & Chain (vuelta, 11:05): los dos dioramas de la fachada y después la foto de la artista. Los dioramas tienen cámaras
-  estimadas: calibrarlos en `calibrar.html`. Los dos del Tower ya están calibrados (esquinas del teatro, ~22 px de
-  error medio por las proporciones inventadas por la IA). El diorama de 336 SW 15 Av queda comentado.
+- **Recorrido real** (desde el 17/11/2026): los `puntos` salen de los momentos que marcó la artista en
+  `../carga-puntos/` (ella marcó los edificios que se oyen; se pasaron a la vereda, a 8,5 m del eje de la calle). Ida por
+  la vereda norte desde Pajaritos (1421 SW 8 St) hasta enfrente de Tumba'o, cruce, y vuelta por la sur hasta El Exquisito.
+  Los criterios están en el encabezado de `recorrido.js`.
+- **Proyecciones activas** (abrir con `?tramos` para ver la tabla): a la ida, en el momento en que ella marcó que se oyen,
+  Guantanamera (0:45), Ball & Chain (1:53: dos dioramas de IA y la foto), El Cristo (3:51), Top Cigars (4:23) y
+  Mr. Cigars (5:48); a la vuelta, el Tower Theatre (11:06: dron, dos dioramas y la cenital) y Cuban Cigars, que cierra
+  (12:11). Guantanamera, El Cristo y Mr. Cigars son fotos de Drive (originales en `../fachadas/drive/`) con cámaras
+  estimadas: calibrarlas en `calibrar.html`, igual que los dioramas de Ball & Chain. Los dos del Tower ya están
+  calibrados (esquinas del teatro, ~22 px de error medio por las proporciones inventadas por la IA). El diorama de
+  336 SW 15 Av queda comentado.
 - **Proyecciones anamórficas** (`proyecciones` en `recorrido.js`): cada imagen se proyecta sobre la ciudad desde el
   punto de vista donde fue tomada (`camara`, `mira`, `apertura`). Las fotos quedan siempre como textura tenue en
   las paredes. **Travelling por cercanía**: cuando el caminante pasa a menos de `radio` m (15 por defecto) del punto
