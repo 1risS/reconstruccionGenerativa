@@ -103,18 +103,25 @@ window.RECORRIDO = {
       // drone/tower_theatre_00.jpeg — captura aérea desde la esquina de Calle 8 y 15 Av, mirando al suroeste.
       // Cámara calculada a partir de esquinas del teatro y del cruce peatonal (ver calibracion.js, se puede
       // retocar en calibrar.html). El volumen del teatro en edificios.json se midió sobre esta misma foto.
-      // Orden: diorama de día, la foto cenital sobre el techo, diorama de noche y, al final, la foto del dron (pedido de
-      // la artista: que sea la última imagen anamórfica en apreciarse).
+      // Orden: la foto de la artista desde la esquina, diorama de día, la foto cenital sobre el techo, diorama de noche y,
+      // al final, la foto del dron (pedido de la artista: que sea la última imagen anamórfica en apreciarse).
       // Las cámaras de los dioramas están calibradas en calibracion.js con las esquinas del teatro (techo y base):
       // dan casi ortográficas (apertura ≈ 3,4°), con ~22 px de error por las proporciones inventadas por la IA.
       // El teatro está en la vereda sur, en la esquina de la 15 Av. La artista no marcó cuándo se oye. Cierra el
       // recorrido, en la vuelta: el caminante pasa primero frente a Cuban Cigars (más al oeste) y después sigue hacia
       // la esquina con el teatro adelante. `punto` está pasando Cuban Cigars (~11:51): si Cuban todavía está en el
-      // aire, espera a que vuelva. Sus 4 vistas terminan después del audio: la cámara sigue hasta recomponer la última
+      // aire, espera a que vuelva. Sus 5 vistas terminan después del audio: la cámara sigue hasta recomponer la última
       // y recién entonces sube a la vista general (ver EPÍLOGO en mapa.js). A la ida (cruce de 15 Av., ~1:00) no se
       // dispara: ahí se superponía con Guantanamera y Ball & Chain, que ella sí marcó, y los corría 15 s.
       lugar: 'Tower Theater', punto: { lat: 25.7656298, lng: -80.21999 }, radio: 4,
       vistas: [
+        // fachadas/drive/tower-theater/00-_DSC1208.jpg — foto nocturna de la artista desde la 15 Av., apenas al norte de
+        // Calle 8, mirando al suroeste: la pared este del teatro (la plaza, el árbol de Navidad) y la marquesina. Sin EXIF:
+        // la cámara sale de 6 pares imagen ↔ modelo del teatro (esquina NE a 0, 5 y 10 m, esquina SE a 10 m, punta de la
+        // torre a 18 m y su pedestal a 11 m), con el mismo ajuste que calibrar.html: errores de 4 a 17 px.
+        // Va primero (a la altura de la calle, como la foto de Ball & Chain) y el dron cierra.
+        { imagen: 'registros/tower-theater-foto-00.webp', tipo: 'fotografía', apertura: 58.43, rumbo: -143.19, cabeceo: -8.1, giro: 1.03,
+          camara: { lat: 25.7658532, lng: -80.2194087, alt: 1.94 }, mira: { lat: 25.7656392, lng: -80.2195864, alt: 6.17 } },
         { imagen: 'registros/tower-theater-diorama-00.webp', tipo: 'diorama generado por IA', isometrica: true, apertura: 42,
           camara: { lat: 25.765945, lng: -80.219124, alt: 60 }, mira: { lat: 25.76546, lng: -80.21966, alt: 4 } },
         // cenital/tower_hotel_00.jpf — dron a 54,9 m justo encima del teatro, cámara a −90° (datos del XMP de DJI).
@@ -173,6 +180,10 @@ window.RECORRIDO = {
       vistas: [
         // El borde derecho de Skinny Louie (u ≈ 0,81; a la derecha empieza el edificio blanco de dos pisos) cae en el
         // final del volumen (lng −80.220553): con ≈ 14,6 m de pared en la foto, el centro queda 1 m al este del pin.
+        // Lo de la derecha (el mural de cajones de madera) es la pared OESTE del edificio vecino, que se ve por el
+        // pasaje de 2,7 m: cae en la pared oeste de ese volumen con ~20 px de diferencia. El borde de arriba de la
+        // fachada (y ≈ 492 de 1200 px) queda a 5,3 m en la pared: esa es la altura del volumen en calibracion.js →
+        // alturas (con más, el cielo de la foto caía sobre la pared).
         { imagen: 'registros/top-cigars-foto-00.webp', apertura: 43,
           camara: { lat: 25.765605, lng: -80.220598, alt: 1.6 }, mira: { lat: 25.765782, lng: -80.220598, alt: 4.3 } }
       ]
@@ -219,7 +230,7 @@ window.RECORRIDO = {
       // patio, x 95…1310 px) es el frente del volumen, de lng −80.220451 a −80.220312 (13,9 m), a lat ≈ 25.765791.
       // Eso da la cámara a 14,7 m del frente y, con la base de las rejas en y ≈ 675 px, a 1,6 m de altura (ojos).
       // El costado blanco de la izquierda cae sobre la pared este del vecino (lng −80.220462). Las alturas de los dos
-      // volúmenes se corrigieron en calibracion.js → alturas (el local, 4,5 m; el vecino, 7,5 m).
+      // volúmenes se corrigieron en calibracion.js → alturas (el local, 4,2 m: el borde del cartel; el vecino, 6,8 m: medido en esta foto y en la de Top Cigars).
       // Marcada a las 3:58.2.
       lugar: 'El Cristo Restaurant', tipo: 'fotografía', punto: { lat: 25.7657697, lng: -80.220411 }, radio: 4,
       vistas: [
@@ -236,9 +247,12 @@ window.RECORRIDO = {
       vistas: [
         // La foto cubre ≈ 10,5 m de pared (puerta del 1603 ≈ 0,95 m = 0,09 del ancho). Centrada en el pin, el Social Club
         // (borde derecho) caía en un hueco de OSM al este del volumen (lng > −80.221218): se corre 1,6 m al oeste para
-        // que los cuatro locales queden sobre el edificio. Lo que falta de la foto lo completa el fondo (ciudad.js).
+        // que los cuatro locales queden sobre el edificio. La base de las vidrieras (y ≈ 1033 de 1200 px) tiene que caer
+        // en el pie del volumen (a 24,4 m): eso da la cámara mirando 3,7° hacia arriba (mira a 3,18 m). Antes, con 2,8 m,
+        // la vereda de la foto quedaba 0,4 m bajo el piso. El edificio se bajó a 8 m en calibracion.js → alturas (la foto
+        // llega a ~7,2 m de altura en la pared; con los 15 m de OSM sobraba un bloque liso arriba de la foto).
         { imagen: 'registros/mr-cigars-foto-00.webp', apertura: 27,
-          camara: { lat: 25.765555, lng: -80.2212704, alt: 1.6 }, mira: { lat: 25.765774, lng: -80.2212704, alt: 2.8 } }
+          camara: { lat: 25.765555, lng: -80.2212704, alt: 1.6 }, mira: { lat: 25.765774, lng: -80.2212704, alt: 3.18 } }
       ]
     }
   ]
