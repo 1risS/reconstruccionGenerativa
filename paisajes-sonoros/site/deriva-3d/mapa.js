@@ -54,6 +54,7 @@ const FUNDIDO_FOTO = 1.5;   // segundos del fundido de la foto fija al 3D (igual
 const PANO_APAGA = 2.5;     // segundos que tarda en apagarse la proyección al comenzar
 const VUELTA_SEG = 9;       // segundos del vuelo de vuelta al dron al terminar el recorrido
 const VUELTA_ALTO = 400;    // altura (m) a la que cruza la ciudad en ese vuelo
+const PARTIDA_SEG = 12;     // segundos del travelling del dron a los ojos del caminante (al comenzar)
 const PASO = 0.75;          // largo del paso, en metros (para el balanceo)
 
 // ── utilidades ─────────────────────────────────────
@@ -937,11 +938,13 @@ function armarCiudadPano(est) {
   }).catch((e) => { console.warn('No se pudo armar la panorámica 3D', e); });
 }
 // final del recorrido: la cámara vuela de vuelta al dron y la panorámica se recompone
+// posición actual de la cámara en metros locales (la de MapLibre, o la que calcula la capa 3D en cada cuadro)
+function posCamara() {
+  try { const ll = map.transform.getCameraLngLat(); return [...aLocal([ll.lng, ll.lat]), map.transform.getCameraAltitude()]; }
+  catch (e) { return capaRegistros ? capaRegistros.camPos.toArray() : [...aLocal(map.getCenter().toArray()), 300]; }
+}
 function volverAPano() {
-  // posición actual de la cámara en metros locales (la de MapLibre, o la que calcula la capa 3D en cada cuadro)
-  let pos;
-  try { const ll = map.transform.getCameraLngLat(); pos = [...aLocal([ll.lng, ll.lat]), map.transform.getCameraAltitude()]; }
-  catch (e) { pos = capaRegistros ? capaRegistros.camPos.toArray() : [...aLocal(map.getCenter().toArray()), 300]; }
+  const pos = posCamara();
   pano = nuevoPano();
   pano.vuelta = { ini: performance.now(), llega: 0,
     desde: { pos, rumbo: map.getBearing(), pitch: map.getPitch(), fov: map.getVerticalFieldOfView() } };
@@ -963,7 +966,67 @@ function salirDePano() {
   document.body.classList.remove('pano-final');
   return true;
 }
-const panoActiva = () => pano && !pano.apagando;
+const panoActiva = () => pano && !pano.apagando && !pano.partida;
+
+// ── partida: del dron a los ojos del caminante ──
+// Al comenzar (y al volver a empezar desde la panorámica final), la cámara deja el punto de vista sin apagar la
+// imagen: primero se corre al este y sube SIN DEJAR DE MIRAR la zona de la foto, que se descompone sobre techos,
+// fachadas y el telón (desde cualquier otro lugar la proyección es estiramiento y fragmento). Después gira hacia el
+// caminante y baja por detrás de él, a lo largo de la calle, hasta sus ojos; en ese tramo la imagen se apaga.
+// La trayectoria es una curva de Bézier (sin paradas) y la mirada pasa de la foto a la vereda.
+// Sólo en la vista de calle y con la proyección ya a la vista; si no, queda el flyTo de siempre.
+function iniciarPartida() {
+  if (!pano || pano.apagando || pano.partida || VISTA !== 'calle' || !pano.ciudad || !pano.listo) return false;
+  const c = posCamara();
+  // lo que mira ahora (a 1,5 km por el eje de la cámara): la mirada arranca exactamente de ahí
+  const r = map.getBearing() * RAD, b = (90 - map.getPitch()) * RAD;
+  const mira0 = [c[0] + Math.sin(r) * Math.cos(b) * 1500, c[1] + Math.cos(r) * Math.cos(b) * 1500, c[2] - Math.sin(b) * 1500];
+  pano.partida = { ini: performance.now(), f: 0, llega: false, desde: c, mira0, fov0: map.getVerticalFieldOfView() };
+  map.stop();
+  modo = 'calle';       // sin setModo: la cámara la maneja camaraPartida hasta llegar a la vereda
+  seguir = true;
+  enTransicion = true;  // el bucle no mueve la cámara de calle mientras tanto
+  mirarYaw = mirarPitch = 0;
+  manejadores(false);
+  etiquetas(false);
+  elCaminante.style.display = 'none';
+  btnSeguir.hidden = true;
+  document.body.classList.remove('pano-final');
+  return true;
+}
+function camaraPartida(ahora) {
+  const pa = pano.partida;
+  const f = clamp((ahora - pa.ini) / 1000 / PARTIDA_SEG, 0, 1);
+  pa.f = f;
+  const u = f * f * f * (f * (f * 6 - 15) + 10);   // arranca y llega con velocidad y aceleración cero
+  const e = estado(tActual());
+  const E = [...aLocal([e.lng, e.lat]), OJO];
+  const d = [Math.sin(e.rumbo * RAD), Math.cos(e.rumbo * RAD)];
+  const P = pano.vista.pos, A = pa.desde;
+  const C1 = [P[0] + 420, P[1] + 380, P[2] + 90];                  // al noreste y arriba del dron, cerca del cono de la foto
+  const C2 = [E[0] - d[0] * 450, E[1] - d[1] * 450, E[2] + 140];   // detrás del caminante, sobre la calle
+  const c = [0, 1, 2].map((i) => (1 - u) ** 3 * A[i] + 3 * (1 - u) ** 2 * u * C1[i] + 3 * (1 - u) * u * u * C2[i] + u ** 3 * E[i]);
+  // nunca dentro de un edificio (salvo al final, que llega exacto a los ojos en la vereda)
+  if (ciudad && ciudad.alturaCerca) {
+    const techo = ciudad.alturaCerca(c[0], c[1], 3);
+    if (techo > 0 && techo + 2 > c[2]) c[2] += (techo + 2 - c[2]) * (1 - suave(clamp((f - 0.95) / 0.05, 0, 1)));
+  }
+  // la mirada: de la foto (lo que miraba el dron) a la vereda, adelante del caminante, con el pitch de la calle
+  const w = suave(clamp((f - 0.35) / 0.55, 0, 1));
+  const Tf = [E[0] + d[0] * 60, E[1] + d[1] * 60, OJO - 60 * Math.tan((90 - PITCH_CALLE) * RAD)];
+  const L = mirarA(c, [0, 1, 2].map((i) => pa.mira0[i] + (Tf[i] - pa.mira0[i]) * w));
+  const fov = pa.fov0 + (fovCalle() - pa.fov0) * w;
+  if (Math.abs(map.getVerticalFieldOfView() - fov) > 0.01) map.setVerticalFieldOfView(fov);
+  map.jumpTo({ ...map.calculateCameraOptionsFromCameraLngLatAltRotation(aLngLat(c[0], c[1]), c[2], L.rumbo, L.pitch, 0),
+    padding: SIN_RELLENO });
+  if (f >= 1) {   // en la vereda: la cámara de calle sigue desde acá
+    pa.llega = true;
+    enTransicion = false;
+    camRumbo = L.rumbo; camPitch = PITCH_CALLE;
+    document.body.classList.add('modo-calle');
+    salirDePano();
+  }
+}
 // foto fija mientras carga el 3D, ubicada exactamente donde la va a dibujar la proyección
 function ubicarFotoPano() {
   const el = $('#pano-foto');
@@ -979,7 +1042,12 @@ function panoCuadro(ahora) {
   // en la vuelta, la imagen aparece en el último tramo del vuelo
   const v = pano.vuelta;
   const entra = v && !v.llega ? suave(clamp(((ahora - v.ini) / 1000 / VUELTA_SEG - 0.55) / 0.45, 0, 1)) : 1;
-  if (pano.ciudad) pano.ciudad.setIntensidades([entra * (1 - suave(clamp(s / PANO_APAGA, 0, 1)))]);
+  // en la partida, la imagen sigue entera mientras se descompone y se apaga cuando la cámara ya va hacia la calle
+  const sale = pano.partida ? 1 - suave(clamp((pano.partida.f - 0.4) / 0.35, 0, 1)) : 1;
+  if (pano.ciudad) pano.ciudad.setIntensidades([entra * sale * (1 - suave(clamp(s / PANO_APAGA, 0, 1)))]);
+  // el telón (el cielo de la foto) acompaña la descomposición al principio, y se va antes de que se vea como un
+  // panel suelto en el aire
+  if (pano.ciudad && pano.ciudad.setTelon) pano.ciudad.setTelon(pano.partida ? 1 - suave(clamp((pano.partida.f - 0.12) / 0.2, 0, 1)) : 1);
   if (s > PANO_APAGA + 0.5) {
     if (pano.ciudad) {
       if (capaRegistros) capaRegistros.escena.remove(pano.ciudad.grupo);
@@ -1008,7 +1076,7 @@ function cuadro(ahora) {
     elCaminante.classList.toggle('quieto', e.pausa);
     elEstado.classList.toggle('en-pausa', e.pausa && iniciado);
     if (e.nota) elNota.textContent = e.nota;
-    elNota.classList.toggle('visible', !!e.nota && iniciado && !mir && !vu && !panoActiva());
+    elNota.classList.toggle('visible', !!e.nota && iniciado && !mir && !vu && !(pano && !pano.apagando));
 
     // pie del registro
     if (vu && (modo !== 'calle' || vu.w > 0.4)) {
@@ -1065,7 +1133,8 @@ function cuadro(ahora) {
 
     const k = 1 - Math.exp(-dt * 1.6);
     if (pano) panoCuadro(ahora);
-    if (panoActiva()) camaraPano(ahora);
+    if (pano && pano.partida && !pano.partida.llega) camaraPartida(ahora);
+    else if (panoActiva()) camaraPano(ahora);
     else if (!iniciado || (modo === 'general' && terminado)) {
       if (!map.isMoving()) map.setBearing(map.getBearing() + dt * 2.5);
     } else if (!enTransicion && modo === 'calle') {
@@ -1146,8 +1215,8 @@ $('#comenzar').addEventListener('click', () => {
   $('#inicio').classList.add('oculto');
   $('#panel').hidden = false;
   altoPanel();
-  // descenso a la vereda (desde el dron de la panorámica, un vuelo más largo)
-  setModo(VISTA, { dur: salirDePano() ? 6500 : 4200 });
+  // descenso a la vereda: desde la panorámica, el travelling en que la imagen se descompone (si no, un flyTo)
+  if (!iniciarPartida()) setModo(VISTA, { dur: salirDePano() ? 6500 : 4200 });
   setTimeout(() => $('#inicio').remove(), 900);
 });
 
@@ -1211,7 +1280,10 @@ rango.addEventListener('change', () => {
 audio.addEventListener('playing', () => {
   // si se vuelve a reproducir después del final (anterior, la línea, volver a empezar), se baja otra vez a la vereda
   // (desde la panorámica, con el mismo vuelo largo que al comenzar)
-  if (iniciado && (modo !== VISTA || panoActiva())) { ocultarFin(); setModo(VISTA, { dur: salirDePano() ? 6500 : 3500 }); }
+  if (iniciado && (modo !== VISTA || panoActiva())) {
+    ocultarFin();
+    if (!iniciarPartida()) setModo(VISTA, { dur: salirDePano() ? 6500 : 3500 });
+  }
 });
 audio.addEventListener('loadedmetadata', () => altoPanel());
 audio.addEventListener('error', () => console.warn('No se pudo cargar el audio', audio.error));

@@ -103,7 +103,8 @@ window.RECORRIDO = {
       // drone/tower_theatre_00.jpeg — captura aérea desde la esquina de Calle 8 y 15 Av, mirando al suroeste.
       // Cámara calculada a partir de esquinas del teatro y del cruce peatonal (ver calibracion.js, se puede
       // retocar en calibrar.html). El volumen del teatro en edificios.json se midió sobre esta misma foto.
-      // Después del dron, la cámara sigue subiendo: diorama de día, la foto cenital sobre el techo y diorama de noche.
+      // Orden: diorama de día, la foto cenital sobre el techo, diorama de noche y, al final, la foto del dron (pedido de
+      // la artista: que sea la última imagen anamórfica en apreciarse).
       // Las cámaras de los dioramas están calibradas en calibracion.js con las esquinas del teatro (techo y base):
       // dan casi ortográficas (apertura ≈ 3,4°), con ~22 px de error por las proporciones inventadas por la IA.
       // El teatro está en la vereda sur, en la esquina de la 15 Av. La artista no marcó cuándo se oye. Cierra el
@@ -114,8 +115,6 @@ window.RECORRIDO = {
       // dispara: ahí se superponía con Guantanamera y Ball & Chain, que ella sí marcó, y los corría 15 s.
       lugar: 'Tower Theater', punto: { lat: 25.7656298, lng: -80.21999 }, radio: 4,
       vistas: [
-        { imagen: 'registros/tower-theatre-dron-00.webp', tipo: 'fotografía aérea', apertura: 73.7, rumbo: -137.2, cabeceo: 22.2, giro: -0.1,
-          camara: { lat: 25.7657892, lng: -80.2194265, alt: 19.5 }, mira: { lat: 25.7655532, lng: -80.2196669, alt: 5 } },
         { imagen: 'registros/tower-theater-diorama-00.webp', tipo: 'diorama generado por IA', isometrica: true, apertura: 42,
           camara: { lat: 25.765945, lng: -80.219124, alt: 60 }, mira: { lat: 25.76546, lng: -80.21966, alt: 4 } },
         // cenital/tower_hotel_00.jpf — dron a 54,9 m justo encima del teatro, cámara a −90° (datos del XMP de DJI).
@@ -125,7 +124,10 @@ window.RECORRIDO = {
           rumbo: -97.8, cabeceo: 89, giro: 0,
           camara: { lat: 25.7654547, lng: -80.2197256, alt: 54.9 }, mira: { lat: 25.7654535, lng: -80.2197355, alt: 0 } },
         { imagen: 'registros/tower-theater-diorama-02.webp', tipo: 'diorama generado por IA', isometrica: true, apertura: 40,
-          camara: { lat: 25.76546, lng: -80.218962, alt: 72 }, mira: { lat: 25.76546, lng: -80.21966, alt: 4 } }
+          camara: { lat: 25.76546, lng: -80.218962, alt: 72 }, mira: { lat: 25.76546, lng: -80.21966, alt: 4 } },
+        // la foto del dron va última: es la última imagen anamórfica que se recompone antes de volver a la panorámica
+        { imagen: 'registros/tower-theatre-dron-00.webp', tipo: 'fotografía aérea', apertura: 73.7, huella: true, rumbo: -137.2, cabeceo: 22.2, giro: -0.1,
+          camara: { lat: 25.7657892, lng: -80.2194265, alt: 19.5 }, mira: { lat: 25.7655532, lng: -80.2196669, alt: 5 } }
       ]
     },
     {

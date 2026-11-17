@@ -362,6 +362,7 @@ void main() { vPos = position; vN = normal; gl_Position = projectionMatrix * mod
 const FRAG_TELON = /* glsl */ `
 ${COMUN}
 varying vec3 vN;
+uniform float uTelon;   // opacidad propia del telón (setTelon): visto de lejos es un panel rígido y se apaga antes
 void main() {
   vec3 n = normalize(vN);
   vec2 ol = ola(vPos);
@@ -372,6 +373,7 @@ void main() {
     sobre(Q, B, pr.rgb, pr.a * mascara(uProyLado[ i ], ol.x));
   }
   #pragma unroll_loop_end
+  B *= uTelon; Q *= uTelon;   // color premultiplicado
   if (B < 0.004) discard;
   gl_FragColor = vec4(Q, B);
 }`;
@@ -573,7 +575,7 @@ export async function crearCiudad(THREE, { url, local, sol, vistas, alturas = []
     uCaminante: { value: new THREE.Vector3() }, uLinterna: { value: 0 },
     uFoco: { value: new THREE.Vector2(cx, cy) }, uRadio: { value: new THREE.Vector2(...R_FOCO) },
     uNiebla: { value: new THREE.Color(0.42, 0.30, 0.33) },
-    uSuelo: { value: 0 },
+    uSuelo: { value: 0 }, uTelon: { value: 1 },
     // estilos (estilos.js)
     uEstilo: { value: 0 }, uCamara: { value: new THREE.Vector3(0, 0, 1e4) }, uTiempo: { value: 0 },
     uTinta: { value: new THREE.Vector3(0.62, 0.78, 1.0) }, uPisoCol: { value: new THREE.Vector3(0.30, 0.235, 0.245) },
@@ -786,6 +788,8 @@ export async function crearCiudad(THREE, { url, local, sol, vistas, alturas = []
       }
     },
     setTiempo(s) { uniforms.uTiempo.value = s; },
+    // opacidad del telón (0…1), aparte de la intensidad de la proyección
+    setTelon(v) { uniforms.uTelon.value = v; },
     // opacidad del piso propio (0 = se ven las calles del mapa, 1 = piso opaco); con dt, se acerca de a poco
     setSuelo(v, dt) {
       const u = uniforms.uSuelo;

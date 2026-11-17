@@ -13,13 +13,13 @@
       height: 100dvh; display: flex; align-items: center; justify-content: center; gap: clamp(2rem, 6vw, 5rem);
       padding: 1.25rem 2rem;
     }
-    .telefono {
+    /* sólo la pantalla vertical, sin dibujar el aparato: proporción y tamaño de un celular */
+    .pantalla {
       flex: none; position: relative;
-      height: calc(100dvh - 2.5rem); aspect-ratio: 9 / 19.5; min-width: 340px;
-      border: 11px solid #151515; border-radius: 3.2rem; background: #151515;
-      box-shadow: 0 0 0 1px #3a3a3a, 0 30px 60px -20px rgba(0, 0, 0, 0.45);
+      height: calc(100dvh - 2.5rem); aspect-ratio: 9 / 19.5; min-width: 320px;
+      background: var(--bg); box-shadow: 0 0 0 1px var(--line), 0 24px 50px -24px rgba(0, 0, 0, 0.35);
     }
-    .telefono iframe { display: block; width: 100%; height: 100%; border: 0; border-radius: 2.5rem; background: var(--bg); }
+    .pantalla iframe { display: block; width: 100%; height: 100%; border: 0; background: var(--bg); }
     .nota { max-width: 21rem; display: flex; flex-direction: column; gap: 1.1rem; }
     .nota .m-artista {
       font-family: var(--display); font-weight: 500; text-transform: lowercase;
@@ -32,18 +32,18 @@
     .qr div { flex: none; width: 8.5rem; height: 8.5rem; background: #fff; padding: 0.4rem; border-radius: 6px; }
     .qr svg { display: block; width: 100%; height: 100%; }
     .qr p { font-size: 1.05rem; line-height: 1.4; color: var(--texto); }
-    /* ventana casi cuadrada: sólo el teléfono */
+    /* ventana casi cuadrada: sólo la pantalla */
     @media (max-aspect-ratio: 1 / 1) { .nota { display: none; } }
   </style>
 </head>
 <body>
-  <div class="telefono">
+  <div class="pantalla">
     <iframe id="pantalla" title="Little Havana · Paisajes sonoros" allow="autoplay; fullscreen; screen-wake-lock"></iframe>
   </div>
   <aside class="nota">
     <span class="m-artista">Viviana Zargón</span>
     <h1>Little Havana<br>Paisajes sonoros</h1>
-    <p>Esta obra está pensada para el celular. En la computadora se muestra dentro de una pantalla de teléfono, tal como la verá el público.</p>
+    <p>Esta obra está pensada para el celular. En la computadora se muestra en una pantalla vertical, con el mismo encuadre que verá el público.</p>
     <p>Se recomienda usar auriculares.</p>
     <div class="qr" id="qr" hidden>
       <div id="qr-img"></div>
