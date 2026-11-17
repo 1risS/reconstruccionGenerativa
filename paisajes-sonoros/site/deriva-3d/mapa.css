@@ -183,6 +183,11 @@ body.modo-calle .vineta { opacity: 1; }
 }
 .reiniciar svg { width: 1.1rem; height: 1.1rem; fill: currentColor; }
 .fin.visible .reiniciar { pointer-events: auto; }
+/* sobre la panorámica del final: arriba, en el cielo, con un velo de papel */
+body.pano-final .fin {
+  top: 0; padding: calc(max(1.5rem, env(safe-area-inset-top)) + 16vh) 1.5rem 7rem;
+  background: linear-gradient(rgba(234,234,234,0.88), rgba(234,234,234,0.6) 65%, rgba(234,234,234,0));
+}
 
 body.modo-calle #mapa { cursor: grab; }
 body.modo-calle #mapa:active { cursor: grabbing; }
