@@ -86,7 +86,6 @@ for (let i = 1; i < K.length; i++) if (K[i].t < K[i - 1].t) console.warn('recorr
 
 K[0].d = 0;
 for (let i = 1; i < K.length; i++) K[i].d = K[i - 1].d + metros(K[i - 1], K[i]);
-const LARGO = K[K.length - 1].d || 1;
 let ultimoRumbo = 0;
 for (let i = 0; i < K.length - 1; i++) {
   if (!quieto(K[i], K[i + 1])) ultimoRumbo = rumbo(K[i], K[i + 1]);
@@ -483,18 +482,6 @@ map.on('load', async () => {
       'sky-horizon-blend': 0.55, 'horizon-fog-blend': 0.45, 'fog-ground-blend': 0.8, 'atmosphere-blend': 0 });
   } catch (e) {}
 
-  map.addSource('ruta', {
-    type: 'geojson', lineMetrics: true,
-    data: { type: 'Feature', geometry: { type: 'LineString', coordinates: coordsRuta } },
-  });
-  // ancho fijo en pantalla de lejos; de cerca, ancho real en metros sobre la vereda
-  const anchoLinea = (minPx, m) => ['interpolate', ['exponential', 2], ['zoom'], 14, minPx, 18, Math.max(minPx, m * 3.7), 24, m * 238];
-  map.addLayer({
-    id: 'ruta-hecha', type: 'line', source: 'ruta',
-    layout: { 'line-cap': 'round', 'line-join': 'round' },
-    paint: { 'line-width': anchoLinea(4, 0.3), 'line-gradient': gradiente(0), 'line-blur': anchoLinea(0, 0.15) },
-  });
-
   marcador.addTo(map);
   const attrib = document.querySelector('.maplibregl-ctrl-attrib');
   if (attrib) attrib.classList.remove('maplibregl-compact-show');
@@ -518,7 +505,7 @@ map.on('load', async () => {
       window.__ciudad = ciudad; // para depurar desde la consola
     } catch (e) { console.warn('No se pudo armar la ciudad 3D', e); }
     capaRegistros = crearCapaRegistros(THREE);
-    map.addLayer(capaRegistros, 'ruta-hecha'); // la línea del recorrido queda sobre el piso dibujado
+    map.addLayer(capaRegistros);
   } catch (e) { console.warn('No se pudieron cargar los registros 3D', e); }
   // los estilos se aplican a la ciudad del recorrido y a la de la panorámica (si ya está)
   const ambas = { setEstilo: (est) => { if (ciudad) ciudad.setEstilo(est); if (pano && pano.ciudad) pano.ciudad.setEstilo(est); } };
@@ -529,11 +516,6 @@ map.on('load', async () => {
   btn.textContent = 'Comenzar';
 });
 map.on('error', (e) => console.warn('mapa:', e && e.error));
-
-function gradiente(p) {
-  p = Math.min(0.99999, Math.max(0.00001, p));
-  return ['step', ['line-progress'], COLOR, p, 'rgba(0,0,0,0)'];
-}
 
 // ── capa Three.js: cuadros con los registros sobre las fachadas ──
 function crearCapaRegistros(THREE) {
@@ -709,7 +691,6 @@ let tPrevia = 0;
 let camRumbo = K[0].rumbo, camPitch = PITCH_CALLE;
 let mirarYaw = 0, mirarPitch = 0, ultimoToque = 0;
 let orbita = 0;
-let ultimoP = -1;
 let ultimoCuadro = performance.now();
 let terminado = false;
 
@@ -1082,11 +1063,6 @@ function cuadro(ahora) {
     } else elPie.classList.remove('visible');
     if (panoActiva()) elPie.classList.remove('visible');   // sobre la panorámica del final, sin pie
 
-    const p = e.d / LARGO;
-    if (Math.abs(p - ultimoP) > 0.0002 && map.getLayer('ruta-hecha')) {
-      map.setPaintProperty('ruta-hecha', 'line-gradient', gradiente(p));
-      ultimoP = p;
-    }
     if (capaRegistros) capaRegistros.actualizar(t, iniciado ? modo : 'general');
     if (ciudad) {
       const [cx, cy] = aLocal([e.lng, e.lat]);
