@@ -55,6 +55,10 @@ const PANO_APAGA = 2.5;     // segundos que tarda en apagarse la proyección al 
 const VUELTA_SEG = 9;       // segundos del vuelo de vuelta al dron al terminar el recorrido
 const VUELTA_ALTO = 400;    // altura (m) a la que cruza la ciudad en ese vuelo
 const PARTIDA_SEG = 12;     // segundos del travelling del dron a los ojos del caminante (al comenzar)
+// Estilo de la ciudad: FANTASMA (sólo la luz de las imágenes) en la panorámica y MAQUETA durante el recorrido.
+const MAQUETA_PARTIDA = [0.42, 0.66];   // tramo de la partida en que pasa a Maqueta: cuando la cámara ya toma Little Havana
+const FANTASMA_VUELTA = [0.12, 0.5];  // tramo de la vuelta al dron en que vuelve a Fantasma: al dejar Little Havana
+const FUNDIDO_ESTILO = 2.5;           // segundos del fundido en los demás casos
 const PASO = 0.75;          // largo del paso, en metros (para el balanceo)
 
 // ── utilidades ─────────────────────────────────────
@@ -430,7 +434,8 @@ const bounds = coordsRuta.reduce((b, c) => b.extend(c), new maplibregl.LngLatBou
 
 let capaRegistros = null;
 let ciudad = null;
-let estilos = null;   // estilos visuales intercambiables (estilos.js)
+let estilos = null;   // Fantasma y Maqueta, y el fundido entre los dos (estilos.js)
+let mezclaEstilo = INICIO_PANO ? 0 : 1;   // 0 = Fantasma, 1 = Maqueta
 
 map.on('load', async () => {
   const capas = map.getStyle().layers;
@@ -511,7 +516,7 @@ map.on('load', async () => {
   } catch (e) { console.warn('No se pudieron cargar los registros 3D', e); }
   // los estilos se aplican a la ciudad del recorrido y a la de la panorámica (si ya está)
   const ambas = { setEstilo: (est) => { if (ciudad) ciudad.setEstilo(est); if (pano && pano.ciudad) pano.ciudad.setEstilo(est); } };
-  try { estilos = iniciarEstilos(map, ambas); } catch (e) { console.warn('No se pudieron armar los estilos', e); }
+  try { estilos = iniciarEstilos(map, ambas); estilos.mezclar(mezclaEstilo); } catch (e) { console.warn('No se pudieron armar los estilos', e); }
 
   const btn = $('#comenzar');
   btn.disabled = false;
@@ -1145,9 +1150,32 @@ function cuadro(ahora) {
     }
     if (terminado && t < duracion() - 1) ocultarFin();
     if (epilogo && t >= epilogo.hasta) terminar();
+    estiloCuadro(ahora, dt);
   }
+  // la interfaz se ve sólo durante el recorrido: no en la panorámica (ni en la partida ni en la vuelta) ni al final
+  document.body.classList.toggle('ui-visible', iniciado && !terminado && !(pano && !pano.apagando) && !uiOcultaUsuario);
   requestAnimationFrame(cuadro);
 }
+// Fantasma en la panorámica, Maqueta en el recorrido. En la partida y en la vuelta el fundido va atado al vuelo
+// de la cámara; en los demás casos (sin panorámica, o si se comenzó antes de que estuviera lista) dura FUNDIDO_ESTILO.
+function estiloCuadro(ahora, dt) {
+  if (!estilos) return;
+  const rampa = (f, [a, b]) => suave(clamp((f - a) / (b - a), 0, 1));
+  const v = pano && !pano.apagando && pano.vuelta;
+  if (pano && pano.partida) mezclaEstilo = rampa(pano.partida.f, MAQUETA_PARTIDA);
+  else if (v) mezclaEstilo = 1 - rampa(clamp((ahora - v.ini) / 1000 / VUELTA_SEG, 0, 1), FANTASMA_VUELTA);
+  else {
+    const obj = pano && !pano.apagando ? 0 : 1;
+    mezclaEstilo += clamp(obj - mezclaEstilo, -dt / FUNDIDO_ESTILO, dt / FUNDIDO_ESTILO);
+  }
+  estilos.mezclar(mezclaEstilo);
+}
+// tecla H: oculta o vuelve a mostrar la interfaz durante el recorrido
+let uiOcultaUsuario = false;
+document.addEventListener('keydown', (ev) => {
+  if (ev.metaKey || ev.ctrlKey || ev.altKey || ev.repeat || /INPUT|TEXTAREA|SELECT/.test(ev.target.tagName) && ev.target.type !== 'range') return;
+  if (ev.key === 'h' || ev.key === 'H') uiOcultaUsuario = !uiOcultaUsuario;
+});
 // arranque de la panorámica (acá, cuando ya están definidas todas las constantes que usa)
 if (pano) {
   document.body.classList.add('con-pano');

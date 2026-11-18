@@ -50,6 +50,7 @@ Usa MapLibre 5.6 desde unpkg y Three.js dentro del mapa. Los datos se cargan com
 - `ciudad.js` dibuja los volúmenes de `edificios.json`, una copia fija de OSM ya editada (el Tower Theatre se modeló a mano con medidas tomadas de la foto del dron). Agrega sombras de sol y las proyecciones anamórficas en shaders GLSL.
 - `mapa.js` sincroniza el audio con la cámara y maneja las vistas Calle, Aérea y Mapa. Parámetros de URL: `?editar` (marcar puntos), `?prueba&t=…` (probar una calibración sin guardar).
 - La pantalla de inicio de la deriva muestra la panorámica del dron proyectada desde su punto de vista (Calle 8 y SW 37 Av., 3,5 km al oeste del recorrido), con una segunda ciudad (`portada/edificios.json`) que se libera al comenzar. Al terminar el audio la cámara vuela de vuelta al dron, la ciudad se vuelve a armar y la panorámica queda hasta que se vuelve a empezar. Los datos de esa cámara y el cálculo del encuadre están en `site/portada/panoramica.js`, que comparten la portada y la deriva.
+- Estilo de la ciudad (`estilos.js`, sin selector): **Fantasma** en la panorámica y **Maqueta** durante el recorrido. El fundido (`mezclar(t)`, uniform `uFantasma` en `ciudad.js`) va atado a la partida (cuando la cámara toma Little Havana) y a la vuelta al dron (al dejarla). La interfaz (`body.ui-visible`) sólo se ve durante el recorrido, y la tecla H la oculta o la vuelve a mostrar. Al final quedan sólo «fin del recorrido» y el botón.
 
 Límites fijos que hay que respetar:
 - `MAX_PROY = 6` proyecciones. Cada una usa 2 texturas y los celulares admiten 16 en total.

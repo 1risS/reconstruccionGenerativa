@@ -1,7 +1,8 @@
-// Estilos visuales del mapa 3D, intercambiables con una botonera (arriba a la derecha) o con las teclas 1–8.
-// Cada estilo es una rama de los shaders de ciudad.js (uEstilo) más una paleta para el mapa base de MapLibre
-// y el cielo. No cambian el recorrido, la cámara, el audio ni la interfaz: sólo cómo se dibuja la ciudad.
-// El estilo elegido se recuerda en este navegador; ?estilo=<id> en la URL lo fuerza.
+// Estilos visuales del mapa 3D. Cada estilo es una rama de los shaders de ciudad.js (uEstilo) más una paleta para el
+// mapa base de MapLibre y el cielo. No cambian el recorrido, la cámara, el audio ni la interfaz: sólo cómo se dibuja
+// la ciudad. La deriva usa dos, sin botonera: FANTASMA en la panorámica del principio y del final (la ciudad no está,
+// sólo la luz de la foto) y MAQUETA durante el recorrido; mapa.js los funde con `mezclar(t)`. Los demás quedan
+// definidos (las ramas de los shaders siguen ahí) pero no se usan.
 
 // colores [r, g, b] en 0…1 tal cual se ven en pantalla (los shaders no convierten el espacio de color)
 const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255);
@@ -83,15 +84,26 @@ export const ESTILOS = [
 ];
 
 const PROPIAS = ['veredas', 'calzadas', 'carriles'];
-const CLAVE = 'deriva3d-estilo-v2';   // v2: la Maqueta pasó a ser la predeterminada
+const FANTASMA = ESTILOS.find((e) => e.id === 'fantasma'), MAQUETA = ESTILOS.find((e) => e.id === 'maqueta');
+
+// mezcla de colores: '#rrggbb' o [r, g, b] en 0…1
+const aRGB = (c) => (Array.isArray(c) ? c : hex(c));
+const mix = (a, b, t) => aRGB(a).map((x, i) => x + (aRGB(b)[i] - x) * t);
+const css = (c) => `rgb(${c.map((x) => Math.round(x * 255)).join(',')})`;
+function mezclarCielo(a, b, t) {
+  const c = {};
+  for (const k of Object.keys(a)) c[k] = typeof a[k] === 'number' ? a[k] + (b[k] - a[k]) * t : css(mix(a[k], b[k], t));
+  return c;
+}
 
 /**
- * Arma la botonera y aplica el estilo inicial. Llamar después de que mapa.js pintó el mapa base y armó la ciudad.
- * Con { fijo: '<id>' } aplica ese estilo sin botonera y sin recordarlo (lo usa la portada).
- * @returns { actual } — el estilo vigente (lo lee la capa Three.js en cada cuadro)
+ * Pinta el mapa base y la ciudad. Llamar después de que mapa.js pintó el mapa base y armó la ciudad.
+ * Con { fijo: '<id>' } aplica ese estilo y nada más (lo usa la portada). Sin `fijo` arranca en Fantasma y devuelve
+ * `mezclar(t)`: t = 0 Fantasma, 1 Maqueta, y en el medio un fundido (la rama de la maqueta con uFantasma = 1 − t).
+ * @returns { actual, mezclar } — `actual` es el estilo vigente (lo lee la capa Three.js en cada cuadro)
  */
 export function iniciarEstilos(map, ciudad, { fijo = null } = {}) {
-  // paleta original de cada capa de relleno y de línea, para poder volver a ella
+  // paleta original de cada capa de relleno y de línea
   const originales = [];
   for (const l of map.getStyle().layers) {
     if (/^ruta/.test(l.id)) continue;
@@ -103,92 +115,53 @@ export function iniciarEstilos(map, ciudad, { fijo = null } = {}) {
   }
   const pintar = (id, p, v) => { try { map.setPaintProperty(id, p, v); } catch (e) {} };
 
-  function base(b) {
+  // b: la paleta `base` de un estilo; con b2 y t, la mezcla de las dos
+  const color = (b, o) => (o.tipo === 'background' ? b.fondo : PROPIAS.includes(o.id) ? b[o.id] : /water/.test(o.id) ? b.agua
+    : o.tipo === 'line' ? b.linea : /park|wood|grass|landcover/.test(o.id) ? b.parque : b.relleno);
+  function base(b, b2 = null, t = 0) {
     for (const o of originales) {
       if (!b) { pintar(o.id, o.p, o.v); continue; }
-      if (o.tipo === 'symbol') { pintar(o.id, o.p, b.texto ? b.texto[o.p === 'text-color' ? 'color' : 'halo'] : o.v); continue; }
+      if (o.tipo === 'symbol') {
+        const bt = (b2 && t >= 0.5 ? b2 : b).texto;
+        pintar(o.id, o.p, bt ? bt[o.p === 'text-color' ? 'color' : 'halo'] : o.v);
+        continue;
+      }
       if (o.p === 'line-opacity') { if (!PROPIAS.includes(o.id)) pintar(o.id, o.p, 0.6); continue; }
-      let c;
-      if (o.tipo === 'background') c = b.fondo;
-      else if (PROPIAS.includes(o.id)) c = b[o.id];
-      else if (/water/.test(o.id)) c = b.agua;
-      else if (o.tipo === 'line') c = b.linea;
-      else if (/park|wood|grass|landcover/.test(o.id)) c = b.parque;
-      else c = b.relleno;
-      pintar(o.id, o.p, c);
+      pintar(o.id, o.p, b2 ? css(mix(color(b, o), color(b2, o), t)) : color(b, o));
     }
   }
 
-  const ctl = { actual: ESTILOS[0] };
-  function aplicar(est) {
+  const ctl = { actual: fijo ? null : FANTASMA, t: -1, mezclar };
+  function aplicar(est, { cielo = est.cielo, paleta = () => base(est.base), tono = est.tono } = {}) {
     ctl.actual = est;
     if (ciudad) ciudad.setEstilo(est);
-    base(est.base);
-    try { map.setSky(est.cielo); } catch (e) {}
-    document.body.dataset.tono = est.tono || 'oscuro';
+    paleta();
+    try { map.setSky(cielo); } catch (e) {}
+    document.body.dataset.tono = tono || 'oscuro';
     // detrás del canvas: a la altura del horizonte MapLibre deja una franja sin dibujar (transparente) y se veía el
     // fondo claro de la página como una raya blanca en los estilos oscuros. Se pinta con el color de la niebla.
-    map.getContainer().style.background = `rgb(${est.niebla.map((c) => Math.round(c * 255)).join(',')})`;
-    map.triggerRepaint();
-    if (fijo) return;
-    try { localStorage.setItem(CLAVE, est.id); } catch (e) {}
-    nav.querySelector('.estilos-abrir').setAttribute('aria-label', `Estilo: ${est.nombre}`);
-    nav.querySelector('.estilos-abrir span').style.background = est.muestra;
-    nav.querySelectorAll('[data-estilo]').forEach((b) => b.setAttribute('aria-checked', b.dataset.estilo === est.id));
+    map.getContainer().style.background = css(est.niebla);
     map.triggerRepaint();
   }
+  // t = 0 Fantasma … 1 Maqueta
+  function mezclar(t) {
+    t = Math.max(0, Math.min(1, t));
+    if (t === ctl.t || (t > 0 && t < 1 && Math.abs(t - ctl.t) < 0.004)) return;
+    ctl.t = t;
+    if (t === 0) return aplicar(FANTASMA);
+    if (t === 1) return aplicar(MAQUETA);
+    const est = { ...MAQUETA, id: 'fundido', fantasma: 1 - t, transparente: true, ocluye: true,
+      niebla: mix(FANTASMA.niebla, MAQUETA.niebla, t), tinta: mix(FANTASMA.tinta, MAQUETA.tinta, t),
+      piso: mix(FANTASMA.piso, MAQUETA.piso, t) };
+    aplicar(est, { cielo: mezclarCielo(FANTASMA.cielo, MAQUETA.cielo, t), paleta: () => base(FANTASMA.base, MAQUETA.base, t),
+      tono: t >= 0.5 ? MAQUETA.tono : FANTASMA.tono });
+  }
 
-  if (fijo) { aplicar(ESTILOS.find((e) => e.id === fijo) || ESTILOS[0]); return ctl; }
-
-  // ── botonera ──
-  const css = document.createElement('style');
-  css.textContent = `
-.estilos { position: fixed; z-index: 11; top: max(0.75rem, env(safe-area-inset-top)); right: 0.75rem;
-  display: flex; flex-direction: column; align-items: flex-end; gap: 0.4rem; font-size: 0.85rem; }
-.estilos-abrir { width: 2.4rem; height: 2.4rem; padding: 0.3rem; border-radius: 50%; cursor: pointer;
-  border: 1px solid var(--line, rgba(255,255,255,0.2)); background: var(--panel, rgba(18,16,16,0.86)); }
-.estilos-abrir[aria-expanded="true"] { border-color: var(--accent); }
-.estilos-abrir span, .estilos-lista i { display: block; width: 100%; height: 100%; border-radius: 50%;
-  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.15); }
-.estilos-lista { margin: 0; padding: 0.35rem; list-style: none; width: 16.5rem; max-width: calc(100vw - 1.5rem);
-  border-radius: 14px; border: 1px solid var(--line, rgba(255,255,255,0.2));
-  background: var(--panel, rgba(18,16,16,0.86)); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
-.estilos-lista button { display: grid; grid-template-columns: 1.6rem 1fr auto; align-items: center; gap: 0 0.65rem;
-  width: 100%; padding: 0.45rem 0.5rem; border: 0; border-radius: 9px; background: none; text-align: left; cursor: pointer; }
-.estilos-lista button:hover { background: rgba(0,0,0,0.05); }
-.estilos-lista button[aria-checked="true"] { background: rgba(0,0,0,0.08); }
-.estilos-lista button[aria-checked="true"] b { color: var(--accent); }
-.estilos-lista i { width: 1.6rem; height: 1.6rem; grid-row: span 2; }
-.estilos-lista b { font-family: var(--display); font-weight: 500; font-size: 1.05rem; }
-.estilos-lista small { grid-column: 2; color: var(--muted, #aaa); font-size: 0.72rem; line-height: 1.25; }
-.estilos-lista kbd { grid-row: 1; grid-column: 3; font: inherit; font-size: 0.7rem; color: var(--muted, #aaa); opacity: 0.7; }
-@media (hover: none) { .estilos-lista kbd { display: none; } }`;
-  document.head.appendChild(css);
-
-  const nav = document.createElement('nav');
-  nav.className = 'estilos';
-  nav.setAttribute('aria-label', 'Estilo del mapa');
-  nav.innerHTML = `<button class="estilos-abrir" aria-expanded="false" aria-controls="estilos-lista"><span></span></button>
-<ul class="estilos-lista" id="estilos-lista" role="radiogroup" aria-label="Estilo del mapa" hidden>${ESTILOS.map((e, i) =>
-    `<li><button role="radio" data-estilo="${e.id}" aria-checked="false"><i style="background:${e.muestra}"></i><b>${e.nombre}</b><kbd>${i + 1}</kbd><small>${e.nota}</small></button></li>`).join('')}</ul>`;
-  document.body.appendChild(nav);
-  const abrir = nav.querySelector('.estilos-abrir'), lista = nav.querySelector('.estilos-lista');
-  const mostrar = (ver) => { lista.hidden = !ver; abrir.setAttribute('aria-expanded', ver); };
-  abrir.addEventListener('click', () => mostrar(lista.hidden));
-  lista.addEventListener('click', (ev) => {
-    const b = ev.target.closest('[data-estilo]');
-    if (b) aplicar(ESTILOS.find((e) => e.id === b.dataset.estilo));
-  });
-  document.addEventListener('pointerdown', (ev) => { if (!nav.contains(ev.target)) mostrar(false); });
-  document.addEventListener('keydown', (ev) => {
-    if (ev.metaKey || ev.ctrlKey || ev.altKey || /INPUT|TEXTAREA/.test(ev.target.tagName) && ev.target.type !== 'range') return;
-    const i = Number(ev.key) - 1;
-    if (Number.isInteger(i) && ESTILOS[i]) aplicar(ESTILOS[i]);
-    if (ev.key === 'Escape') mostrar(false);
-  });
-
-  let inicial = new URLSearchParams(location.search).get('estilo');
-  if (!inicial) try { inicial = localStorage.getItem(CLAVE); } catch (e) {}
-  aplicar(ESTILOS.find((e) => e.id === inicial) || ESTILOS[0]);
+  if (fijo) aplicar(ESTILOS.find((e) => e.id === fijo) || MAQUETA);
+  else {
+    // el fundido pinta el mapa base en cada cuadro: sin la transición propia de MapLibre (300 ms), que lo atrasaría
+    try { map.style.stylesheet.transition = { duration: 0, delay: 0 }; } catch (e) {}
+    mezclar(0);
+  }
   return ctl;
 }

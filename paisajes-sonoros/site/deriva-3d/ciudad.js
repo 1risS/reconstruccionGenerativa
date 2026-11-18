@@ -10,7 +10,7 @@ const MAX_PROY = 6;   // proyecciones SIMULTÁNEAS: cada una usa 2 texturas (ima
 const R_FOCO = [260, 520];   // radio (m) alrededor del caminante a partir del cual la ciudad se disuelve
 
 // ESTILOS (uEstilo, ver estilos.js): 0 atardecer · 1 aristas · 2 fantasma · 3 cercanía · 4 cianotipo · 5 sonar · 6 nube de puntos
-//   · 7 maqueta
+//   · 7 maqueta (con uFantasma > 0 se funde hacia fantasma: la deriva pasa de uno a otro, ver estilos.js)
 const COMUN = /* glsl */ `
 uniform sampler2D uSolProf; uniform mat4 uSolVP; uniform vec3 uSolDir; uniform vec2 uSolTexel; uniform float uSolBiasM;
 uniform sampler2D uSolProfC; uniform mat4 uSolVPC; uniform vec2 uSolTexelC; uniform float uSolBiasC; uniform float uSolCerca;
@@ -18,7 +18,7 @@ uniform mat4 uProyVP[${MAX_PROY}]; uniform vec3 uProyPos[${MAX_PROY}]; uniform v
 uniform float uProyInt[${MAX_PROY}]; uniform sampler2D uProyTex[${MAX_PROY}]; uniform sampler2D uProyProf[${MAX_PROY}];
 uniform float uProyLado[${MAX_PROY}]; uniform float uProyTol[${MAX_PROY}]; uniform vec4 uOla; uniform float uOlaLuz;
 uniform vec3 uCaminante; uniform float uLinterna; uniform vec2 uFoco; uniform vec2 uRadio; uniform vec3 uNiebla;
-uniform float uEstilo; uniform vec3 uCamara; uniform float uTiempo; uniform vec3 uTinta; uniform vec3 uPisoCol;
+uniform float uEstilo; uniform float uFantasma; uniform vec3 uCamara; uniform float uTiempo; uniform vec3 uTinta; uniform vec3 uPisoCol;
 varying vec3 vPos;
 
 // Sombras del sol con dos mapas de profundidad ortográficos: uno CERCANO, fino, alrededor del foco (se rehace
@@ -320,7 +320,10 @@ void main() {
     col = P + col * (1.0 - A);
   }
   col += (LUZ_OLA - col) * luzOla * 0.8 * (1.0 - lejos);
-  gl_FragColor = vec4(col, 1.0);
+  // fundido hacia FANTASMA (uFantasma = 1: sólo la luz de las imágenes; el material es transparente mientras dura)
+  vec4 sal = vec4(col, 1.0);
+  if (uFantasma > 0.0) { sal = mix(sal, vec4(P, A), uFantasma); if (sal.a < 0.004) discard; }
+  gl_FragColor = sal;
 }`;
 
 // piso: sombras, tramado, linterna y proyecciones. Desde arriba es una capa transparente sobre las calles
@@ -370,7 +373,7 @@ void main() {
   } else if (e == 7) {
     // maqueta: sólo una sombra gris suave, sin tramado
     float sh = 1.0 - sombraSol(vPos + vec3(0.0, 0.0, 0.25), uSolDir.z);
-    sobre(P, A, vec3(0.36, 0.34, 0.33), sh * 0.32);
+    sobre(P, A, vec3(0.36, 0.34, 0.33), sh * 0.32 * (1.0 - uFantasma));
   } else if (e != 2) {
     float sh = 1.0 - sombraSol(vPos + vec3(0.0, 0.0, 0.25), uSolDir.z);
     sobre(P, A, vec3(0.14, 0.14, 0.30), sh * 0.6);
@@ -612,7 +615,7 @@ export async function crearCiudad(THREE, { url, local, sol, vistas, alturas = []
     uNiebla: { value: new THREE.Color(0.42, 0.30, 0.33) },
     uSuelo: { value: 0 }, uTelon: { value: 1 },
     // estilos (estilos.js)
-    uEstilo: { value: 0 }, uCamara: { value: new THREE.Vector3(0, 0, 1e4) }, uTiempo: { value: 0 },
+    uEstilo: { value: 0 }, uFantasma: { value: 0 }, uCamara: { value: new THREE.Vector3(0, 0, 1e4) }, uTiempo: { value: 0 },
     uCorte: { value: new THREE.Vector4(0, 0, 0, 0) },
     uTinta: { value: new THREE.Vector3(0.62, 0.78, 1.0) }, uPisoCol: { value: new THREE.Vector3(0.30, 0.235, 0.245) },
   };
@@ -797,13 +800,16 @@ export async function crearCiudad(THREE, { url, local, sol, vistas, alturas = []
     ranuras: () => ranuras.map((r, i) => r.p && [r.p.v.imagen.replace('registros/', ''), +uniforms.uProyInt.value[i].toFixed(2)]),
     setRadio(a, b) { uniforms.uRadio.value.set(a, b); },
     // estilo: { indice, niebla, tinta, piso ([r,g,b] tal cual se ven), transparente (la malla se mezcla en vez de tapar),
-    //          ocluye (transparente pero sin dejar ver lo que está detrás de la superficie más cercana) }
-    setEstilo({ indice, niebla, tinta, piso, transparente, ocluye }) {
+    //          ocluye (transparente pero sin dejar ver lo que está detrás de la superficie más cercana),
+    //          fantasma (0…1, sólo con la maqueta: cuánto se funde hacia Fantasma) }
+    setEstilo({ indice, niebla, tinta, piso, transparente, ocluye, fantasma = 0 }) {
       oclusor.visible = !!(transparente && ocluye);
       uniforms.uEstilo.value = indice;
+      uniforms.uFantasma.value = fantasma;
       uniforms.uNiebla.value.setRGB(...niebla);
       uniforms.uTinta.value.set(...tinta);
       uniforms.uPisoCol.value.set(...piso);
+      if (matEdificios.transparent === !!transparente) return;   // en un fundido se llama en cada cuadro
       matEdificios.transparent = !!transparente;
       matEdificios.depthWrite = !transparente;
       matEdificios.blending = transparente ? THREE.CustomBlending : THREE.NormalBlending;

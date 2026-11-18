@@ -18,7 +18,7 @@ button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent
   background: linear-gradient(to bottom, rgba(234,234,234,0.97) 0%, rgba(234,234,234,0.62) 50%, rgba(234,234,234,0.97) 100%);
   transition: opacity 0.8s ease;
 }
-.inicio .sitio { max-width: 30rem; padding-right: 3rem; } /* deja lugar al botón de estilos */
+.inicio .sitio { max-width: 30rem; }
 .inicio .nombre { font-size: clamp(3rem, 16vw, 5.6rem); line-height: 0.88; }   /* 16vw: entra en una línea en 360 px */
 .inicio .muestra { order: 0; max-width: 30rem; }   /* acá va pegada a la descripción */
 .inicio .lugar { max-width: 22rem; line-height: 1.45; }
@@ -181,6 +181,16 @@ body.pano-final .fin {
   top: 0; padding: calc(max(1.5rem, env(safe-area-inset-top)) + 16vh) 1.5rem 7rem;
   background: linear-gradient(rgba(234,234,234,0.88), rgba(234,234,234,0.6) 65%, rgba(234,234,234,0));
 }
+
+/* ── interfaz: sólo durante el recorrido (mapa.js pone body.ui-visible; la tecla H la oculta y la vuelve a mostrar).
+   En la panorámica, la partida, la vuelta y el final no se ve: al final quedan sólo «fin del recorrido» y el botón.
+   Se oculta con opacidad y no con `hidden`: el panel sigue ocupando su lugar y el encuadre de las fotos no salta. */
+.panel, .estado, .seguir, .maplibregl-ctrl-bottom-left { transition: opacity 0.8s; }
+.maplibregl-ctrl-bottom-right { transition: bottom 0.3s, opacity 0.8s; }
+body:not(.ui-visible) :is(.panel, .estado, .pie, .seguir, .maplibregl-ctrl-bottom-right, .maplibregl-ctrl-bottom-left) {
+  opacity: 0 !important; pointer-events: none !important;
+}
+body:not(.ui-visible) .panel * { visibility: hidden; transition: visibility 0s 0.8s; }   /* sin foco de teclado */
 
 body.modo-calle #mapa { cursor: grab; }
 body.modo-calle #mapa:active { cursor: grabbing; }
