@@ -158,11 +158,33 @@ float puntosLod(vec2 p, float paso, float semilla, float dist, out float denso) 
 vec3 cianotipo(vec3 c) { float l = dot(c, vec3(0.3, 0.59, 0.11)); return mix(vec3(0.03, 0.11, 0.30), vec3(0.92, 0.97, 1.0), smoothstep(0.06, 0.9, l)); }
 `;
 
+// CORTE: mientras se mira un diorama desde lo alto, los volúmenes que quedan entre la cámara y el lugar (la vereda de
+// enfrente) se ocultan: tapaban la parte baja del dibujo y distraían. caja = (x0, y0, x1, y1) del volumen, h = su altura.
+// Se oculta si está a más de 4 m del lugar en dirección a la cámara, a menos de 25 m del eje y su techo llega a la
+// línea de mirada (con 4 m de margen). tramado(): umbral por píxel para desvanecer con un tramado, sin transparencia.
+const CORTE = /* glsl */ `
+float tapa(vec4 caja, float h, vec3 desde, vec3 hasta) {
+  vec2 d = desde.xy - hasta.xy; float L = length(d);
+  if (L < 1.0) return 0.0;
+  vec2 u = d / L, v = vec2(-u.y, u.x);
+  vec2 q0 = caja.xy - hasta.xy, q1 = caja.zw - hasta.xy;
+  vec4 ex = vec4(q0.x, q1.x, q0.x, q1.x), ey = vec4(q0.y, q0.y, q1.y, q1.y);
+  vec4 s = ex * u.x + ey * u.y, l = ex * v.x + ey * v.y;
+  float sMin = min(min(s.x, s.y), min(s.z, s.w));
+  float lMin = min(min(l.x, l.y), min(l.z, l.w)), lMax = max(max(l.x, l.y), max(l.z, l.w));
+  float lat = lMin > 0.0 ? lMin : (lMax < 0.0 ? -lMax : 0.0);
+  if (sMin < 4.0 || sMin > L || lat > 25.0) return 0.0;
+  float linea = hasta.z + sMin * (desde.z - hasta.z) / L;
+  return step(linea, h + 4.0);
+}
+float tramado(vec2 f) { return fract(52.9829189 * fract(dot(f, vec2(0.06711056, 0.00583715)))); }
+`;
+
 const VERT = /* glsl */ `
-attribute vec4 aW; attribute vec4 aI; attribute vec3 aB;
-varying vec3 vPos; varying vec3 vN; varying vec4 vW; varying vec4 vI; varying vec3 vB;
+attribute vec4 aW; attribute vec4 aI; attribute vec3 aB; attribute vec4 aCaja;
+varying vec3 vPos; varying vec3 vN; varying vec4 vW; varying vec4 vI; varying vec3 vB; varying vec4 vCaja;
 void main() {
-  vPos = position; vN = normal; vW = aW; vI = aI; vB = aB;
+  vPos = position; vN = normal; vW = aW; vI = aI; vB = aB; vCaja = aCaja;
   gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
 }`;
 
@@ -170,9 +192,12 @@ void main() {
 // aB = coordenadas baricéntricas del triángulo (para dibujar sus aristas)
 const FRAG_EDIFICIOS = /* glsl */ `
 ${COMUN}
-varying vec3 vN; varying vec4 vW; varying vec4 vI; varying vec3 vB;
+${CORTE}
+uniform vec4 uCorte;   // xyz = lugar mirado, w = cuánto se ocultan los volúmenes de adelante (0…1)
+varying vec3 vN; varying vec4 vW; varying vec4 vI; varying vec3 vB; varying vec4 vCaja;
 void main() {
   vec3 n = normalize(vN);
+  if (uCorte.w > 0.001 && tapa(vCaja, vW.z, uCamara, uCorte.xyz) * uCorte.w > tramado(gl_FragCoord.xy)) discard;
   // las normales apuntan hacia afuera: una cara vista de espaldas sólo se ve desde ADENTRO del volumen (o un techo
   // desde abajo). Si la cámara quedara dentro de un edificio, sus paredes no se dibujan y se ve hacia afuera.
   if (dot(n, uCamara - vPos) < -0.05) discard;
@@ -417,10 +442,11 @@ export async function crearCiudad(THREE, { url, local, sol, vistas, alturas = []
   const datos = aplicarAlturas(await (await fetch(url)).json(), alturas);
 
   // ── geometría ──
-  const P = [], N = [], W = [], I = [];
+  const P = [], N = [], W = [], I = [], K = [];
+  let cajaAct = [0, 0, 0, 0];
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
   const area = (r) => r.reduce((a, p, i) => { const q = r[(i + 1) % r.length]; return a + p[0] * q[1] - q[0] * p[1]; }, 0) / 2;
-  const vert = (x, y, z, n, w, inf) => { P.push(x, y, z); N.push(...n); W.push(...w); I.push(...inf); };
+  const vert = (x, y, z, n, w, inf) => { P.push(x, y, z); N.push(...n); W.push(...w); I.push(...inf); K.push(...cajaAct); };
 
   const volumenes = []; // contornos en metros, para que la cámara esquive los edificios (alturaCerca)
   for (const [h, mh, anillos] of datos) {
@@ -429,7 +455,8 @@ export async function crearCiudad(THREE, { url, local, sol, vistas, alturas = []
     rs.forEach((r, k) => { if ((k === 0) !== (area(r) > 0)) r.reverse(); });
     {
       const xs = rs[0].map((p) => p[0]), ys = rs[0].map((p) => p[1]);
-      volumenes.push({ h, anillo: rs[0], caja: [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)] });
+      cajaAct = [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
+      volumenes.push({ h, anillo: rs[0], caja: cajaAct });
     }
     const [ax, ay] = rs[0][0];
     const tono = Math.abs(Math.sin(ax * 12.9898 + ay * 78.233) * 43758.5453) % 1;
@@ -465,6 +492,7 @@ export async function crearCiudad(THREE, { url, local, sol, vistas, alturas = []
   geo.setAttribute('normal', new THREE.Float32BufferAttribute(N, 3));
   geo.setAttribute('aW', new THREE.Float32BufferAttribute(W, 4));
   geo.setAttribute('aI', new THREE.Float32BufferAttribute(I, 4));
+  geo.setAttribute('aCaja', new THREE.Float32BufferAttribute(K, 4));
   // baricéntricas: los vértices van de a tres por triángulo (sin índices)
   const nv = P.length / 3, B = new Float32Array(nv * 3);
   for (let i = 0; i < nv; i++) B[i * 3 + (i % 3)] = 1;
@@ -585,6 +613,7 @@ export async function crearCiudad(THREE, { url, local, sol, vistas, alturas = []
     uSuelo: { value: 0 }, uTelon: { value: 1 },
     // estilos (estilos.js)
     uEstilo: { value: 0 }, uCamara: { value: new THREE.Vector3(0, 0, 1e4) }, uTiempo: { value: 0 },
+    uCorte: { value: new THREE.Vector4(0, 0, 0, 0) },
     uTinta: { value: new THREE.Vector3(0.62, 0.78, 1.0) }, uPisoCol: { value: new THREE.Vector3(0.30, 0.235, 0.245) },
   };
 
@@ -607,8 +636,17 @@ export async function crearCiudad(THREE, { url, local, sol, vistas, alturas = []
   // oclusor: en los estilos transparentes con `ocluye`, los volúmenes se dibujan primero sólo en profundidad
   // (invisibles) para que las imágenes proyectadas en techos y edificios de atrás no se vean a través de la
   // pared más cercana. Sin esto, desde la vereda las capas de la proyección se superponen fuera de orden.
-  const oclusor = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({
-    side: THREE.DoubleSide, colorWrite: false, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1,
+  // material sólo de profundidad, con el mismo CORTE: uDesde → uHasta es la línea de mirada, uK cuánto se oculta
+  const matProf = (u, extra = {}) => new THREE.ShaderMaterial({
+    uniforms: u, colorWrite: false, ...extra,
+    vertexShader: `attribute vec4 aW; attribute vec4 aCaja; varying vec4 vCaja; varying float vH;
+      void main() { vCaja = aCaja; vH = aW.z; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+    fragmentShader: `${CORTE} uniform vec3 uDesde; uniform vec3 uHasta; uniform float uK; varying vec4 vCaja; varying float vH;
+      void main() { if (uK > 0.001 && tapa(vCaja, vH, uDesde, uHasta) * uK > tramado(gl_FragCoord.xy)) discard; gl_FragColor = vec4(0.0); }`,
+  });
+  const corteOcl = { uDesde: { value: uniforms.uCamara.value }, uHasta: { value: new THREE.Vector3() }, uK: { value: 0 } };
+  const oclusor = new THREE.Mesh(geo, matProf(corteOcl, {
+    side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1,
   }));
   oclusor.material.side = THREE.FrontSide; // vista desde adentro de un volumen, no tapa (ver el discard de FRAG_EDIFICIOS)
   oclusor.renderOrder = -2; // antes que el piso (-1) y que la malla visible (0)
@@ -644,7 +682,10 @@ export async function crearCiudad(THREE, { url, local, sol, vistas, alturas = []
 
   // escena sólo de profundidad (para el sol y los proyectores)
   const escenaProf = new THREE.Scene();
-  escenaProf.add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ side: THREE.DoubleSide, colorWrite: false })));
+  // los proyectores de dioramas (isometrica) no ven los volúmenes que el CORTE oculta: si no, dejarían su sombra
+  // (un hueco) sobre la fachada. Es fijo para cada proyector: la línea va de su cámara a su mira.
+  const corteProf = { uDesde: { value: new THREE.Vector3() }, uHasta: { value: new THREE.Vector3() }, uK: { value: 0 } };
+  escenaProf.add(new THREE.Mesh(geo, matProf(corteProf, { side: THREE.DoubleSide })));
   escenaProf.children[0].frustumCulled = false;
 
   // distancia (m) de un punto al borde de un contorno
@@ -689,6 +730,7 @@ export async function crearCiudad(THREE, { url, local, sol, vistas, alturas = []
         tamSol = Math.min(4096, renderer.capabilities.maxTextureSize);
         uniforms.uSolTexel.value.set(1 / tamSol, 1 / tamSol);
         rtSol = objetivo(tamSol);
+        corteProf.uK.value = 0;
         renderer.setRenderTarget(rtSol); renderer.clear(); renderer.render(escenaProf, camSol);
         uniforms.uSolProf.value = rtSol.depthTexture;
         hizo = true;
@@ -696,6 +738,7 @@ export async function crearCiudad(THREE, { url, local, sol, vistas, alturas = []
       if (moverCerca) {
         encuadrarCerca(f.x, f.y);
         if (!rtCerca) rtCerca = objetivo(TAM_CERCA);
+        corteProf.uK.value = 0;
         renderer.setRenderTarget(rtCerca); renderer.clear(); renderer.render(escenaProf, camCerca);
         uniforms.uSolProfC.value = rtCerca.depthTexture;
         uniforms.uSolCerca.value = 1;
@@ -706,6 +749,9 @@ export async function crearCiudad(THREE, { url, local, sol, vistas, alturas = []
         r.sucio = false;
         if (!r.p) return;
         if (!r.rt) r.rt = objetivo(2048);
+        const v = r.p.v;
+        corteProf.uK.value = v.isometrica ? 1 : 0;
+        corteProf.uDesde.value.set(...v.pos); corteProf.uHasta.value.set(...v.mira);
         renderer.setRenderTarget(r.rt); renderer.clear(); renderer.render(escenaProf, r.p.cam);
         uniforms.uProyProf.value[i] = r.rt.depthTexture;
         uniforms.uProyVP.value[i] = r.p.vp;
@@ -797,6 +843,12 @@ export async function crearCiudad(THREE, { url, local, sol, vistas, alturas = []
       }
     },
     setTiempo(s) { uniforms.uTiempo.value = s; },
+    // CORTE: oculta (k = 0…1) los volúmenes entre la cámara y el lugar [x, y, z] mientras se mira un diorama
+    setCorte(lugar, k) {
+      if (lugar) { uniforms.uCorte.value.set(lugar[0], lugar[1], lugar[2], k); corteOcl.uHasta.value.set(...lugar); }
+      else uniforms.uCorte.value.w = 0;
+      corteOcl.uK.value = lugar ? k : 0;
+    },
     // opacidad del telón (0…1), aparte de la intensidad de la proyección
     setTelon(v) { uniforms.uTelon.value = v; },
     // opacidad del piso propio (0 = se ven las calles del mapa, 1 = piso opaco); con dt, se acerca de a poco

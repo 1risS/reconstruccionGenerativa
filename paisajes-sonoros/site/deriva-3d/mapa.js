@@ -373,7 +373,9 @@ function vuelo(t) {
       r *= 1 + 0.3 * b; z *= 1 + 0.35 * b;
     }
     const w = suave(clamp((t - p.inicio) / p.subida, 0, 1)) * suave(clamp((p.hasta - t) / p.bajada, 0, 1));
-    return { p, w, k: pesos.indexOf(Math.max(...pesos)), T: m, polarV: { th, r, z }, fov, yp, dR, dP, giro, lnIso };
+    // cuánto pesan los dioramas en este momento (para ocultar lo que los tapa: ciudad.setCorte)
+    const kIso = pesos.reduce((a, q, i) => a + (p.vistas[i].isometrica ? q : 0), 0);
+    return { p, w, k: pesos.indexOf(Math.max(...pesos)), T: m, polarV: { th, r, z }, fov, yp, dR, dP, giro, lnIso, kIso };
   }
   return null;
 }
@@ -1067,6 +1069,9 @@ function cuadro(ahora) {
     if (ciudad) {
       const [cx, cy] = aLocal([e.lng, e.lat]);
       ciudad.setCaminante(cx, cy, modo === 'calle' && iniciado ? 1 - (vu ? vu.w : 0) * 0.6 : 0.5);
+      // mientras se mira un diorama, los edificios entre la cámara y el lugar (la vereda de enfrente) se desvanecen
+      const kCorte = vu && modo === 'calle' ? vu.w * vu.kIso : 0;
+      ciudad.setCorte(kCorte > 0.001 ? vu.T : null, kCorte);
       if (modo === 'general' || !iniciado) { const [gx, gy] = aLocal(bounds.getCenter().toArray()); ciudad.uniforms.uFoco.value.set(gx, gy); ciudad.setRadio(420, 720); }
       else ciudad.setRadio(260, 540);
       if (at && at.length && modo === 'calle') { // la ciudad se revela también alrededor del lugar mirado

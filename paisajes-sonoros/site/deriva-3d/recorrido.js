@@ -149,11 +149,9 @@ window.RECORRIDO = {
       // frontales desde lo alto de la vereda sur), uno por vez. La foto queda como huella.
       // Los dioramas muestran tres locales: Ball & Chain, la heladería Azúcar y la tabaquería de la esquina de la 15 Av.
       // (la IA le puso "SW 14 Ave"). En edificios.json son un solo volumen de 60 m (de la 15 Av. hacia el oeste,
-      // frente en lat ≈ 25.76582). Los tres juntos se encajan en sus ~28 m del lado de la esquina: el borde derecho del
-      // dibujo cae en la esquina (lng −80.219545) y así el centro de Ball & Chain queda en −80.21977, donde lo marcó la
-      // artista. Escala ≈ 0,0266 m/px → la imagen entera mide ≈ 42,5 m sobre la fachada. Inclinación de 16° (por lo que
-      // se ve de vereda en el dibujo); el eje cruza la fachada a ≈ 4 m de altura, perpendicular a ella (rumbo 358°).
-      // La cámara está a 80 m: camara/mira/apertura salen de esas medidas (ancho = 2 · 83,2 m · tan(apertura / 2)).
+      // frente en lat ≈ 25.76582). Cámaras perpendiculares a la fachada (rumbo 358°), a 80 m: camara/mira/apertura salen
+      // de las medidas de abajo (ancho sobre la pared = 2 · 80 m · tan(apertura / 2)). Mientras se los mira, los volúmenes
+      // de enfrente (el frente del Tower Theater) se ocultan: ver CORTE en ciudad.js.
       lugar: 'Ball & Chain', punto: { lat: 25.7657893, lng: -80.219765 }, radio: 4,
       // Orden: primero la foto (es la que el caminante viene viendo pegada en la fachada: la cámara cruza la calle y
       // se recompone a la altura de los ojos), después sube a los dos dioramas. Si empezara por un diorama, la foto
@@ -161,12 +159,19 @@ window.RECORRIDO = {
       vistas: [
         { imagen: 'registros/ball-and-chain-foto-00.webp', tipo: 'fotografía', apertura: 21, huella: true,
           camara: { lat: 25.76562, lng: -80.219765, alt: 1.6 }, mira: { lat: 25.765815, lng: -80.219765, alt: 2 } },
-        // de noche: edificio de x 260 a 1315 px, base en y ≈ 655 px
-        { imagen: 'registros/ball-and-chain-fachada-00.webp', tipo: 'diorama generado por IA', isometrica: true, apertura: 28.6,
-          camara: { lat: 25.7650987, lng: -80.2196536, alt: 27 }, mira: { lat: 25.7658177, lng: -80.2196813, alt: 4.1 } },
-        // de día: edificio de x 290 a 1340 px, base en y ≈ 628 px
-        { imagen: 'registros/ball-and-chain-fachada-01.webp', tipo: 'diorama generado por IA', isometrica: true, apertura: 28.8,
-          camara: { lat: 25.7650985, lng: -80.2196609, alt: 26.8 }, mira: { lat: 25.7658175, lng: -80.2196886, alt: 3.9 } }
+        // Los dioramas se encajan para que el FRENTE DE BALL & CHAIN coincida con el de la foto (pedido de la artista):
+        // base de la fachada en el piso, borde del toldo a 2,34 m y cartel «BALL & CHAIN» a 3,76–4,43 m, como en la foto,
+        // con el centro del cartel donde está el de la foto (lng −80.21976). La IA dibujó la fachada más alta de lo real en
+        // proporción a su ancho, así que el ancho sale de esas alturas: los tres locales ocupan ~17 m (noche) y ~24 m (día)
+        // de la cuadra, no los 28 m hasta la esquina, y el cartel del dibujo queda más angosto que el de la foto.
+        // de noche: base en y ≈ 650, toldo 497, cartel 388–420 (x 403–630) → 62 px/m en vertical; inclinación 13°
+        // (por la vereda del dibujo) → 63,6 px/m, la imagen entera mide 25,1 m sobre la pared
+        { imagen: 'registros/ball-and-chain-fachada-00.webp', tipo: 'diorama generado por IA', isometrica: true, apertura: 17.8,
+          camara: { lat: 25.765116, lng: -80.2196889, alt: 20.31 }, mira: { lat: 25.7658166, lng: -80.2197161, alt: 2.31 } },
+        // de día: base en y ≈ 620, toldo 518, cartel 428–456 (x 400–604) → 43,5 px/m en vertical; inclinación 16,5°
+        // → 45,4 px/m, la imagen entera mide 35,2 m sobre la pared
+        { imagen: 'registros/ball-and-chain-fachada-01.webp', tipo: 'diorama generado por IA', isometrica: true, apertura: 24.8,
+          camara: { lat: 25.7651279, lng: -80.2196678, alt: 25.7 }, mira: { lat: 25.7658173, lng: -80.2196945, alt: 3.01 } }
       ]
     },
     {
