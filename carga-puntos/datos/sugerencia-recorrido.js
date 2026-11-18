@@ -1,5 +1,5 @@
 // Borrador generado por carga-puntos/scripts/traer.mjs a partir de lo que cargó la artista.
-// Versión 270 de la carga (2026-11-17T04:49:19.342Z). Copiar a recorrido.js lo que sirva y ajustar a mano.
+// Versión 271 de la carga (2026-11-17T18:13:26.080Z). Copiar a recorrido.js lo que sirva y ajustar a mano.
 // ⚠ Momentos marcados con (aprox.) son inciertos. Las cámaras de las fotos van a la altura de los ojos
 //   (alt 1,6) y miran al punto marcado del edificio: hay que calibrarlas en calibrar.html.
 
@@ -27,6 +27,16 @@
 // ── proyecciones: edificios con fotos ──
 // desde/hasta: alrededor del primer momento en la deriva en que se oye el edificio (≈ 10 s por vista + viajes).
 // proyecciones: [
+//   {
+//     // Tower Theater · 1508 SW 8 St
+//     // ⚠ sin momento en la deriva: falta que la artista marque cuándo se oye
+//     desde: '?', hasta: '?', lugar: 'Tower Theater',
+//     vistas: [
+//       // https://drive.google.com/file/d/1mpZ7VxnDc7Oi-1mLNwjLV3HlDqCT2BtB/view?usp=drive_link
+//       { imagen: 'registros/tower-theater-00.webp', tipo: 'fotografía', apertura: 50,
+//         camara: null /* ⚠ falta desde dónde */, mira: { lat: 25.7654716, lng: -80.2196503, alt: 2 } },
+//     ]
+//   },
 //   {
 //     // Guantanamera
 //     desde: '0:38.7', hasta: '1:04.7', lugar: 'Guantanamera',

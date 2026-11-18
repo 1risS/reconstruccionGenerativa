@@ -1,6 +1,6 @@
 {
-  "version": 270,
-  "guardado": "2026-11-17T04:49:19.342Z",
+  "version": 271,
+  "guardado": "2026-11-17T18:13:26.080Z",
   "datos": {
     "lugares": [
       {
@@ -10,7 +10,15 @@
         "nota": "",
         "lat": 25.7654716,
         "lng": -80.2196503,
-        "fotos": []
+        "fotos": [
+          {
+            "id": "f-mwl0ggegjqfe",
+            "url": "https://drive.google.com/file/d/1mpZ7VxnDc7Oi-1mLNwjLV3HlDqCT2BtB/view?usp=drive_link",
+            "tipo": "fotografía",
+            "nota": "",
+            "desde": null
+          }
+        ]
       },
       {
         "id": "l-mwjmzmw5rvak",
