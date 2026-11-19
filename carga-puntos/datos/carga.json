@@ -1,6 +1,6 @@
 {
-  "version": 271,
-  "guardado": "2026-11-17T18:13:26.080Z",
+  "version": 272,
+  "guardado": "2026-11-19T14:32:57.350Z",
   "datos": {
     "lugares": [
       {
@@ -54,12 +54,27 @@
         "nota": "Comienzo del recorrido. Tiene fotos, quedan pendientes los links de Drive\n",
         "lat": 25.765832,
         "lng": -80.2182399,
-        "fotos": []
+        "fotos": [
+          {
+            "id": "f-mwnngp7xuk6y",
+            "url": "https://drive.google.com/file/d/1vfXUd2rvIWob6nJ6FoXH4x396ezOxaxP/view?usp=drive_link",
+            "tipo": "fotografía",
+            "nota": "Arbolito 1730: fachada de Havana Collection / Cubavera (1421 SW 8 St)",
+            "desde": null
+          },
+          {
+            "id": "f-mwnngp7xziu3",
+            "url": "https://drive.google.com/file/d/1IizY9qamSmSyATYs3l9SjEaOjkOYxv8i/view?usp=drive_link",
+            "tipo": "fotografía",
+            "nota": "Archivo «Esquina 15 y 8»: es la vidriera de Havana Collection (1421), mirando al oeste hacia la 15 Av. y el Tower",
+            "desde": null
+          }
+        ]
       },
       {
         "id": "l-mwjrrhzhj195",
         "nombre": "Guantanamera",
-        "direccion": "",
+        "direccion": "1465 SW 8 St",
         "nota": "",
         "lat": 25.7658358,
         "lng": -80.2191451,
@@ -70,17 +85,67 @@
             "tipo": "fotografía",
             "nota": "",
             "desde": null
+          },
+          {
+            "id": "f-mwnngp7xdduo",
+            "url": "https://drive.google.com/file/d/1quBKxStsxs81FuQmWZ1t4laOwaQdGozk/view?usp=drive_link",
+            "tipo": "fotografía",
+            "nota": "Guantanamera.jpg (17/11, de noche)",
+            "desde": null
           }
         ]
       },
       {
         "id": "l-mwjslt3wod2o",
         "nombre": "Cubaocho ",
-        "direccion": "",
+        "direccion": "1465 SW 8 St",
         "nota": "",
         "lat": 25.7658383,
         "lng": -80.2193573,
-        "fotos": []
+        "fotos": [
+          {
+            "id": "f-mwnngp7xh5vq",
+            "url": "https://drive.google.com/file/d/1xN7dpLH89iB6F99oE1Tz-suKbhtFessH/view?usp=drive_link",
+            "tipo": "fotografía",
+            "nota": "Cuba 8 1739: entrada",
+            "desde": null
+          },
+          {
+            "id": "f-mwnngp7xswpk",
+            "url": "https://drive.google.com/file/d/1aWYIelhpTJn9_OxTBxM3WWoxyGIQg-ty/view?usp=drive_link",
+            "tipo": "fotografía",
+            "nota": "Cuba 8 1759: fachada desde la vereda de enfrente",
+            "desde": null
+          },
+          {
+            "id": "f-mwnngp7x4fru",
+            "url": "https://drive.google.com/file/d/1IuLjnDyAECgtt02q0JQGKReaL2AFethf/view?usp=drive_link",
+            "tipo": "fotografía",
+            "nota": "Esquina de Cuba 8 1758: la esquina con la 15 Av., de noche",
+            "desde": null
+          },
+          {
+            "id": "f-mwnngp7xzlkl",
+            "url": "https://drive.google.com/file/d/1uSCL_JPCAoDN1BSGjuRSJQguEFSofmQO/view?usp=drive_link",
+            "tipo": "fotografía",
+            "nota": "Esquina de Cuba 8: vitrina de Premium Cigars",
+            "desde": null
+          },
+          {
+            "id": "f-mwnngp7xx58q",
+            "url": "https://drive.google.com/file/d/133GfWeWVb38GeiV45qRbaYPyrSz84S0L/view?usp=drive_link",
+            "tipo": "fotografía",
+            "nota": "esquinaCuba8_00: esquina 15 Av. y Calle 8",
+            "desde": null
+          },
+          {
+            "id": "f-mwnngp7xu1jb",
+            "url": "https://drive.google.com/file/d/17t_Fvr5L1CQXrWKT4KX6-e2xEsgO6cr4/view?usp=drive_link",
+            "tipo": "fotografía",
+            "nota": "esquinaCuba8_01: esquina 15 Av. y Calle 8",
+            "desde": null
+          }
+        ]
       },
       {
         "id": "l-mwjsz05krycf",
@@ -159,7 +224,15 @@
         "nota": "",
         "lat": 25.765526,
         "lng": -80.2209481,
-        "fotos": []
+        "fotos": [
+          {
+            "id": "f-mwnngp7xnok0",
+            "url": "https://drive.google.com/file/d/19eN5gjp2JZWAUPnup2Lr1Fd0_LFfrtwg/view?usp=drive_link",
+            "tipo": "fotografía",
+            "nota": "Cuban Dinner y Ciao Restaurant _1578 (la misma foto está en El Cuban Diner)",
+            "desde": null
+          }
+        ]
       },
       {
         "id": "l-mwk5y9dju50f",
@@ -177,7 +250,15 @@
         "nota": "",
         "lat": 25.7655733,
         "lng": -80.2203876,
-        "fotos": []
+        "fotos": [
+          {
+            "id": "f-mwnngp7xrrfb",
+            "url": "https://drive.google.com/file/d/1V0B8iF-izTY1euFwiWKmVym_2zM30dCw/view?usp=drive_link",
+            "tipo": "fotografía",
+            "nota": "Restaurant Pub 1537: ventanilla",
+            "desde": null
+          }
+        ]
       },
       {
         "id": "l-mwk754if0scx",
@@ -186,7 +267,15 @@
         "nota": "",
         "lat": 25.765543,
         "lng": -80.2198266,
-        "fotos": []
+        "fotos": [
+          {
+            "id": "f-mwnngp7xfqey",
+            "url": "https://drive.google.com/file/d/1gVzQ-h82gYnVG6WiWElo3V8PSshevtY5/view?usp=drive_link",
+            "tipo": "fotografía",
+            "nota": "El exquisito Cafeteria _1505",
+            "desde": null
+          }
+        ]
       },
       {
         "id": "l-mwk7a63nrda8",
@@ -196,6 +285,64 @@
         "lat": 25.7655056,
         "lng": -80.2205887,
         "fotos": []
+      },
+      {
+        "id": "l-mwnngp7xalyu",
+        "nombre": "Havana Classic Cigar",
+        "direccion": "1419 SW 8 St",
+        "nota": "Al este de Havana Collection (1421). Ubicado por la dirección: revisar.",
+        "lat": 25.765835,
+        "lng": -80.218035,
+        "fotos": [
+          {
+            "id": "f-mwnngp7xyaai",
+            "url": "https://drive.google.com/file/d/1RUCeH0UBO-Bnkj6zw5vrEltJBxKgPZM6/view?usp=drive_link",
+            "tipo": "fotografía",
+            "nota": "Havana Clasic Cigar _1444: entrada (se ve el 1419)",
+            "desde": null
+          },
+          {
+            "id": "f-mwnngp7xv1uw",
+            "url": "https://drive.google.com/file/d/14hRpecfAjQL_4B2xBMRb0gnmZSopr3pL/view?usp=drive_link",
+            "tipo": "fotografía",
+            "nota": "Archivo «Casa de Tabaco antes que arbolito_1731»: la fachada amarilla de Havana Classic, de noche",
+            "desde": null
+          }
+        ]
+      },
+      {
+        "id": "l-mwnngp7x81pa",
+        "nombre": "La Colada Gourmet",
+        "direccion": "1518 SW 8 St",
+        "nota": "The House of Cuban Coffee. Entre El Exquisito (1510) y Cuban Cigars (1520). Ubicado por la dirección: revisar.",
+        "lat": 25.76556,
+        "lng": -80.219905,
+        "fotos": [
+          {
+            "id": "f-mwnngp7xep9g",
+            "url": "https://drive.google.com/file/d/1yzoST8qViMmar0m-U0oeM19y7FJMT5Yj/view?usp=drive_link",
+            "tipo": "fotografía",
+            "nota": "La calada Gourmet _1396 (en la foto se lee el buzón 1518 / 1520)",
+            "desde": null
+          }
+        ]
+      },
+      {
+        "id": "l-mwnngp7xotdq",
+        "nombre": "El Cuban Diner",
+        "direccion": "1620 SW 8 St",
+        "nota": "Al oeste de Ciao Havana, en el mismo volumen. Ubicado por la dirección: revisar.",
+        "lat": 25.76553,
+        "lng": -80.2211,
+        "fotos": [
+          {
+            "id": "f-mwnngp7xeud9",
+            "url": "https://drive.google.com/file/d/19eN5gjp2JZWAUPnup2Lr1Fd0_LFfrtwg/view?usp=drive_link",
+            "tipo": "fotografía",
+            "nota": "Cuban Dinner y Ciao Restaurant _1578 (la misma foto está en Ciao Havana)",
+            "desde": null
+          }
+        ]
       }
     ],
     "marcas": [
