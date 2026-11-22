@@ -959,6 +959,7 @@ addEventListener('keydown', (e) => {
 
 // ─────────────────────────── INICIO ───────────────────────────
 $('#audio-elegir').replaceChildren(...C.audios.map((a) => el('option', { value: a.id }, a.nombre)));
+$('#audio-elegir').hidden = C.audios.length < 2;
 const audioGuardado = leerLS(LS.audio);
 elegirAudio(C.audios.some((a) => a.id === audioGuardado) ? audioGuardado : C.audios[0].id);
 await iniciarDatos();

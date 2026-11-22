@@ -1,7 +1,7 @@
 // ─────────────────────────────────────────────────────────────
 // Configuración de la herramienta de carga. Script clásico (define window.CARGA).
 //
-//  audios    → los que la artista puede escuchar y marcar. "id" es el nombre del archivo sin extensión
+//  audios    → los que la artista puede escuchar y marcar (con uno solo no se muestra el selector). "id" es el nombre del archivo sin extensión
 //              (el mismo que usa site/picos/<id>.json). Se reproducen desde el sitio publicado, así que
 //              no hace falta copiarlos acá: el sitio ya responde las peticiones Range que pide Safari.
 //  tiposFoto → opciones del desplegable "tipo" de cada registro (el pie que muestra la deriva 3D).
@@ -11,16 +11,10 @@
 window.CARGA = {
   sitio: 'https://little-havana-sonoro.pages.dev/',
 
+  // Sólo la deriva: los audios de interiores (Tower Hotel, Ball & Chain, etc.) se escuchan en sus
+  // páginas de QR y no se ubican en el mapa.
   audios: [
-    { id: 'deriva_calle_8', nombre: 'Deriva Calle 8' },
-    { id: 'tower_00', nombre: 'Tower Hotel · I' },
-    { id: 'tower_01', nombre: 'Tower Hotel · II' },
-    { id: 'tower_02', nombre: 'Tower Hotel · III' },
-    { id: 'ball_and_chain_00', nombre: 'Ball & Chain · I' },
-    { id: 'ball_and_chain_01', nombre: 'Ball & Chain · II' },
-    { id: 'ball_and_chain_02', nombre: 'Ball & Chain · III' },
-    { id: 'casa_tabaco', nombre: 'Casa de Tabaco' },
-    { id: 'domino_park', nombre: 'Domino Park' }
+    { id: 'deriva_calle_8', nombre: 'Deriva Calle 8' }
   ],
 
   centro: { lat: 25.76575, lng: -80.2195 },

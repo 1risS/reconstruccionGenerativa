@@ -25,11 +25,8 @@ window.SITIOS = {
       '[Texto provisorio: podemos incluir datos de color o alguna reflexión poética sobre el lugar]',
     color: '#9a5a4a',
     loop: true,
-    pistas: [
-      { titulo: 'I', src: '../audio/tower_00.m4a' },
-      { titulo: 'II', src: '../audio/tower_01.m4a' },
-      { titulo: 'III', src: '../audio/tower_02.m4a' }
-    ]
+    // Toma III recortada a 3:54 (el original completo está en ../audios/descartados/)
+    pistas: [{ titulo: 'I', src: '../audio/tower_02.m4a' }]
   },
 
   'ball-and-chain': {
