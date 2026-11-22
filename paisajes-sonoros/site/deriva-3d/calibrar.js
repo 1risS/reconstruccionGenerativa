@@ -190,7 +190,7 @@ function recortar(pol, cerca) {
 }
 // contornos de la ciudad vistos desde la cámara actual (pintor: de lejos a cerca, cada cara tapa lo de atrás)
 function contornos() {
-  const v = T.v, E = C.ejes(v), th = Math.tan((v.apertura * RAD) / 2), tv = th / asp(), c = v.centro || [0, 0];
+  const v = T.v, E = C.ejes(v), th = Math.tan((v.apertura * RAD) / 2), tv = C.tanV(v, asp()), c = v.centro || [0, 0];
   const [px, py, pz] = v.pos, Wd = W * esc, Hd = H * esc;
   const lista = [];
   for (const f of CARAS) {
@@ -644,6 +644,7 @@ function exportarVista(t) {
     mira: { lat: red(mi.lat, 7), lng: red(mi.lng, 7), alt: red(Math.max(0, m[2]), 2) },
     rumbo: red(v.rumbo, 3), cabeceo: red(v.cabeceo, 3), giro: red(v.giro, 3),
     apertura: red(v.apertura, 3), centro: [red(v.centro[0], 4), red(v.centro[1], 4)],
+    ...(v.estirar && Math.abs(v.estirar - 1) > 1e-4 ? { estirar: red(v.estirar, 4) } : {}),   // de encajar.html
     pares: t.pares.filter((q) => q.uv || q.ll).map((q) => ({
       ...(q.uv ? { u: red(q.uv[0], 5), v: red(q.uv[1], 5) } : {}),
       ...(q.ll ? { lat: red(q.ll.lat, 7), lng: red(q.ll.lng, 7) } : {}),

@@ -12,7 +12,7 @@ const ROOT = P("../site/");
 const PORT = Number(process.env.PORT) || 8080;
 const TIPOS = { ".html": "text/html; charset=utf-8", ".css": "text/css", ".js": "text/javascript",
   ".m4a": "audio/mp4", ".mp3": "audio/mpeg", ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg",
-  ".jpeg": "image/jpeg", ".webp": "image/webp", ".json": "application/json" };
+  ".jpeg": "image/jpeg", ".webp": "image/webp", ".mp4": "video/mp4", ".json": "application/json" };
 
 // "Guardar" en deriva-3d/calibrar.html escribe deriva-3d/calibracion.js (sólo en este servidor local)
 function guardarCalibracion(req, res) {

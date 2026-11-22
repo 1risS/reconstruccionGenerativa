@@ -2,7 +2,7 @@
 // Los datos del recorrido y de los registros están en recorrido.js; este archivo no necesita editarse.
 // Las cámaras calibradas (calibrar.html) están en calibracion.js y tienen prioridad sobre recorrido.js.
 
-import { normalizar, factorIso } from './camara.js';
+import { normalizar, factorIso, ejes } from './camara.js';
 import { iniciarEstilos } from './estilos.js';
 import { FOTO as PANO, telonDe, encuadre as encuadrePano, homografia } from '../portada/panoramica.js';
 
@@ -27,7 +27,8 @@ const CAL = (() => {
 const COLOR = (window.SITIOS && window.SITIOS['deriva-calle-8'] && window.SITIOS['deriva-calle-8'].color) || '#685236';
 document.documentElement.style.setProperty('--accent', COLOR);
 // artista, muestra y espacios que la auspician, debajo de la descripción
-if (M) $('#muestra').innerHTML = `<span class="m-artista">${M.artista}</span><span class="m-titulo">${M.titulo}: ${M.subtitulo}</span><span class="m-sede">${M.sede}</span>`;
+// en la portada manda la muestra (título grande y sedes) y la deriva va debajo, más chica; sin el nombre de la artista
+if (M) $('#muestra').innerHTML = `<h1 class="m-titulo">${M.titulo}:<span>${M.subtitulo}</span></h1><p class="m-sede">${M.sede}</p>`;
 
 // cámara de calle
 const OJO = 1.65;           // altura de los ojos, en metros
@@ -56,8 +57,13 @@ const VUELTA_SEG = 9;       // segundos del vuelo de vuelta al dron al terminar 
 const VUELTA_ALTO = 400;    // altura (m) a la que cruza la ciudad en ese vuelo
 const PARTIDA_SEG = 12;     // segundos del travelling del dron a los ojos del caminante (al comenzar)
 // Estilo de la ciudad: FANTASMA (sólo la luz de las imágenes) en la panorámica y MAQUETA durante el recorrido.
-const MAQUETA_PARTIDA = [0.42, 0.66];   // tramo de la partida en que pasa a Maqueta: cuando la cámara ya toma Little Havana
-const FANTASMA_VUELTA = [0.12, 0.5];  // tramo de la vuelta al dron en que vuelve a Fantasma: al dejar Little Havana
+const MAQUETA_PARTIDA = [0.66, 0.8];    // tramo de la partida en que pasa a Maqueta: recién cuando ya baja y se ven
+                                        // de cerca los techos de Little Havana (antes, aunque estén en cuadro, es Fantasma)
+const FANTASMA_VUELTA = [0, 0.14];   // tramo de la vuelta al dron en que vuelve a Fantasma: apenas empieza a subir
+// En los travellings a los puntos de vista también es Fantasma (sólo las fotos): se funde en la segunda mitad de la
+// subida (la cámara llegando) y vuelve a Maqueta en la primera mitad de la bajada (la cámara volviendo al caminante).
+const FANTASMA_LLEGA = [0.5, 1];     // tramo de la subida
+const MAQUETA_SALE = [0, 0.5];       // tramo de la bajada
 const FUNDIDO_ESTILO = 2.5;           // segundos del fundido en los demás casos
 const PASO = 0.75;          // largo del paso, en metros (para el balanceo)
 
@@ -158,7 +164,8 @@ const LUGARES = (R.proyecciones || []).map((p, grupo) => {
   const vistas = p.vistas.map((v) => {
     const c = CAL.vistas[v.imagen];
     const vista = { ...normalizar(c ? { ...v, ...c, imagen: v.imagen } : v, aLocal), idx: VISTAS.length, aspecto: 1.45,
-      tipo: v.tipo || p.tipo || '' };   // el pie dice qué es la imagen que se está viendo
+      tipo: v.tipo || p.tipo || '',     // el pie dice qué es la imagen que se está viendo
+      llega: v.llega };                 // 'fundido': sin vuelo desde la vista anterior (ver TRASLADO_FUNDIDO)
     // vistas isométricas (camara.js): la cámara está a ~1 km con un teleobjetivo. El vuelo se calcula con su
     // equivalente CERCANA (misma dirección, apertura de 40°, `iso` veces más cerca) y recién al final la cámara se
     // aleja por su eje cerrando el campo de visión en la misma proporción: un dolly zoom (ver camaraCalle).
@@ -188,6 +195,12 @@ const LUGARES = (R.proyecciones || []).map((p, grupo) => {
 const ANTICIPA = 20, SUELTA = 5;
 const TRASLADO = 6, POST = 3, REPOSO = 0.7;
 const CONTEMPLA = 6; // segundos quieto en cada punto de vista
+// vistas con `llega: 'fundido'` (recorrido.js): no se vuela hasta ellas. La imagen anterior se apaga en su punto de
+// vista, la cámara corta a oscuras y la nueva se enciende ya recompuesta. Para los tramos en que el vuelo sólo mostraría
+// mapa vacío (p. ej. de un diorama, a 1 km con teleobjetivo, a la foto cenital del Tower, pasando por el nadir).
+const TRASLADO_FUNDIDO = 2.4;
+const esFundido = (v) => v.llega === 'fundido';
+const traslado = (v) => (esFundido(v) ? TRASLADO_FUNDIDO : TRASLADO);
 const PASO_T = 0.5;
 function pasadas(L) {
   const fin = K[K.length - 1].t, res = [];
@@ -212,7 +225,7 @@ PROYS.forEach((p, i) => {
   if (prev) p.desde = Math.max(p.desde, prev.hasta + SUELTA + 2);
   const n = p.vistas.length, ult = p.vistas[n - 1];
   p.subida = viaje(p.desde, p.vistas[0]);
-  const resto = n * CONTEMPLA + (n - 1) * TRASLADO;
+  const resto = n * CONTEMPLA + p.vistas.slice(1).reduce((s, v) => s + traslado(v), 0);
   p.bajada = viaje(p.desde + p.subida + resto + 6, ult);
   p.hasta = p.desde + p.subida + resto + p.bajada;
   p.inicio = p.desde;
@@ -231,7 +244,8 @@ function pesosProy(p, t) {
   const n = p.vistas.length, a = p.desde + p.subida, D = Math.max(0, p.hasta - p.bajada - a);
   const pesos = [1];
   for (let k = 1; k < n; k++) {
-    const f = suave(clamp((t - (a + (k * D) / n) + TRASLADO / 2) / TRASLADO, 0, 1));
+    const tr = traslado(p.vistas[k]);
+    const f = suave(clamp((t - (a + (k * D) / n) + tr / 2) / tr, 0, 1));
     for (let j = 0; j < k; j++) pesos[j] *= 1 - f;
     pesos[k] = f;
   }
@@ -283,7 +297,11 @@ function intensidades(t) {
       // entre dos vistas: las dos enteras, y la ola decide qué se ve dónde
       for (let k = 1; k < pesos.length; k++) {
         const f = pesos[k] / (pesos[k] + pesos[k - 1] || 1);
-        if (f > 0 && f < 1 && pesos[k] + pesos[k - 1] > 0.99) {
+        if (f > 0 && f < 1 && pesos[k] + pesos[k - 1] > 0.99 && esFundido(p.vistas[k])) {
+          // fundido: primero se apaga la anterior y después se enciende la nueva (sin ola)
+          arr[p.vistas[k - 1].idx] = 1 - suave(clamp(f / 0.5, 0, 1));
+          arr[p.vistas[k].idx] = suave(clamp((f - 0.5) / 0.5, 0, 1));
+        } else if (f > 0 && f < 1 && pesos[k] + pesos[k - 1] > 0.99) {
           arr[p.vistas[k - 1].idx] = resto(f);
           arr[p.vistas[k].idx] = 1;
           ola = olaEntre(p, p.vistas[k - 1], p.vistas[k], f);
@@ -335,34 +353,38 @@ function zonaLibre() {
   abajo = Math.min(abajo, H - arriba - 0.35 * H);
   return { arriba, alto: H - arriba - abajo };
 }
-// Encuadre de una vista en esta pantalla: la foto entra entera y queda CENTRADA en la zona libre.
-// La posición y la orientación de la cámara son exactas (eso es lo que recompone la imagen). Para centrar sin
-// moverlas se corre el centro óptico de la pantalla (el `padding` de MapLibre es un frustum descentrado: no
-// cambia los rayos, sólo dónde caen en la pantalla). yp = altura del centro óptico, en fracción del alto.
-// Si MapLibre no puede inclinar la cámara tanto como la foto (pitch entre 0 y PITCH_CALLE), la diferencia d también
-// se compensa corriendo el centro óptico.
+// Encuadre de una vista en esta pantalla: la foto entra entera y queda CENTRADA en la zona libre, como un
+// rectángulo (sin trapecio). La pantalla que se busca es la de una cámara en la posición del proyector que mira
+// exactamente por su eje (rumbo, cabeceo y giro de la foto): desde ahí el plano de la imagen es paralelo a la
+// pantalla. Para centrar sin mover ni girar la cámara se corre el centro óptico de la pantalla (xp, yp, en
+// fracción del ancho y del alto), compensando también el `centro` de la foto (el centro óptico de la imagen no
+// siempre es el centro de la imagen). MapLibre no puede mirar por ese eje cuando la foto mira al horizonte o más
+// arriba (pitch máximo PITCH_CALLE): la diferencia la corrige rectificar(), con una homografía sobre el canvas.
 function encuadre(v) {
   const W = window.innerWidth, H = window.innerHeight, z = zonaLibre();
-  const tanH = Math.tan((v.apertura * RAD) / 2), aV = Math.atan(tanH / v.aspecto);
-  const P = 90 - (v.cabeceo ?? 45), d = (P - clamp(P, 0, PITCH_CALLE)) * RAD; // d > 0: la foto mira más arriba
-  const sup = Math.tan(Math.min(d + aV, 1.4)), inf = Math.tan(Math.max(d - aV, -1.4)); // bordes, arriba positivo
-  const f = Math.min(W / 2 / (1.06 * tanH), z.alto / (1.04 * (sup - inf)));
-  const yp = z.arriba + z.alto / 2 + (f * (sup + inf)) / 2;
-  return { fov: (2 * Math.atan(H / 2 / f)) / RAD, yp: clamp(yp / H, 0.06, 0.94) };
+  const th = Math.tan((v.apertura * RAD) / 2), tv = (th / v.aspecto) * (v.estirar || 1), c = v.centro || [0, 0];
+  const f = Math.min(W / (2 * 1.06 * th), z.alto / (2 * 1.04 * tv));
+  // en la imagen proyectada, el centro de la foto está en (−c0·th, −c1·tv) respecto del eje (tangentes)
+  return { fov: (2 * Math.atan(H / 2 / f)) / RAD, xp: 0.5 + (f * c[0] * th) / W, yp: (z.arriba + z.alto / 2 - f * c[1] * tv) / H };
 }
 // encuadre de la equivalente cercana de una vista isométrica: el mismo cuadro con `iso` veces más campo de visión
 function encuadreEq(v) {
   const e = encuadre(v);
   if (v.iso <= 1) return e;
-  return { fov: (2 * Math.atan(Math.tan((e.fov / 2) * RAD) * v.iso)) / RAD, yp: e.yp };
+  return { ...e, fov: (2 * Math.atan(Math.tan((e.fov / 2) * RAD) * v.iso)) / RAD };
 }
 // vuelo activo en t: w = 0 (ojos del caminante) … 1 (punto de vista de la imagen)
 function vuelo(t) {
   for (const p of PROYS) {
     if (t < p.inicio || t > p.hasta) continue;
     const pesos = pesosProy(p, t);
+    // hacia una vista con fundido la cámara no viaja: salta de un punto de vista al otro a mitad del fundido (a oscuras)
+    for (let k = 1; k < pesos.length; k++) {
+      const s = pesos[k] + pesos[k - 1];
+      if (esFundido(p.vistas[k]) && pesos[k] > 0 && pesos[k - 1] > 0) { const f = pesos[k] / s; pesos[k] = f < 0.5 ? 0 : s; pesos[k - 1] = s - pesos[k]; }
+    }
     const v0 = p.vistas[0], e0 = encuadreEq(v0);
-    let m = [...v0.mira], { th, r, z } = v0.polar, fov = e0.fov, yp = e0.yp, giro = v0.giro, lnIso = v0.lnIso;
+    let m = [...v0.mira], { th, r, z } = v0.polar, fov = e0.fov, xp = e0.xp, yp = e0.yp, giro = v0.giro, lnIso = v0.lnIso;
     let dR = v0.dR, dP = v0.dP;
     for (let k = 1; k < pesos.length; k++) {
       const f = pesos[k] / (pesos[k] + pesos[k - 1] || 1);
@@ -370,7 +392,7 @@ function vuelo(t) {
       const v = p.vistas[k], ev = encuadreEq(v);
       m = m.map((c, i) => c + (v.mira[i] - c) * f);
       th += difAng(th, v.polar.th) * f; r += (v.polar.r - r) * f; z += (v.polar.z - z) * f;
-      fov += (ev.fov - fov) * f; yp += (ev.yp - yp) * f; giro += (v.giro - giro) * f; lnIso += (v.lnIso - lnIso) * f;
+      fov += (ev.fov - fov) * f; xp += (ev.xp - xp) * f; yp += (ev.yp - yp) * f; giro += (v.giro - giro) * f; lnIso += (v.lnIso - lnIso) * f;
       dR += (v.dR - dR) * f; dP += (v.dP - dP) * f;
       // entre una vista y otra la cámara se aleja y sube un poco: la imagen se deshace antes de rearmarse
       const b = Math.sin(Math.PI * f);
@@ -379,7 +401,7 @@ function vuelo(t) {
     const w = suave(clamp((t - p.inicio) / p.subida, 0, 1)) * suave(clamp((p.hasta - t) / p.bajada, 0, 1));
     // cuánto pesan los dioramas en este momento (para ocultar lo que los tapa: ciudad.setCorte)
     const kIso = pesos.reduce((a, q, i) => a + (p.vistas[i].isometrica ? q : 0), 0);
-    return { p, w, k: pesos.indexOf(Math.max(...pesos)), T: m, polarV: { th, r, z }, fov, yp, dR, dP, giro, lnIso, kIso };
+    return { p, w, k: pesos.indexOf(Math.max(...pesos)), T: m, polarV: { th, r, z }, fov, xp, yp, dR, dP, giro, lnIso, kIso };
   }
   return null;
 }
@@ -507,6 +529,8 @@ map.on('load', async () => {
       ciudad = await crearCiudad(THREE, {
         url: 'edificios.json', local: aLocal, sol: { azimut: 235, elevacion: 14 },
         vistas: VISTAS, alturas: CAL.alturas, repintar: () => map.triggerRepaint(),
+        // frames del video de la caminata en las fachadas (paredes-video.js); ?sinvideo los apaga
+        paredes: PARAMS.has('sinvideo') || !window.PAREDES_VIDEO ? null : { ...window.PAREDES_VIDEO, collage: PARAMS.has('collage') },
       });
       map.setLayoutProperty('edificios-3d', 'visibility', 'none');
       window.__ciudad = ciudad; // para depurar desde la consola
@@ -742,7 +766,10 @@ function esquivarEdificios(c, ojos, vu) {
   const dMin = Math.min(...extremos.map((p) => Math.hypot(c[0] - p[0], c[1] - p[1])));
   const adentro = ciudad.alturaCerca(c[0], c[1], 0);
   const cerca = ciudad.alturaCerca(c[0], c[1], 4) * suave(clamp((dMin - 1) / 4, 0, 1));
-  const techo = Math.max(adentro, cerca);
+  // mientras va hacia un diorama (o vuelve de él) los volúmenes del medio están ocultos (CORTE): no hay nada que
+  // esquivar, y subir de golpe sobre un techo invisible era un salto desconcertante a la salida de la foto del Tower
+  const corte = vu.w * (vu.kIso || 0) > 0.001;
+  const techo = corte ? 0 : Math.max(adentro, cerca);
   const falta = techo > 0 ? Math.max(0, techo + 1.5 - c[2]) : 0;
   elevVuelo = Math.max(falta, elevVuelo * Math.exp(-dt * 2.5));
   return elevVuelo;
@@ -754,6 +781,7 @@ function camaraCalle(e, rumboCam, pitchCam, vu) {
   const roll = andando ? 0.35 * Math.sin(fase) : 0;
   if (!vu || vu.w <= 0) {
     elevVuelo = 0;
+    rectificar(null);
     return { ...map.calculateCameraOptionsFromCameraLngLatAltRotation([e.lng, e.lat], alt, rumboCam, pitchCam, roll), padding: SIN_RELLENO };
   }
   // viaje directo de los ojos del caminante al punto de vista de la imagen (sin rodeos: un paso al costado,
@@ -776,18 +804,117 @@ function camaraCalle(e, rumboCam, pitchCam, vu) {
   if (g > 1.0001) c = c.map((v, i) => T[i] + (v - T[i]) * g);
   c[2] += esquivarEdificios(c, [x, y], vu);
   const L = mirarA(c, T);
+  // la pantalla que se quiere ver (ver encuadre): al llegar, la cámara mira por el eje de la foto, con el campo de
+  // visión y el centro óptico que dejan la foto entera y centrada. En el viaje, todo pasa de a poco de la vereda a eso.
+  const W = window.innerWidth, H = window.innerHeight;
   const fc = fovCalle(), fovEq = fc + (vu.fov - fc) * w;
-  const fov = (2 * Math.atan(Math.tan((fovEq / 2) * RAD) / g)) / RAD;
-  if (Math.abs(map.getVerticalFieldOfView() - fov) > 0.001) map.setVerticalFieldOfView(fov);
-  // al llegar, la cámara mira por el eje de la foto (MapLibre: pitch entre 0 y PITCH_CALLE; un pitch negativo lo
-  // recorta DESPUÉS de ubicar la cámara y la corre del punto de vista). El centrado lo hace el padding.
-  const pitchObj = clamp(L.alto + vu.dP, 0, PITCH_CALLE);
-  const o = (vu.yp - 0.5) * window.innerHeight * w;
-  return {
-    ...map.calculateCameraOptionsFromCameraLngLatAltRotation(aLngLat(c[0], c[1]), c[2],
-      rumboCam + difAng(rumboCam, L.rumbo + vu.dR) * fv, Math.max(0, pitchCam + (pitchObj - pitchCam) * fv), roll * (1 - w) + vu.giro * w),
-    padding: { top: Math.max(0, 2 * o), bottom: Math.max(0, -2 * o), left: 0, right: 0 },
+  const quiero = {
+    rumbo: rumboCam + difAng(rumboCam, L.rumbo + vu.dR) * fv,
+    pitch: pitchCam + (L.alto + vu.dP - pitchCam) * fv,      // puede pasar de PITCH_CALLE (fotos al horizonte)
+    giro: roll * (1 - w) + vu.giro * w,
+    f: (g * H) / 2 / Math.tan((fovEq / 2) * RAD),
+    cx: W * (0.5 + (vu.xp - 0.5) * w), cy: H * (0.5 + (vu.yp - 0.5) * w),
   };
+  // En el viaje, cuando la cámara pasa cerca de la mira, L.alto da saltos grandes: lo que se corrige por fuera del
+  // rango de MapLibre se limita (al llegar, la diferencia es la de la foto: unos pocos grados).
+  quiero.pitch = clamp(quiero.pitch, -EXCESO_MAX, PITCH_CALLE + EXCESO_MAX);
+  // lo que dibuja MapLibre: una cámara en el mismo punto, con el pitch dentro de su rango (un pitch negativo lo
+  // recorta DESPUÉS de ubicar la cámara y la corre del punto de vista), orientada y con el campo de visión y el
+  // centro óptico (padding) justos para que toda la pantalla buscada quede adentro con el menor campo posible.
+  // rectificar() lleva una a la otra. Si MapLibre dibuja de más, la imagen se amplía y pierde definición; si de
+  // menos, queda a la vista el fondo de la página (parpadeos blancos).
+  let dibujo = mejorDibujo(quiero, W, H);
+  // si ni así entra (una foto muy ancha en un celular vertical pide más de lo que MapLibre puede abrir), se acerca
+  // la pantalla buscada: la foto se recorta un poco a los costados, pero nunca queda a la vista el fondo
+  const fMin = H / 2 / Math.tan((FOV_DIBUJO_MAX / 2) * RAD);
+  for (let i = 0; i < 3 && dibujo.f < fMin; i++) {
+    const k = (fMin / dibujo.f) * 1.01;
+    quiero.f *= k;
+    quiero.cx = W / 2 + (quiero.cx - W / 2) * k; quiero.cy = H / 2 + (quiero.cy - H / 2) * k;
+    dibujo = mejorDibujo(quiero, W, H);
+  }
+  const fov = Math.min(FOV_DIBUJO_MAX, (2 * Math.atan(H / 2 / dibujo.f)) / RAD);
+  dibujo.f = H / 2 / Math.tan((fov / 2) * RAD);
+  if (Math.abs(map.getVerticalFieldOfView() - fov) > 0.001) map.setVerticalFieldOfView(fov);
+  rectificar(homografiaVista(dibujo, quiero));
+  const ox = dibujo.cx - W / 2, oy = dibujo.cy - H / 2;
+  return {
+    ...map.calculateCameraOptionsFromCameraLngLatAltRotation(aLngLat(c[0], c[1]), c[2], dibujo.rumbo, dibujo.pitch, dibujo.giro),
+    padding: { top: Math.max(0, 2 * oy), bottom: Math.max(0, -2 * oy), left: Math.max(0, 2 * ox), right: Math.max(0, -2 * ox) },
+  };
+}
+const EXCESO_MAX = 30;        // grados que la rectificación puede inclinar por fuera del rango de MapLibre
+const FOV_DIBUJO_MAX = 148;   // campo de visión vertical máximo con que se le pide dibujar a MapLibre (su tope es 150°). En un
+                              // celular vertical, una foto de 72° de ancho entra a lo ancho con ~115° de alto
+// ── rectificación: de la cámara que puede dibujar MapLibre a la que se quiere ver ──
+// Una cámara es { rumbo, pitch, giro, f (focal en píxeles), cx, cy (centro óptico en píxeles) }; las dos están en
+// el mismo punto, así que de una pantalla a la otra hay una homografía exacta (sólo cambia hacia dónde miran).
+const ejesCam = (k) => ejes({ rumbo: k.rumbo, cabeceo: 90 - k.pitch, giro: k.giro });
+const prod = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+// rayo (en el mundo) del píxel (x, y) de la cámara k
+const rayoPx = (k, E, x, y) => [0, 1, 2].map((i) => E.f[i] * k.f + E.der[i] * (x - k.cx) - E.arr[i] * (y - k.cy));
+// rumbo y pitch del rayo que pasa por el centro de la pantalla de `quiero`
+function apuntarAlCentro(quiero, W, H) {
+  const r = rayoPx(quiero, ejesCam(quiero), W / 2, H / 2);
+  const elev = Math.atan2(r[2], Math.hypot(r[0], r[1])) / RAD;
+  return { rumbo: Math.atan2(r[0], r[1]) / RAD, pitch: 90 + elev };
+}
+// la cámara de dibujo que cubre la pantalla de `quiero` con la mayor focal (el menor campo de visión): búsqueda
+// ternaria del pitch (dentro del rango de MapLibre) y después del rumbo, alrededor del rayo del centro
+function mejorDibujo(quiero, W, H) {
+  const c = apuntarAlCentro(quiero, W, H), giro = quiero.giro;
+  const prueba = (rumbo, pitch) => ({ rumbo, pitch, giro, ...marcoQueCubre(quiero, { rumbo, pitch, giro }, W, H) });
+  const ternaria = (a, b, f) => {
+    for (let i = 0; i < 18; i++) {
+      const m1 = a + (b - a) / 3, m2 = b - (b - a) / 3;
+      if (f(m1).f < f(m2).f) a = m1; else b = m2;
+    }
+    return f((a + b) / 2);
+  };
+  const p0 = clamp(c.pitch, 0, PITCH_CALLE);
+  const d = ternaria(Math.max(0, p0 - 20), Math.min(PITCH_CALLE, p0 + 20), (p) => prueba(c.rumbo, p));
+  return ternaria(c.rumbo - 15, c.rumbo + 15, (r) => prueba(r, d.pitch));
+}
+// focal y centro óptico de `dibujo` con los que las cuatro esquinas de la pantalla de `quiero` caen adentro; lo que
+// sobra se reparte a los dos lados (el centro óptico de MapLibre tiene que quedar dentro de la pantalla)
+function marcoQueCubre(quiero, dibujo, W, H) {
+  const Eq = ejesCam(quiero), Ed = ejesCam(dibujo);
+  let izq = 0.02, der = 0.02, arr = 0.02, aba = 0.02;     // tangentes desde el eje de `dibujo`
+  for (const [x, y] of [[0, 0], [W, 0], [W, H], [0, H]]) {
+    const r = rayoPx(quiero, Eq, x, y), z = prod(r, Ed.f);
+    if (z <= 1e-3) return { f: 1e-3, cx: W / 2, cy: H / 2 };
+    const u = prod(r, Ed.der) / z, v = prod(r, Ed.arr) / z;
+    der = Math.max(der, u); izq = Math.max(izq, -u); arr = Math.max(arr, v); aba = Math.max(aba, -v);
+  }
+  const f = Math.min(W / (izq + der), H / (arr + aba)) * 0.99;
+  return { f, cx: f * izq + (W - f * (izq + der)) / 2, cy: f * arr + (H - f * (arr + aba)) / 2 };
+}
+// matrix3d (transform-origin 0 0) que lleva el canvas dibujado con `dibujo` a la pantalla de `quiero`.
+// null si son la misma.
+function homografiaVista(dibujo, quiero) {
+  const Ed = ejesCam(dibujo), Eq = ejesCam(quiero), d = dibujo;
+  // columnas: rayo del píxel (x, y, 1) del dibujo; filas: coordenadas en la cámara buscada
+  const A = [Ed.der, Ed.arr.map((a) => -a), rayoPx(d, Ed, 0, 0)];
+  const q = (fila) => A.map((col) => prod(col, fila));           // [coef x, coef y, coef 1]
+  const qx = q(Eq.der), qy = q(Eq.arr), qz = q(Eq.f);
+  const fila = (i) => [quiero.f * qx[i] + quiero.cx * qz[i], -quiero.f * qy[i] + quiero.cy * qz[i], qz[i]];
+  const [cX, cY, c1] = [fila(0), fila(1), fila(2)];   // columnas de la homografía (x, y, 1)
+  const n = c1[2];
+  const m = [cX[0], cX[1], 0, cX[2], cY[0], cY[1], 0, cY[2], 0, 0, 1, 0, c1[0], c1[1], 0, c1[2]].map((x, i) => (i === 10 ? 1 : x / n));
+  const ident = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
+  if (m.every((x, i) => Math.abs(x - ident[i]) < 1e-6)) return null;
+  return `matrix3d(${m.map((x) => +x.toFixed(9)).join(',')})`;
+}
+let rectActual = '';
+// (No se cambia la resolución del canvas durante el vuelo: cada map.setPixelRatio vuelve a crear el buffer y se
+// veía un cuadro en blanco. Con la cámara de dibujo apuntada al centro, la ampliación es mínima.)
+function rectificar(css) {
+  css = css || '';
+  if (css === rectActual) return;
+  rectActual = css;
+  const cv = map.getCanvas();
+  cv.style.transformOrigin = '0 0';
+  cv.style.transform = css;
 }
 
 let etiquetasVisibles = true;
@@ -1074,9 +1201,17 @@ function cuadro(ahora) {
     if (ciudad) {
       const [cx, cy] = aLocal([e.lng, e.lat]);
       ciudad.setCaminante(cx, cy, modo === 'calle' && iniciado ? 1 - (vu ? vu.w : 0) * 0.6 : 0.5);
-      // mientras se mira un diorama, los edificios entre la cámara y el lugar (la vereda de enfrente) se desvanecen
-      const kCorte = vu && modo === 'calle' ? vu.w * vu.kIso : 0;
-      ciudad.setCorte(kCorte > 0.001 ? vu.T : null, kCorte);
+      if (peli) {   // modo video: aparece y desaparece en ~0,7 s
+        const obj = modoVideo && modo === 'calle' && iniciado && !terminado ? 1 : 0;
+        opVivo += clamp(obj - opVivo, -dt * 1.5, dt * 1.5);
+        sincronizarPelicula(t);
+        ciudad.setVivo(cx, cy, opVivo);
+      }
+      // mientras se mira un diorama, los edificios entre la cámara y el lugar (la vereda de enfrente) desaparecen de
+      // golpe, sin fundido, apenas la cámara empieza a ir hacia el diorama (en el viaje la cámara sube y se aleja, y
+      // pasaba por detrás de esos volúmenes: llenaban la pantalla), y vuelven recién cuando llega a la vista siguiente
+      const kCorte = vu && modo === 'calle' && vu.w * vu.kIso > 0.001 ? 1 : 0;
+      ciudad.setCorte(kCorte ? vu.T : null, kCorte);
       if (modo === 'general' || !iniciado) { const [gx, gy] = aLocal(bounds.getCenter().toArray()); ciudad.uniforms.uFoco.value.set(gx, gy); ciudad.setRadio(420, 720); }
       else ciudad.setRadio(260, 540);
       if (at && at.length && modo === 'calle') { // la ciudad se revela también alrededor del lugar mirado
@@ -1142,6 +1277,7 @@ function cuadro(ahora) {
       camRumbo += difAng(camRumbo, e.rumbo + orbita) * k;
       map.jumpTo({ center: [e.lng, e.lat], bearing: camRumbo, padding: rellenoAereo() });
     }
+    if (modo !== 'calle' || enTransicion) rectificar(null);   // la rectificación es sólo para los vuelos a las fotos
 
     if (!arrastrando) {
       const d = duracion();
@@ -1150,7 +1286,7 @@ function cuadro(ahora) {
     }
     if (terminado && t < duracion() - 1) ocultarFin();
     if (epilogo && t >= epilogo.hasta) terminar();
-    estiloCuadro(ahora, dt);
+    estiloCuadro(ahora, dt, vu, t);
   }
   // la interfaz se ve sólo durante el recorrido: no en la panorámica (ni en la partida ni en la vuelta) ni al final
   document.body.classList.toggle('ui-visible', iniciado && !terminado && !(pano && !pano.apagando) && !uiOcultaUsuario);
@@ -1158,23 +1294,66 @@ function cuadro(ahora) {
 }
 // Fantasma en la panorámica, Maqueta en el recorrido. En la partida y en la vuelta el fundido va atado al vuelo
 // de la cámara; en los demás casos (sin panorámica, o si se comenzó antes de que estuviera lista) dura FUNDIDO_ESTILO.
-function estiloCuadro(ahora, dt) {
+function estiloCuadro(ahora, dt, vu, t) {
   if (!estilos) return;
   const rampa = (f, [a, b]) => suave(clamp((f - a) / (b - a), 0, 1));
   const v = pano && !pano.apagando && pano.vuelta;
   if (pano && pano.partida) mezclaEstilo = rampa(pano.partida.f, MAQUETA_PARTIDA);
-  else if (v) mezclaEstilo = 1 - rampa(clamp((ahora - v.ini) / 1000 / VUELTA_SEG, 0, 1), FANTASMA_VUELTA);
-  else {
+  else if (v) {
+    // parte de donde estaba (si el recorrido terminó mirando una foto, ya es Fantasma)
+    if (v.m0 == null) v.m0 = mezclaEstilo;
+    mezclaEstilo = v.m0 * (1 - rampa(clamp((ahora - v.ini) / 1000 / VUELTA_SEG, 0, 1), FANTASMA_VUELTA));
+  } else if (vu && !pano) {
+    // en un travelling: atado al vuelo de la cámara (va con el audio; si se salta, salta con la cámara)
+    const p = vu.p, sube = (t - p.inicio) / p.subida, baja = (t - (p.hasta - p.bajada)) / p.bajada;
+    mezclaEstilo = 1 - rampa(sube, FANTASMA_LLEGA) * (1 - rampa(baja, MAQUETA_SALE));
+  } else {
     const obj = pano && !pano.apagando ? 0 : 1;
     mezclaEstilo += clamp(obj - mezclaEstilo, -dt / FUNDIDO_ESTILO, dt / FUNDIDO_ESTILO);
   }
   estilos.mezclar(mezclaEstilo);
 }
-// tecla H: oculta o vuelve a mostrar la interfaz durante el recorrido
-let uiOcultaUsuario = false;
+// MODO VIDEO (tecla V, sin botón): la película de la caminata (paredes-video.js → pelicula), armada a 12 fps con
+// el tiempo del audio, se ve en un panel sobre la pared de la vereda del caminante. Como cada cuadro sale de dónde está
+// el caminante, cuando se detiene la imagen se congela y cuando avanza corre en stop motion. Sigue al audio: se
+// reproduce con él y se corrige si se desfasa más de un tercio de segundo (o al arrastrar la línea).
+const PELICULA = !PARAMS.has('sinvideo') && window.PAREDES_VIDEO && window.PAREDES_VIDEO.pelicula;
+let modoVideo = false, opVivo = 0, peli = null;
+function alternarVideo() {
+  if (!PELICULA || !ciudad) return;
+  if (!peli) {
+    peli = document.createElement('video');
+    peli.muted = true; peli.playsInline = true; peli.preload = 'auto';
+    peli.setAttribute('playsinline', ''); peli.setAttribute('muted', '');
+    peli.src = PELICULA;
+    ciudad.setPelicula(peli);
+    window.__peli = peli; // para depurar desde la consola
+  }
+  modoVideo = !modoVideo;
+}
+function sincronizarPelicula(t) {
+  if (opVivo < 0.01) { if (!peli.paused) peli.pause(); return; }
+  const tt = peli.duration ? Math.min(t, peli.duration - 0.05) : t;
+  const desfase = Math.abs(peli.currentTime - tt);
+  if (audio.paused) {
+    if (!peli.paused) peli.pause();
+    if (!peli.seeking && desfase > 0.09) peli.currentTime = tt;   // al arrastrar la línea se ve el cuadro de ese lugar
+  } else {
+    if (peli.paused) peli.play().catch(() => {});
+    if (!peli.seeking && desfase > 0.35) peli.currentTime = tt;
+    peli.playbackRate = audio.playbackRate;
+  }
+}
+// tecla H: oculta o vuelve a mostrar la interfaz durante el recorrido; tecla T, la textura del video en las paredes
+let uiOcultaUsuario = false, texturaVideo = true;
 document.addEventListener('keydown', (ev) => {
   if (ev.metaKey || ev.ctrlKey || ev.altKey || ev.repeat || /INPUT|TEXTAREA|SELECT/.test(ev.target.tagName) && ev.target.type !== 'range') return;
   if (ev.key === 'h' || ev.key === 'H') uiOcultaUsuario = !uiOcultaUsuario;
+  if (ev.key === 'v' || ev.key === 'V') alternarVideo();
+  if ((ev.key === 't' || ev.key === 'T') && ciudad && window.PAREDES_VIDEO) {
+    texturaVideo = !texturaVideo;
+    ciudad.setVideo(texturaVideo ? window.PAREDES_VIDEO.opacidad ?? 0.9 : 0);
+  }
 });
 // arranque de la panorámica (acá, cuando ya están definidas todas las constantes que usa)
 if (pano) {

@@ -24,18 +24,17 @@
 
   <!-- pantalla de inicio: la interacción habilita el audio -->
   <section class="inicio" id="inicio">
+    <header class="muestra" id="muestra"></header>
     <div class="sitio">
-      <h1 class="nombre">Deriva Calle 8</h1>
+      <h2 class="nombre">Deriva Calle 8</h2>
       <p class="lugar">De 13 a 17 Avenida por una vereda, volviendo por la otra hasta la 15</p>
     </div>
-    <footer class="muestra" id="muestra"></footer>
     <button class="comenzar" id="comenzar" disabled>Cargando mapa…</button>
     <p class="aviso">Se recomienda usar auriculares.</p>
   </section>
 
-  <!-- indicador de pausa-escucha-registro y de esquina -->
+  <!-- nota de esquina (los momentos que marcó la artista) -->
   <div class="estado" id="estado" aria-live="polite">
-    <span class="pausa-txt">pausa · escucha · registro</span>
     <span class="nota" id="nota"></span>
   </div>
 
@@ -81,6 +80,7 @@
   <script src="../assets/sitios.js"></script>
   <script src="recorrido.js"></script>
   <script src="calibracion.js"></script>
+  <script src="paredes-video.js"></script>
   <script type="module" src="mapa.js"></script>
 </body>
 </html>

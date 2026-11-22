@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Encajar fachadas · Deriva Calle 8</title>
+  <link rel="stylesheet" href="../assets/estilo.css">
+  <link rel="stylesheet" href="encajar.css">
+  <script type="importmap">
+    { "imports": {
+      "three": "https://unpkg.com/three@0.169.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.169.0/examples/jsm/"
+    } }
+  </script>
+</head>
+<body>
+  <div class="cabecera">
+    <b>Encajar fachadas</b>
+    <select id="vista" aria-label="Imagen a encajar"></select>
+    <span class="estado" id="estado"></span>
+    <span class="espacio"></span>
+    <button id="guardar" class="principal">Guardar</button>
+    <button id="probar" title="Abre la deriva con estos cambios sin guardarlos (?prueba)">Probar en la página</button>
+  </div>
+
+  <main class="area">
+    <section class="escena" id="escena">
+      <canvas id="lienzo"></canvas>
+      <div class="marco" id="marco" hidden><img id="plana" alt=""></div>
+      <div class="flotante arriba">
+        <div class="modos" role="group" aria-label="Punto de vista">
+          <button id="modo-pov" class="activo" title="Tecla V">desde la foto</button>
+          <button id="modo-libre" title="Tecla V">libre</button>
+        </div>
+        <label><input type="checkbox" id="ver-aristas" checked> aristas</label>
+        <label><input type="checkbox" id="ver-marco" checked> borde de la imagen</label>
+        <label>proyección <input type="range" id="intensidad" min="0" max="100" value="100"></label>
+        <label title="La foto sin proyectar, encima de todo (sólo desde la foto)">foto plana <input type="range" id="opacidad-plana" min="0" max="100" value="0"></label>
+      </div>
+      <p class="ayuda flotante abajo" id="ayuda"></p>
+    </section>
+
+    <aside class="lateral">
+      <details class="guia">
+        <summary>¿Cómo funciona?</summary>
+        <p>Cada imagen se proyecta sobre los volúmenes desde un punto, como un proyector. Acá se cambia el <b>tamaño</b>
+          y la <b>posición</b> de la imagen sobre las paredes, y también se puede <b>mover el proyector</b>.</p>
+        <p>Cambiar el tamaño sólo encaja una pared. Si la foto dobla una esquina (una ochava, dos fachadas), la imagen
+          se pliega bien sólo si el proyector está donde estaba quien sacó la foto: movelo hasta que la arista de la
+          esquina caiga sobre la esquina de la foto, con la apertura de la lente (71,6° en el iPhone) y la posición en 0.</p>
+        <p><b>Desde la foto</b> se ve la ciudad desde el proyector: la imagen siempre se ve entera, y lo que hay que
+          mirar es si las <span style="color:var(--contorno)">aristas</span> de los volúmenes caen sobre las esquinas,
+          el piso y el borde del techo de la foto. <b>Libre</b> sirve para ver cómo cae en las paredes desde la vereda.</p>
+        <p>Las medidas en metros son sobre la pared que mira la foto. Si el techo de la foto sobresale del volumen o
+          queda corto, se puede cambiar la altura del edificio con <b>⇧ clic</b>.</p>
+      </details>
+
+      <h2>Dimensiones de la imagen</h2>
+      <div class="campos">
+        <label for="ancho">ancho</label>
+        <input type="range" id="ancho-r" min="-60" max="60" step="0.1" value="0">
+        <span><input type="number" id="ancho" step="0.1" min="0.1"> m</span>
+        <label for="alto">alto</label>
+        <input type="range" id="alto-r" min="-60" max="60" step="0.1" value="0">
+        <span><input type="number" id="alto" step="0.1" min="0.1"> m</span>
+      </div>
+      <label class="fila"><input type="checkbox" id="proporcion" checked> mantener la proporción de la foto</label>
+      <p class="nota" id="proporcion-nota"></p>
+
+      <h2>Posición <small>sobre la pared</small></h2>
+      <div class="campos">
+        <label for="mover-x">horizontal</label>
+        <input type="range" id="mover-x-r" min="-10" max="10" step="0.01" value="0">
+        <span><input type="number" id="mover-x" step="0.05"> m</span>
+        <label for="mover-y">vertical</label>
+        <input type="range" id="mover-y-r" min="-10" max="10" step="0.01" value="0">
+        <span><input type="number" id="mover-y" step="0.05"> m</span>
+        <label for="giro">giro</label>
+        <input type="range" id="giro-r" min="-10" max="10" step="0.05" value="0">
+        <span><input type="number" id="giro" step="0.1"> °</span>
+      </div>
+      <p class="nota">Los deslizadores se mueven alrededor del valor actual: al soltarlos vuelven al centro.</p>
+
+      <h2>Proyector <small>donde se tomó la foto</small></h2>
+      <div class="campos">
+        <label for="p-der" title="Positivo = hacia la derecha de la foto">costado</label>
+        <input type="range" id="p-der-r" min="-3" max="3" step="0.01" value="0">
+        <span><input type="number" id="p-der" step="0.05"> m</span>
+        <label for="p-adel" title="Positivo = hacia la pared">adelante</label>
+        <input type="range" id="p-adel-r" min="-3" max="3" step="0.01" value="0">
+        <span><input type="number" id="p-adel" step="0.05"> m</span>
+        <label for="p-alt">altura</label>
+        <input type="range" id="p-alt-r" min="-1" max="1" step="0.01" value="0">
+        <span><input type="number" id="p-alt" step="0.05"> m</span>
+        <label for="p-rumbo">rumbo</label>
+        <input type="range" id="p-rumbo-r" min="-15" max="15" step="0.05" value="0">
+        <span><input type="number" id="p-rumbo" step="0.5"> °</span>
+        <label for="p-cabeceo" title="Positivo = mira hacia abajo">cabeceo</label>
+        <input type="range" id="p-cabeceo-r" min="-10" max="10" step="0.05" value="0">
+        <span><input type="number" id="p-cabeceo" step="0.5"> °</span>
+      </div>
+      <p class="nota">Costado y adelante se cuentan desde lo guardado. La imagen sigue apuntando para el mismo lado.</p>
+
+      <div class="botones">
+        <button id="deshacer">Deshacer</button>
+        <button id="restablecer" title="Vuelve a lo que está guardado en calibracion.js">Lo guardado</button>
+      </div>
+      <div class="botones">
+        <button id="de-recorrido" title="Trae la cámara escrita en recorrido.js, sin lo de calibracion.js">Como en recorrido.js</button>
+      </div>
+
+      <h2>Teclado</h2>
+      <ul class="teclas">
+        <li><kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> mover 5 cm (<kbd>⇧</kbd> 50 cm)</li>
+        <li><kbd>+</kbd><kbd>−</kbd> tamaño 1 % (<kbd>⇧</kbd> 5 %)</li>
+        <li><kbd>⌥</kbd> + <kbd>←</kbd><kbd>→</kbd> ancho · <kbd>⌥</kbd> + <kbd>↑</kbd><kbd>↓</kbd> alto</li>
+        <li><kbd>Q</kbd><kbd>E</kbd> giro 0,1°</li>
+        <li><kbd>J</kbd><kbd>L</kbd> proyector al costado · <kbd>I</kbd><kbd>K</kbd> adelante y atrás (5 cm, <kbd>⇧</kbd> 50 cm)</li>
+        <li><kbd>V</kbd> cambiar de vista · <kbd>A</kbd> aristas · <kbd>⌘Z</kbd> deshacer</li>
+      </ul>
+
+      <div id="edificio" class="edificio" hidden>
+        <h2>Edificio</h2>
+        <label>altura <input type="number" id="alto-edificio" min="1" max="200" step="0.1"> m</label>
+        <span class="nota" id="alto-original"></span>
+        <button id="quitar-alto">original</button>
+      </div>
+
+      <h2>Valores</h2>
+      <p class="valores" id="valores"></p>
+    </aside>
+  </main>
+
+  <div class="aviso" id="aviso" hidden></div>
+
+  <script src="../assets/sitios.js"></script>
+  <script src="recorrido.js"></script>
+  <script src="calibracion.js"></script>
+  <script type="module" src="encajar.js"></script>
+</body>
+</html>

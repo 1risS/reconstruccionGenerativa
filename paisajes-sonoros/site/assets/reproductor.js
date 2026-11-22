@@ -11,7 +11,7 @@
 
   document.documentElement.style.setProperty("--accent", sitio.color);
   document.title = `${sitio.nombre} · ${M.titulo}`;
-  $(".muestra").innerHTML = `<span class="m-artista">${M.artista}</span><span class="m-titulo">${M.titulo}: ${M.subtitulo}</span><span class="m-sede">${M.sede}</span>`;
+  $(".muestra").innerHTML = `<span class="m-titulo">${M.titulo}: ${M.subtitulo}</span><span class="m-sede">${M.sede}</span>`;
   $(".numero").textContent = sitio.numero;
   $(".nombre").textContent = sitio.nombre;
   $(".lugar").textContent = sitio.lugar;

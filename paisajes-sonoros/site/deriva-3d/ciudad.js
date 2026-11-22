@@ -6,8 +6,11 @@
 
 import { configurarThree } from './camara.js';
 
-const MAX_PROY = 6;   // proyecciones SIMULTÁNEAS: cada una usa 2 texturas (imagen + profundidad); 6·2 + sol = 13 ≤ 16 (mínimo en celulares)
-const R_FOCO = [260, 520];   // radio (m) alrededor del caminante a partir del cual la ciudad se disuelve
+const MAX_PROY = 6;   // proyecciones SIMULTÁNEAS: cada una usa 2 texturas (imagen + profundidad); 6·2 + 2 sol + atlas de paredes + película = 16 (mínimo en celulares: no agregar más)
+const R_FOCO = [260, 520];
+const RADIO_CIELO = 350;     // m: el telón de cielo de cada foto, más allá de lo que tiene que recibir la imagen
+const CIELO_LLEGA = 14;      // m del punto de vista a los que el cielo empieza a aparecer (entero a 1,5 m)
+const RAD_ = Math.PI / 180;   // radio (m) alrededor del caminante a partir del cual la ciudad se disuelve
 
 // ESTILOS (uEstilo, ver estilos.js): 0 atardecer · 1 aristas · 2 fantasma · 3 cercanía · 4 cianotipo · 5 sonar · 6 nube de puntos
 //   · 7 maqueta (con uFantasma > 0 se funde hacia fantasma: la deriva pasa de uno a otro, ver estilos.js)
@@ -181,10 +184,10 @@ float tramado(vec2 f) { return fract(52.9829189 * fract(dot(f, vec2(0.06711056, 
 `;
 
 const VERT = /* glsl */ `
-attribute vec4 aW; attribute vec4 aI; attribute vec3 aB; attribute vec4 aCaja;
-varying vec3 vPos; varying vec3 vN; varying vec4 vW; varying vec4 vI; varying vec3 vB; varying vec4 vCaja;
+attribute vec4 aW; attribute vec4 aI; attribute vec3 aB; attribute vec4 aCaja; attribute float aV;
+varying vec3 vPos; varying vec3 vN; varying vec4 vW; varying vec4 vI; varying vec3 vB; varying vec4 vCaja; varying float vV;
 void main() {
-  vPos = position; vN = normal; vW = aW; vI = aI; vB = aB; vCaja = aCaja;
+  vPos = position; vN = normal; vW = aW; vI = aI; vB = aB; vCaja = aCaja; vV = aV;
   gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
 }`;
 
@@ -194,7 +197,73 @@ const FRAG_EDIFICIOS = /* glsl */ `
 ${COMUN}
 ${CORTE}
 uniform vec4 uCorte;   // xyz = lugar mirado, w = cuánto se ocultan los volúmenes de adelante (0…1)
-varying vec3 vN; varying vec4 vW; varying vec4 vI; varying vec3 vB; varying vec4 vCaja;
+varying vec3 vN; varying vec4 vW; varying vec4 vI; varying vec3 vB; varying vec4 vCaja; varying float vV;
+// PAREDES: frames del video de la caminata pegados como collage en las fachadas que dan a la Calle 8 (paredes-video.js).
+// vV = 1 vereda norte, 2 sur, 0 el resto. Cada cuadro mide uVidCelda.x × uVidCelda.y m (se apilan hasta el techo); el atlas tiene
+// uVidCelda.z columnas y uVidCelda.w filas, primero los uVidN.x cuadros del norte y después los uVidN.y del sur, de oeste
+// a este desde uVidX0. Van en el material base: las fotos de los puntos (P, A) siempre quedan por encima.
+uniform sampler2D uVidAtlas; uniform vec4 uVidCelda; uniform vec2 uVidX0; uniform vec2 uVidN; uniform float uVidOp;
+// uTira = 1: en vez de cuadros sueltos, una FRANJA CONTINUA (barrido del video) estirada del piso al techo. Entonces
+// uVidCelda = (px por metro, alto de fila en px, ancho de fila en px, filas) y uVidN = columnas de la norte y de la sur.
+uniform float uTira;
+// MODO VIDEO: la película (12 fps, con el tiempo del audio) en un panel sobre la pared de la vereda del caminante, un
+// poco por delante de él. uVivo = (x del centro, vereda 1|2, ancho, alto) en metros; el panel arranca en el piso.
+uniform sampler2D uVivoTex; uniform vec4 uVivo; uniform float uVivoOp;
+// borde de papel: cada frame se lee como una copia pegada (b = distancia al borde en metros)
+vec3 papel(vec3 c, float b) { return mix(vec3(0.96, 0.94, 0.89), c, smoothstep(0.05, 0.05 + max(fwidth(b), 1e-4), b)); }
+// h = altura del techo de esa pared: los cuadros se apilan en filas enteras del piso al techo, recortados (sin
+// deformar) para llenar cada fila.
+vec4 tiraPared(vec3 p, float lado, float h) {
+  bool sur = lado > 1.5;
+  float cx = (p.x - (sur ? uVidX0.y : uVidX0.x)) * uVidCelda.x, zf = clamp(p.z / h, 0.0, 1.0);
+  float g = cx + (sur ? uVidN.x : 0.0);
+  vec2 cont = vec2(g / uVidCelda.z, zf / uVidCelda.w);   // para el mipmap, antes de cortar en filas
+  vec2 gx = dFdx(cont), gy = dFdy(cont);
+  if (lado < 0.5 || uVidOp < 0.002 || cx < 0.0 || cx >= (sur ? uVidN.y : uVidN.x)) return vec4(0.0);
+  float fila = floor(g / uVidCelda.z), m = 0.5 / uVidCelda.y;   // medio texel: sin tocar la fila vecina
+  vec2 uv = vec2(fract(g / uVidCelda.z), (uVidCelda.w - fila - 1.0 + mix(m, 1.0 - m, zf)) / uVidCelda.w);
+  return vec4(textureGrad(uVidAtlas, uv, gx, gy).rgb, uVidOp);
+}
+vec4 videoPared(vec3 p, float lado, float h) {
+  if (uTira > 0.5) return tiraPared(p, lado, h);
+  bool sur = lado > 1.5;
+  float filas = max(1.0, floor(h / uVidCelda.y + 0.5)), alto = h / filas;
+  // recorte tipo «cover»: si la fila es más baja que el cuadro se pierde arriba y abajo; si es más alta, los costados
+  vec2 esc = vec2(min(1.0, alto / uVidCelda.y), min(1.0, uVidCelda.y / alto));
+  float s = (p.x - (sur ? uVidX0.y : uVidX0.x)) / uVidCelda.x, f = p.z / alto;
+  vec2 cont = vec2(s * esc.y / uVidCelda.z, f * esc.x / uVidCelda.w);   // para el mipmap, antes de cortar en celdas
+  vec2 gx = dFdx(cont), gy = dFdy(cont);
+  if (lado < 0.5) return vec4(0.0);
+  vec4 c = vec4(0.0);
+  float i = floor(s), n = sur ? uVidN.y : uVidN.x, r = min(floor(f), filas - 1.0);
+  if (uVidOp > 0.002 && i >= 0.0 && i < n && p.z <= h + 0.01) {
+    // mirando la fachada de frente, el oeste queda a la izquierda en la vereda norte y a la derecha en la sur
+    float u = fract(s); if (sur) u = 1.0 - u;
+    float v = f - r;
+    // las filas de arriba toman cuadros de otros tramos de la misma vereda, para que no se repita el de abajo
+    float j = mod(i + r * 7.0 + (r > 0.5 ? floor(azar(vec3(i, lado, r)) * 3.0) : 0.0), n);
+    float k = j + (sur ? uVidN.x : 0.0);
+    vec2 cel = vec2(mod(k, uVidCelda.z), floor(k / uVidCelda.z));
+    vec2 q = mix(vec2(0.004), vec2(0.996), 0.5 + (vec2(u, v) - 0.5) * esc.yx);     // sin tocar la celda vecina
+    vec2 uv = vec2((cel.x + q.x) / uVidCelda.z, (uVidCelda.w - cel.y - 1.0 + q.y) / uVidCelda.w);
+    c = textureGrad(uVidAtlas, uv, gx, gy);
+    c.rgb = papel(c.rgb, min(min(u, 1.0 - u) * uVidCelda.x, min(v, 1.0 - v) * alto));
+    c.rgb *= 0.9 + 0.2 * azar(vec3(k, lado, 3.0 + r));
+    c.a *= uVidOp;
+  }
+  if (uVivoOp > 0.002 && abs(lado - uVivo.y) < 0.5) {
+    // del piso al techo: el cuadro se recorta arriba y abajo si la pared es más baja que el panel, o a los costados
+    float du = (p.x - uVivo.x) / uVivo.z + 0.5, dv = p.z / h;
+    if (du >= 0.0 && du <= 1.0 && dv <= 1.001) {
+      float u = sur ? 1.0 - du : du;
+      vec2 ev = vec2(min(1.0, uVivo.w / h), min(1.0, h / uVivo.w));
+      vec2 tv = 0.5 + (vec2(u, dv) - 0.5) * ev;
+      vec3 cv = papel(texture2D(uVivoTex, tv).rgb, min(min(u, 1.0 - u) * uVivo.z, min(dv, 1.0 - dv) * h));
+      c = vec4(mix(c.rgb, cv, uVivoOp), mix(c.a, 1.0, uVivoOp));
+    }
+  }
+  return c;
+}
 void main() {
   vec3 n = normalize(vN);
   if (uCorte.w > 0.001 && tapa(vCaja, vW.z, uCamara, uCorte.xyz) * uCorte.w > tramado(gl_FragCoord.xy)) discard;
@@ -209,6 +278,7 @@ void main() {
   float kl = smoothstep(0.04, 0.45, sol * lam);
   float lejos = smoothstep(uRadio.x, uRadio.y, distance(vPos.xy, uFoco));
   vec2 hc = techo ? vPos.xy : vec2(vW.x, vPos.z);
+  vec4 vid = videoPared(vPos, techo ? 0.0 : vV, vW.z);
 
   // imágenes proyectadas, compuestas aparte: P premultiplicado, A cobertura
   float kc = e == 3 ? cerca(vPos) : 1.0;
@@ -294,6 +364,7 @@ void main() {
     vec3 cLuz = techo ? vec3(0.85, 0.85, 0.83)
               : mix(mix(vec3(0.96, 0.83, 0.79), vec3(0.95, 0.93, 0.88), step(0.4, tono)), vec3(0.91, 0.88, 0.79), step(0.8, tono));
     col = mix(cLuz * vec3(0.70, 0.69, 0.71), cLuz, 0.3 + 0.7 * kl);
+    col = mix(col, vid.rgb * mix(0.8, 1.02, kl), vid.a);   // frames del video, con la misma luz de estudio
     col = mix(col, col * 0.62, linFina * 0.85);   // trazo: el mismo color de la cara, más oscuro
     col = mix(col, uNiebla, lejos);                           // se funde con el papel
     col = P + col * (1.0 - A);
@@ -311,6 +382,7 @@ void main() {
     // ventanas: algunas encendidas del lado en sombra
     col = mix(col, vec3(1.0, 0.8, 0.45), ventana * on * (1.0 - kl * 0.75) * 0.9);
     col = mix(col, col * 0.62, ventana * (1.0 - on) * 0.6);
+    col = mix(col, vid.rgb * mix(0.6, 1.05, kl), vid.a);   // frames del video
     col = mix(col, mix(vec3(0.70, 0.71, 0.95), vec3(0.36, 0.20, 0.15), kl), lin * 0.9);
     // la linterna del caminante
     vec3 dl = uCaminante - vPos; float dd = length(dl);
@@ -412,6 +484,30 @@ void main() {
   gl_FragColor = vec4(Q, B);
 }`;
 
+// CIELO de cada foto: un telón propio (ver crearCiudad → cielo) que recibe sólo la imagen de su proyector (uRanura:
+// 1 en la ranura de ese proyector, 0 en las demás; el índice del bucle sólo se puede usar como [ i ])
+// y sólo lo que no cayó antes sobre la ciudad (la prueba de profundidad de proy() lo resuelve sola).
+const FRAG_CIELO = /* glsl */ `
+${COMUN}
+varying vec3 vN;
+uniform float uRanura[${MAX_PROY}]; uniform float uOp;
+void main() {
+  vec3 n = normalize(vN);
+  vec2 ol = ola(vPos);
+  vec3 Q = vec3(0.0); float B = 0.0; vec4 pr;
+  #pragma unroll_loop_start
+  for ( int i = 0; i < ${MAX_PROY}; i ++ ) {
+    if (uRanura[ i ] > 0.5) {
+      pr = proy(vPos, n, uProyVP[ i ], uProyPos[ i ], uProyNF[ i ], uProyInt[ i ], uProyTex[ i ], uProyProf[ i ], uProyTol[ i ]);
+      sobre(Q, B, pr.rgb, pr.a * mascara(uProyLado[ i ], ol.x));
+    }
+  }
+  #pragma unroll_loop_end
+  B *= uOp; Q *= uOp;   // color premultiplicado
+  if (B < 0.004) discard;
+  gl_FragColor = vec4(Q, B);
+}`;
+
 const VERT_PISO = /* glsl */ `
 varying vec3 vPos;
 void main() { vPos = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
@@ -438,18 +534,34 @@ export function aplicarAlturas(datos, alturas) {
  * @param THREE      módulo three
  * @param opciones   { url, local([lng,lat]→[x,y]), sol:{azimut, elevacion}, vistas: [vista normalizada de camara.js],
  *                     alturas: [{lat, lng, alt}] (corrige la altura del edificio que contiene ese punto), repintar,
- *                     telon: { centro: [x, y], radio, desde, hasta (rumbos en grados), alto } (opcional) }
+ *                     telon: { centro: [x, y], radio, desde, hasta (rumbos en grados), alto } (opcional),
+ *                     paredes: window.PAREDES_VIDEO (opcional; frames del video en las fachadas de la Calle 8) }
  *                   Cada vista puede tener `lejos`: hasta cuántos metros alcanza su proyector (900 si no se indica).
  */
-export async function crearCiudad(THREE, { url, local, sol, vistas, alturas = [], repintar, telon = null }) {
+export async function crearCiudad(THREE, { url, local, sol, vistas, alturas = [], repintar, telon = null, paredes = null }) {
   const datos = aplicarAlturas(await (await fetch(url)).json(), alturas);
 
+  // PAREDES: de qué vereda de la Calle 8 es una pared (1 norte, 2 sur, 0 ninguna). Cuentan las que están a 5–25 m del eje
+  // y miran hacia la calle.
+  let ladoPared = () => 0, distEje = () => 0;
+  if (paredes) {
+    const [e0, e1] = paredes.eje.map(([lng, lat]) => local([lng, lat]));
+    const L = Math.hypot(e1[0] - e0[0], e1[1] - e0[1]);
+    let nx = -(e1[1] - e0[1]) / L, ny = (e1[0] - e0[0]) / L;   // normal del eje
+    if (ny < 0) { nx = -nx; ny = -ny; }                        // hacia el norte
+    distEje = (x, y) => (x - e0[0]) * nx + (y - e0[1]) * ny;   // > 0 al norte del eje
+    ladoPared = (mx, my, nm) => {
+      const d = distEje(mx, my), m = nm[0] * nx + nm[1] * ny;
+      return d > 5 && d < 25 && m < -0.8 ? 1 : d < -5 && d > -25 && m > 0.8 ? 2 : 0;
+    };
+  }
+
   // ── geometría ──
-  const P = [], N = [], W = [], I = [], K = [];
-  let cajaAct = [0, 0, 0, 0];
+  const P = [], N = [], W = [], I = [], K = [], V = [];
+  let cajaAct = [0, 0, 0, 0], ladoAct = 0;
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
   const area = (r) => r.reduce((a, p, i) => { const q = r[(i + 1) % r.length]; return a + p[0] * q[1] - q[0] * p[1]; }, 0) / 2;
-  const vert = (x, y, z, n, w, inf) => { P.push(x, y, z); N.push(...n); W.push(...w); I.push(...inf); K.push(...cajaAct); };
+  const vert = (x, y, z, n, w, inf) => { P.push(x, y, z); N.push(...n); W.push(...w); I.push(...inf); K.push(...cajaAct); V.push(ladoAct); };
 
   const volumenes = []; // contornos en metros, para que la cámara esquive los edificios (alturaCerca)
   for (const [h, mh, anillos] of datos) {
@@ -478,7 +590,9 @@ export async function crearCiudad(THREE, { url, local, sol, vistas, alturas = []
         const inf = [tono, 0, esq[i], esq[(i + 1) % n]];
         const A0 = [a[0], a[1], mh, [0, L, h, mh]], B0 = [b[0], b[1], mh, [L, L, h, mh]];
         const B1 = [b[0], b[1], h, [L, L, h, mh]], A1 = [a[0], a[1], h, [0, L, h, mh]];
+        ladoAct = ladoPared((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, nm);
         for (const v of [A0, B0, B1, A0, B1, A1]) vert(v[0], v[1], v[2], nm, v[3], inf);
+        ladoAct = 0;
         x0 = Math.min(x0, a[0]); y0 = Math.min(y0, a[1]); x1 = Math.max(x1, a[0]); y1 = Math.max(y1, a[1]);
       }
     }
@@ -496,6 +610,7 @@ export async function crearCiudad(THREE, { url, local, sol, vistas, alturas = []
   geo.setAttribute('aW', new THREE.Float32BufferAttribute(W, 4));
   geo.setAttribute('aI', new THREE.Float32BufferAttribute(I, 4));
   geo.setAttribute('aCaja', new THREE.Float32BufferAttribute(K, 4));
+  geo.setAttribute('aV', new THREE.Float32BufferAttribute(V, 1));
   // baricéntricas: los vértices van de a tres por triángulo (sin índices)
   const nv = P.length / 3, B = new Float32Array(nv * 3);
   for (let i = 0; i < nv; i++) B[i * 3 + (i % 3)] = 1;
@@ -582,16 +697,53 @@ export async function crearCiudad(THREE, { url, local, sol, vistas, alturas = []
     p.fondo.frustumCulled = false;
     p.fondo.renderOrder = 2;
     p.fondo.visible = false;
+    // CIELO (fotos y dron, no los dioramas): lo que de la foto pasa por encima de la ciudad (el cielo, los árboles
+    // y los postes que no están en edificios.json) no choca con ningún volumen y se perdía. Cae sobre un arco de
+    // cilindro alrededor del proyector, a RADIO_CIELO metros, que abarca la imagen. Como recibe sólo los rayos que
+    // no encontraron nada antes, techos, paredes y calles siguen recibiendo lo suyo. Se enciende al llegar al punto
+    // de vista (ver setCamara): visto desde lejos sería un panel suelto en el aire.
+    if (!v.isometrica) {
+      p.cielo = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.ShaderMaterial({
+        uniforms: { uRanura: { value: new Array(MAX_PROY).fill(0) }, uOp: { value: 0 } },   // + los compartidos, más abajo (uniforms todavía no existe)
+        vertexShader: VERT_TELON, fragmentShader: FRAG_CIELO, side: THREE.DoubleSide,
+        transparent: true, depthWrite: false,
+        blending: THREE.CustomBlending, blendSrc: THREE.OneFactor, blendDst: THREE.OneMinusSrcAlphaFactor,
+      }));
+      p.cielo.frustumCulled = false;
+      p.cielo.renderOrder = 1;
+      p.cielo.visible = false;
+    }
+    const armarCielo = (aspecto) => {
+      if (!p.cielo) return;
+      const th = Math.tan(((v.apertura || 40) / 2) * RAD_), tv = (th / aspecto) * (v.estirar || 1), c = v.centro || [0, 0];
+      const abre = Math.atan(th * (1 + Math.abs(c[0]))) / RAD_ + 6 + Math.abs(v.giro || 0);       // grados a cada lado
+      const sube = -v.cabeceo + Math.atan(tv * (1 + Math.abs(c[1]))) / RAD_ + 4 + Math.abs(v.giro || 0); // borde de arriba
+      const g = p.cielo.geometry;
+      if (sube <= 0) { g.setIndex([]); return; }     // la foto no llega al horizonte: no tiene cielo
+      const alto = v.pos[2] + RADIO_CIELO * Math.tan(Math.min(sube, 80) * RAD_);
+      const seg = 32, pos = [], nor = [], idx = [];
+      for (let i = 0; i <= seg; i++) {
+        const a = (v.rumbo - abre + (2 * abre * i) / seg) * RAD_, sx = Math.sin(a), cy = Math.cos(a);
+        for (const z of [0, alto]) { pos.push(v.pos[0] + sx * RADIO_CIELO, v.pos[1] + cy * RADIO_CIELO, z); nor.push(-sx, -cy, 0); }
+        if (i < seg) { const k = i * 2; idx.push(k, k + 2, k + 1, k + 1, k + 2, k + 3); }
+      }
+      g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+      g.setIndex(idx);
+    };
     const ajustar = (aspecto) => {
+      armarCielo(aspecto);
       configurarThree(THREE, cam, v, aspecto); // posición, orientación con giro, apertura y centro óptico
       p.vp.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
       for (const r of ranuras) if (r.p === p) r.sucio = true;
-      const th = Math.tan(((v.apertura || 40) / 2) * Math.PI / 180), tv = th / aspecto, c = v.centro || [0, 0];
+      p.aspecto = aspecto;
+      const th = Math.tan(((v.apertura || 40) / 2) * Math.PI / 180), tv = (th / aspecto) * (v.estirar || 1), c = v.centro || [0, 0];
       p.fondo.matrix.copy(cam.matrixWorld)
         .multiply(new THREE.Matrix4().makeTranslation(-c[0] * th * D, -c[1] * tv * D, -D))
         .multiply(new THREE.Matrix4().makeScale(2 * th * D, 2 * tv * D, 1));
       p.fondo.matrixWorldNeedsUpdate = true;
     };
+    p.ajustar = ajustar;
     ajustar(1.45);
     p.tex = cargador.load(v.imagen, (tx) => { ajustar(tx.image.width / tx.image.height); p.listo = true; repintar(); });
     p.tex.anisotropy = 8;
@@ -618,7 +770,29 @@ export async function crearCiudad(THREE, { url, local, sol, vistas, alturas = []
     uEstilo: { value: 0 }, uFantasma: { value: 0 }, uCamara: { value: new THREE.Vector3(0, 0, 1e4) }, uTiempo: { value: 0 },
     uCorte: { value: new THREE.Vector4(0, 0, 0, 0) },
     uTinta: { value: new THREE.Vector3(0.62, 0.78, 1.0) }, uPisoCol: { value: new THREE.Vector3(0.30, 0.235, 0.245) },
+    // paredes con frames del video (se encienden cuando carga el atlas)
+    uVidAtlas: { value: vacia }, uVidCelda: { value: new THREE.Vector4(1, 1, 1, 1) }, uVidX0: { value: new THREE.Vector2() },
+    uVidN: { value: new THREE.Vector2() }, uVidOp: { value: 0 }, uTira: { value: 0 },
+    uVivoTex: { value: vacia }, uVivo: { value: new THREE.Vector4(0, 0, 1, 1) }, uVivoOp: { value: 0 },
   };
+  let texVivo = null;
+  let texVideo = null, opParedes = paredes ? paredes.opacidad ?? 0.9 : 0;
+  if (paredes) {
+    const latEje = paredes.eje[0][1];
+    uniforms.uVidX0.value.set(local([paredes.norte.desde, latEje])[0], local([paredes.sur.desde, latEje])[0]);
+    const tira = !paredes.collage && paredes.tira;   // franja continua, salvo con ?collage (cuadros sueltos)
+    if (tira) {
+      uniforms.uTira.value = 1;
+      uniforms.uVidCelda.value.set(tira.pxm, tira.alto, tira.ancho, tira.filas);
+      uniforms.uVidN.value.set(tira.columnas.norte, tira.columnas.sur);
+    } else {
+      uniforms.uVidCelda.value.set(paredes.ancho, paredes.alto, paredes.columnas, paredes.filas);
+      uniforms.uVidN.value.set(paredes.norte.cuadros, paredes.sur.cuadros);
+    }
+    texVideo = cargador.load(tira ? tira.imagen : paredes.atlas, () => { uniforms.uVidOp.value = opParedes; repintar(); });
+    texVideo.anisotropy = 8;
+    uniforms.uVidAtlas.value = texVideo;
+  }
 
   const matEdificios = new THREE.ShaderMaterial({
     uniforms, vertexShader: VERT, fragmentShader: FRAG_EDIFICIOS, side: THREE.DoubleSide,
@@ -659,6 +833,21 @@ export async function crearCiudad(THREE, { url, local, sol, vistas, alturas = []
   const grupo = new THREE.Group();
   grupo.add(oclusor, edificios, piso);
   for (const p of proys) grupo.add(p.fondo);
+  for (const p of proys) if (p.cielo) { Object.assign(p.cielo.material.uniforms, { ...uniforms, ...p.cielo.material.uniforms }); grupo.add(p.cielo); }
+  // cielos: la ranura de su proyector (si la tiene, y ya con su mapa de profundidad) y la opacidad según la cámara
+  function actualizarCielos() {
+    const cam = uniforms.uCamara.value;
+    for (const p of proys) {
+      if (!p.cielo) continue;
+      const i = ranuras.findIndex((r) => r.p === p && !r.sucio);
+      const d = Math.hypot(cam.x - p.v.pos[0], cam.y - p.v.pos[1], cam.z - p.v.pos[2]);
+      const t = Math.min(1, Math.max(0, (CIELO_LLEGA - d) / (CIELO_LLEGA - 1.5)));
+      const k = i >= 0 ? p.int * t * t * (3 - 2 * t) : 0;
+      p.cielo.material.uniforms.uRanura.value.forEach((_, j, a) => (a[j] = j === i ? 1 : 0));
+      p.cielo.material.uniforms.uOp.value = k;
+      p.cielo.visible = k > 0.003;
+    }
+  }
 
   // telón: arco de cilindro vertical alrededor de `centro`, con la cara hacia adentro
   if (telon) {
@@ -705,6 +894,14 @@ export async function crearCiudad(THREE, { url, local, sol, vistas, alturas = []
   return {
     grupo,
     uniforms,
+    edificios, // la malla de los volúmenes (encajar.html la usa para las aristas y para elegir edificios)
+    // vuelve a armar el proyector de vistas[idx] después de cambiarle apertura, centro, giro o estirar (encajar.html)
+    reajustar(idx) {
+      const p = proys[idx];
+      if (!p) return;
+      p.tol = 0.004 * Math.min(1, Math.tan(((p.v.apertura || 40) / 2) * Math.PI / 180) / Math.tan(20 * Math.PI / 180));
+      p.ajustar(p.aspecto || 1.45);
+    },
     // Altura de techo que la cámara tiene que superar en (x, y), en metros locales: la del edificio que contiene el
     // punto, o, a menos de r metros de uno, una fracción que crece suave al acercarse (para subir antes de llegar
     // a la pared y no de golpe). 0 = aire libre. La usa el vuelo de la cámara para no atravesar edificios.
@@ -764,6 +961,7 @@ export async function crearCiudad(THREE, { url, local, sol, vistas, alturas = []
         uniforms.uProyTex.value[i] = r.p.tex;
         hizo = true;
       });
+      if (hizo) actualizarCielos();
       if (hizo) { renderer.setRenderTarget(null); renderer.setViewport(0, 0, ancho, alto); }
       gl.depthRange(rango[0], rango[1]);
     },
@@ -790,6 +988,7 @@ export async function crearCiudad(THREE, { url, local, sol, vistas, alturas = []
       if (ola) uniforms.uOla.value.set(ola.centro[0], ola.centro[1], ola.centro[2], ola.radio);
       else uniforms.uOla.value.w = -1;
       uniforms.uOlaLuz.value = ola ? ola.luz : 0;
+      actualizarCielos();
     },
     setCaminante(x, y, linterna) {
       uniforms.uCaminante.value.set(x, y, 2.2);
@@ -797,6 +996,8 @@ export async function crearCiudad(THREE, { url, local, sol, vistas, alturas = []
       uniforms.uFoco.value.set(x, y);
     },
     // para depurar: qué imagen ocupa cada ranura y con qué intensidad
+    cielos: () => proys.filter((p) => p.cielo && p.cielo.visible).map((p) => [p.v.imagen.replace('registros/', ''),
+      p.cielo.material.uniforms.uRanura.value.indexOf(1), +p.cielo.material.uniforms.uOp.value.toFixed(2)]),
     ranuras: () => ranuras.map((r, i) => r.p && [r.p.v.imagen.replace('registros/', ''), +uniforms.uProyInt.value[i].toFixed(2)]),
     setRadio(a, b) { uniforms.uRadio.value.set(a, b); },
     // estilo: { indice, niebla, tinta, piso ([r,g,b] tal cual se ven), transparente (la malla se mezcla en vez de tapar),
@@ -821,6 +1022,8 @@ export async function crearCiudad(THREE, { url, local, sol, vistas, alturas = []
       grupo.traverse((o) => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); });
       for (const rt of [rtSol, rtCerca, ...ranuras.map((r) => r.rt)]) if (rt) { rt.depthTexture.dispose(); rt.dispose(); }
       for (const p of proys) { p.tex.dispose(); if (p.texFondo) p.texFondo.dispose(); }
+      if (texVideo) texVideo.dispose();
+      if (texVivo) texVivo.dispose();
       escenaProf.children[0].material.dispose();
       rtSol = rtCerca = null;
       ranuras.forEach((r) => { r.p = null; r.rt = null; });
@@ -847,8 +1050,26 @@ export async function crearCiudad(THREE, { url, local, sol, vistas, alturas = []
           p.texFondo = null;
         }
       }
+      actualizarCielos();
     },
     setTiempo(s) { uniforms.uTiempo.value = s; },
+    // opacidad de los frames del video en las paredes (0 = apagados); desde la consola: __ciudad.setVideo(0.5)
+    // (si el atlas todavía no cargó, la opacidad queda guardada para cuando cargue)
+    setVideo(op) { opParedes = op; if (texVideo && texVideo.image) { uniforms.uVidOp.value = op; repintar(); } },
+    // MODO VIDEO: `video` es el elemento <video> de la película (mapa.js lo sincroniza con el audio)
+    setPelicula(video) {
+      if (texVivo) texVivo.dispose();
+      texVivo = video ? new THREE.VideoTexture(video) : null;
+      uniforms.uVivoTex.value = texVivo || vacia;
+    },
+    // el panel va en la pared de la vereda del caminante (x, y), `adelante` metros por delante en el sentido de la
+    // marcha (en la norte camina hacia el oeste, en la sur hacia el este); op 0…1. Cruzando la calle se apaga.
+    setVivo(x, y, op, { adelante = 9, ancho = 7.5, alto = 10 } = {}) {
+      const d = distEje(x, y), norte = d > 0;
+      const k = op * Math.min(1, Math.max(0, (Math.abs(d) - 4) / 3));
+      uniforms.uVivo.value.set(x + (norte ? -adelante : adelante), norte ? 1 : 2, ancho, alto);
+      uniforms.uVivoOp.value = texVivo ? k : 0;
+    },
     // CORTE: oculta (k = 0…1) los volúmenes entre la cámara y el lugar [x, y, z] mientras se mira un diorama
     setCorte(lugar, k) {
       if (lugar) { uniforms.uCorte.value.set(lugar[0], lugar[1], lugar[2], k); corteOcl.uHasta.value.set(...lugar); }

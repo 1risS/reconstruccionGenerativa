@@ -18,16 +18,25 @@ button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent
   background: linear-gradient(to bottom, rgba(234,234,234,0.97) 0%, rgba(234,234,234,0.62) 50%, rgba(234,234,234,0.97) 100%);
   transition: opacity 0.8s ease;
 }
-.inicio .sitio { max-width: 30rem; }
-.inicio .nombre { font-size: clamp(3rem, 16vw, 5.6rem); line-height: 0.88; }   /* 16vw: entra en una línea en 360 px */
-.inicio .muestra { order: 0; max-width: 30rem; }   /* acá va pegada a la descripción */
-.inicio .lugar { max-width: 22rem; line-height: 1.45; }
+/* jerarquía: arriba y grande la muestra; debajo, bajo un filete y más chica, la deriva */
+.inicio .muestra { order: 0; max-width: 30rem; border-top: none; padding-top: 0; gap: 0.9rem; }
+.inicio .muestra .m-titulo {
+  font-family: var(--display); font-weight: 400; color: var(--fg);
+  font-size: clamp(3rem, 15vw, 5.4rem); line-height: 0.88; letter-spacing: -0.01em;
+}
+.inicio .muestra .m-titulo span {
+  display: block; margin-top: 0.45rem;
+  font-weight: 300; font-size: clamp(1.5rem, 7vw, 2.3rem); line-height: 1.05; letter-spacing: 0;
+}
+.inicio .sitio { max-width: 30rem; gap: 0.35rem; border-top: 1px solid var(--line); padding-top: 1rem; }
+.inicio .nombre { font-size: clamp(1.7rem, 7.5vw, 2.3rem); line-height: 1; }
+.inicio .lugar { max-width: 22rem; line-height: 1.4; font-size: 0.95rem; }
 .inicio.oculto { opacity: 0; pointer-events: none; }
 /* con la panorámica detrás: el velo de papel queda arriba (título, sobre el cielo) y abajo (botón), y en el medio
    se ve la ciudad. En una pantalla apaisada y baja el texto ocupa casi todo: el velo se mantiene más parejo. */
 body.con-pano .inicio {
-  background: linear-gradient(to bottom, rgba(234,234,234,0.94) 0%, rgba(234,234,234,0.78) 28%,
-    rgba(234,234,234,0) 50%, rgba(234,234,234,0) 74%, rgba(234,234,234,0.9) 100%);
+  background: linear-gradient(to bottom, rgba(234,234,234,0.94) 0%, rgba(234,234,234,0.86) 38%,
+    rgba(234,234,234,0) 56%, rgba(234,234,234,0) 74%, rgba(234,234,234,0.9) 100%);
 }
 @media (orientation: landscape) and (max-height: 32rem) {
   body.con-pano .inicio {
@@ -64,12 +73,6 @@ body.pano-lista .pano-foto, body.pano-fuera .pano-foto { opacity: 0; }
   display: flex; flex-direction: column; align-items: center; gap: 0.35rem;
   pointer-events: none; text-align: center; padding: 0 1rem;
 }
-.estado .pausa-txt {
-  font-family: var(--display); font-weight: 300; font-style: italic; font-size: 1.25rem; color: var(--accent);
-  background: var(--panel); padding: 0.35rem 0.9rem; border-radius: 999px;
-  opacity: 0; transform: translateY(-6px); transition: opacity 0.6s, transform 0.6s;
-}
-.estado.en-pausa .pausa-txt { opacity: 1; transform: none; }
 .estado .nota {
   font-family: var(--display); font-weight: 500; font-size: 0.95rem; letter-spacing: 0.01em; color: var(--fg);
   background: var(--panel); padding: 0.3rem 0.7rem; border-radius: 999px;
@@ -194,3 +197,5 @@ body:not(.ui-visible) .panel * { visibility: hidden; transition: visibility 0s 0
 
 body.modo-calle #mapa { cursor: grab; }
 body.modo-calle #mapa:active { cursor: grabbing; }
+
+/* botón del modo video (entre anterior y siguiente) */

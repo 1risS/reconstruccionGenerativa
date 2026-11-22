@@ -47,6 +47,8 @@
 //                por el mismo eje con un teleobjetivo (camara/mira/apertura se dan como si fuera una cámara cercana;
 //                lo calibrado en calibrar.html ya queda lejos). Al ir a ese punto de vista, la cámara hace un dolly
 //                zoom: se aleja mientras cierra el campo de visión y la ciudad se aplana hasta volverse maqueta.
+//    llega     → (opcional) 'fundido': no se vuela desde la vista anterior. Ésta se apaga, la cámara corta a oscuras
+//                y la nueva se enciende ya recompuesta (2,4 s en vez de 6). Para cuando el vuelo sólo muestra mapa vacío.
 //  No hay máximo de imágenes: se proyectan a la vez sólo las que se están viendo (hasta 6 simultáneas).
 //
 // Abrí la página con ?editar al final de la URL para marcar puntos sobre el mapa
@@ -61,8 +63,10 @@
 //   · 4:34–4:46 pausa en el semáforo de la 16 Av. (ella marcó el semáforo a las 4:46.8).
 //   · Los Montaditos (6:09) se OYE desde lejos: está a 80 m de Mr. Cigars (5:53), imposible de caminar en 16 s.
 //     Se deja como nota sin mover el recorrido.
-//   · Cruce a la vereda sur enfrente de Tumba'o (7:21), a mitad de cuadra: es lo que mantiene el mismo
-//     ritmo; cruzar en la 17 Av. pediría 2,5 m/s.
+//   · Cruce a la vereda sur EN LA ESQUINA DE LA 17 AV. (confirmado por la artista): camina por la norte hasta la
+//     esquina y cruza la Calle 8 hacia el PNC Bank, sin cruzar la 17. De Mr. Cigars (5:53) a Ciao Havana (9:27) va a
+//     velocidad constante (1,32 m/s, paso normal): llega a la esquina a las 7:19.9 y termina de cruzar a las 7:32.7.
+//     Tumba'o (7:21) y Sala'o (7:58) se OYEN antes de pasar por delante: son notas en el lugar interpolado.
 //   · La Colada Gourmet y la moto no tienen ubicación: son notas en el lugar interpolado.
 //   · 0:00 → 0:46.7 da 1,9 m/s (paso rápido): habría que confirmar con ella dónde empieza el audio.
 // ─────────────────────────────────────────────────────────────
@@ -80,11 +84,12 @@ window.RECORRIDO = {
     { t: '4:34.5', hasta: '4:46.8',   lat: 25.7657627, lng: -80.220643,  nota: 'Semáforo · Calle 8 y 16 Av.' },
     { t: '5:38.4',                    lat: 25.7657477, lng: -80.2211411, nota: 'Pasa un bus' },
     { t: '5:53.1',                    lat: 25.7657443, lng: -80.2212543, nota: 'Mr. Cigars' },
-    { t: '6:09.3',                    lat: 25.7657404, lng: -80.2213823, nota: 'Se oye Los Montaditos Bar' },
-    { t: '6:59.6',                    lat: 25.7657284, lng: -80.2217797, nota: 'Cruce a la vereda sur' },
+    { t: '6:09.3',                    lat: 25.7657379, lng: -80.2214678, nota: 'Se oye Los Montaditos Bar' },
+    { t: '7:19.9',                    lat: 25.7657097, lng: -80.2224,    nota: 'Esquina de la 17 Av. · cruza la Calle 8' },
+    { t: '7:21.0',                    lat: 25.7656965, lng: -80.2224,    nota: "Se oye Tumba'o" },
     // ── vuelta, vereda sur (hacia el este) ──
-    { t: '7:21.0',                    lat: 25.7655757, lng: -80.2217797, nota: "Tumba'o" },
-    { t: '7:58.0',                    lat: 25.765584,  lng: -80.2215059, nota: "Sala'o" },
+    { t: '7:32.7',                    lat: 25.7655569, lng: -80.2224,    nota: 'PNC Bank · esquina de la 17 Av.' },
+    { t: '7:58.0',                    lat: 25.765567,  lng: -80.2220658, nota: "Se oye Sala'o" },
     { t: '9:27.2',                    lat: 25.7656026, lng: -80.2208879, nota: 'Ciao Havana' },
     { t: '9:51.2',                    lat: 25.7656092, lng: -80.2206715, nota: "Alfaro's" },
     { t: '10:02.7',                   lat: 25.7656115, lng: -80.2205937, nota: 'El Pub · Calle 8 y 16 Av.' },
@@ -127,10 +132,12 @@ window.RECORRIDO = {
         // cenital/tower_hotel_00.jpf — dron a 54,9 m justo encima del teatro, cámara a −90° (datos del XMP de DJI).
         // Rumbo −97,8° = el borde de arriba de la foto mira al oeste (Calle 8 queda a la derecha). Cabeceo 89 y no 90
         // (a 90 el rumbo queda indefinido); la mira está 1 m al oeste del nadir, en la dirección del eje óptico.
-        { imagen: 'registros/tower-theatre-cenital-00.webp', tipo: 'fotografía aérea cenital', apertura: 73.7,
+        // Del diorama a la cenital y de la cenital al diorama de noche no se vuela (llega: 'fundido'): el vuelo sólo
+        // mostraba mapa vacío y un giro brusco al pasar por el nadir.
+        { imagen: 'registros/tower-theatre-cenital-00.webp', tipo: 'fotografía aérea cenital', apertura: 73.7, llega: 'fundido',
           rumbo: -97.8, cabeceo: 89, giro: 0,
           camara: { lat: 25.7654547, lng: -80.2197256, alt: 54.9 }, mira: { lat: 25.7654535, lng: -80.2197355, alt: 0 } },
-        { imagen: 'registros/tower-theater-diorama-02.webp', tipo: 'diorama generado por IA', isometrica: true, apertura: 40,
+        { imagen: 'registros/tower-theater-diorama-02.webp', tipo: 'diorama generado por IA', isometrica: true, apertura: 40, llega: 'fundido',
           camara: { lat: 25.76546, lng: -80.218962, alt: 72 }, mira: { lat: 25.76546, lng: -80.21966, alt: 4 } },
         // la foto del dron va última: es la última imagen anamórfica que se recompone antes de volver a la panorámica
         { imagen: 'registros/tower-theatre-dron-00.webp', tipo: 'fotografía aérea', apertura: 73.7, huella: true, rumbo: -137.2, cabeceo: 22.2, giro: -0.1,
@@ -218,6 +225,9 @@ window.RECORRIDO = {
       // cerca, desde la vereda norte, mirando la entrada (galería con el arco, el candelabro y la estatua).
       // Fachada a lat ≈ 25.765829; cámara ~4 m al sur, a la altura de los ojos, horizontal.
       // Marcada a las 0:46.7.
+      // Guantanamera y Cubaocho comparten el volumen de 91 m que llega a la esquina de la 15 Av., pero son locales
+      // distintos: cada uno es un lugar aparte, con su nombre en el pie y su propio travelling (antes iban juntos bajo
+      // «Guantanamera · Cubaocho» y la foto de Cubaocho salía con el nombre de Guantanamera).
       lugar: 'Guantanamera', tipo: 'fotografía', punto: { lat: 25.765808, lng: -80.2191451 }, radio: 4,
       vistas: [
         // La foto está tomada desde la galería: la pared del fondo (puerta con cortinas, piso en v ≈ 0,71, cielorraso en
@@ -225,7 +235,27 @@ window.RECORRIDO = {
         // del fondo cae en el suelo si la cámara está a 6,5 m de esa pared (el cielorraso queda a ~3,9 m y la galería,
         // de columna a columna, a ~8 m: coherente con el local). Antes estaba a 2,8 m y el piso flotaba a 0,9 m.
         { imagen: 'registros/guantanamera-foto-00.webp', apertura: 72,
-          camara: { lat: 25.765759, lng: -80.2191451, alt: 1.5 }, mira: { lat: 25.765818, lng: -80.2191451, alt: 1.5 } }
+          camara: { lat: 25.765759, lng: -80.2191451, alt: 1.5 }, mira: { lat: 25.765818, lng: -80.2191451, alt: 1.5 } },
+        // fachadas/drive/guantanamera/Guantanamera.jpg — la misma galería de noche (17/11), con el gran angular (14 mm eq.,
+        // 102°). Mismo criterio: la pared del fondo (puertas con las banderas, piso en v ≈ 0,70) en la fachada del volumen;
+        // con la cámara horizontal a 1,5 m eso la pone a 4 m de la pared (las puertas dobles dan 1,3 m de ancho).
+        { imagen: 'registros/guantanamera-foto-01.webp', apertura: 102, rumbo: -1.67, cabeceo: 0, giro: 0,
+          camara: { lat: 25.7657884, lng: -80.219143, alt: 1.5 }, mira: { lat: 25.765825, lng: -80.2191442, alt: 1.5 } }
+      ]
+    },
+    {
+      // Cubaocho (Museum & Performing Arts Center), en el mismo volumen que Guantanamera, hacia la esquina de la 15 Av.
+      // Se dispara cuando el caminante (vereda norte, a la ida) pasa frente a la fachada de la foto (lng −80.2192855,
+      // ~1:02). Si Guantanamera todavía está en el aire, espera a que vuelva; Ball & Chain (1:57.7) espera a Cubaocho.
+      lugar: 'Cubaocho', tipo: 'fotografía', punto: { lat: 25.7658038, lng: -80.2192855 }, radio: 4,
+      vistas: [
+        // fachadas/drive/cubaocho/Cuba 8 1759.jpg — Cubaocho desde la vereda de enfrente (24 mm eq., 71,6°), de noche.
+        // La esquina del edificio con la 15 Av. (u ≈ 0,02) va en la esquina del volumen (lng −80.219395); la escala sale
+        // de los autos estacionados (Fiat 500 y Model Y) → cámara a ~15,5 m de la fachada, sobre el cordón sur. Con la
+        // cámara a 1,6 m, la base de la fachada (v ≈ 0,69) pide mirar 5,9° hacia arriba. Rumbo perpendicular al volumen.
+        // Los pisos de arriba están retranqueados y caen en el frente del volumen de 27 m (OSM): no hay borde que encajar.
+        { imagen: 'registros/cubaocho-foto-00.webp', apertura: 71.6, rumbo: -1.67, cabeceo: -5.85, giro: 0,
+          camara: { lat: 25.765681, lng: -80.219281, alt: 1.6 }, mira: { lat: 25.7658204, lng: -80.2192855, alt: 3.18 } }
       ]
     },
     {
@@ -258,6 +288,59 @@ window.RECORRIDO = {
         // llega a ~7,2 m de altura en la pared; con los 15 m de OSM sobraba un bloque liso arriba de la foto).
         { imagen: 'registros/mr-cigars-foto-00.webp', apertura: 27,
           camara: { lat: 25.765555, lng: -80.2212704, alt: 1.6 }, mira: { lat: 25.765774, lng: -80.2212704, alt: 3.18 } }
+      ]
+    },
+    // ── Fotos de la segunda carpeta de Drive (19/11/2026; carga-puntos versión 272) ──
+    // Los números de los nombres de archivo son correlativos de la cámara, no direcciones; sin GPS. Los lugares se
+    // ubicaron por el negocio y por los números de calle que se ven en las fotos. Las aperturas salen de la focal
+    // equivalente del EXIF (4:3: 24 mm → 71,6°, 40 mm → 46,8°, 14–15 mm → 102–98°). Las cámaras se encajaron dibujando
+    // las aristas de los volúmenes sobre cada foto: base de la fachada en el pie del volumen y, cuando se ve, el borde
+    // del edificio en el borde del volumen y el techo en su altura (calibracion.js → alturas).
+    // ⚠ Sin pasar por calibrar.html.
+    {
+      // El Exquisito (1510) y La Colada Gourmet (1518) están en la vereda sur, entre el Tower Theater y Cuban Cigars
+      // (1520). A la vuelta no hay lugar: Cuban Cigars y el Tower cierran el recorrido. Se descubren a la IDA, desde la
+      // vereda de enfrente, cuando el caminante pasa frente a ellos (~2:17; si Ball & Chain todavía está en el aire,
+      // espera a que vuelva). Las dos fotos son de cerca y frontales; no llegan al techo.
+      lugar: 'El Exquisito · La Colada Gourmet', tipo: 'fotografía', punto: { lat: 25.7657861, lng: -80.21987 }, radio: 4,
+      vistas: [
+        // fachadas/drive/el-exquisito-restaurant/El exquisito Cafeteria _1505.jpeg — 24 mm eq. (71,6°). La puerta del 1510
+        // (≈ 1 m) da la cámara a 3,65 m de la vidriera, horizontal a 1,46 m (la base cae en v ≈ 0,87). El reflejo del
+        // cartel de Ball & Chain en el vidrio de la puerta la ubica ~5 m al oeste de ese cartel (lng −80.21976).
+        { imagen: 'registros/el-exquisito-foto-00.webp', apertura: 71.6, rumbo: 178.5, cabeceo: 0, giro: 0,
+          camara: { lat: 25.765642, lng: -80.21981, alt: 1.46 }, mira: { lat: 25.765609, lng: -80.219809, alt: 1.46 } },
+        // fachadas/drive/la-colada-gourmet/La calada Gourmet _1396.jpeg — gran angular (15 mm eq., 98°), de noche. La puerta
+        // (0,9 × 2,3 m) da la cámara a 3,4 m, horizontal a 1,5 m. El pilar del buzón 1518 / 1520 (u ≈ 0,82) es el límite
+        // con Cuban Cigars, cuya foto está centrada en lng −80.220001.
+        { imagen: 'registros/la-colada-foto-00.webp', apertura: 98.1, rumbo: 178.5, cabeceo: 0, giro: 0,
+          camara: { lat: 25.765637, lng: -80.219941, alt: 1.5 }, mira: { lat: 25.7656063, lng: -80.2199401, alt: 1.5 } }
+      ]
+    },
+    {
+      // fachadas/drive/el-cuban-diner/Cuban Dinner y Ciao Restaurant _1578.jpeg — Ciao Havana (los listones) y El Cuban
+      // Diner (el frontón) desde la vereda norte, al atardecer (24 mm eq., 71,6°). El centro de Ciao (u ≈ 0,30) va donde
+      // ella lo marcó (lng −80.22095); la escala sale de los autos estacionados → cámara a ~19 m del frente, a 1,6 m,
+      // mirando 3,3° hacia arriba (base en v ≈ 0,64). El parapeto de Ciao queda a 5,5 m: es la altura del volumen en
+      // calibracion.js → alturas (OSM tenía 15 m); el frontón del Diner sobresale y cae en el cielo.
+      // Se descubre a la vuelta, en la vereda sur, al pasar frente al Diner (~9:11).
+      lugar: 'Ciao Havana · El Cuban Diner', tipo: 'fotografía', punto: { lat: 25.7655992, lng: -80.221 }, radio: 4,
+      vistas: [
+        { imagen: 'registros/el-cuban-diner-foto-00.webp', apertura: 71.6, rumbo: 180, cabeceo: -3.3, giro: 0,
+          camara: { lat: 25.7657528, lng: -80.2210047, alt: 1.6 }, mira: { lat: 25.7655813, lng: -80.2210047, alt: 2.69 } }
+      ]
+    },
+    {
+      // fachadas/drive/el-pub-restaurant/Restaurant Pub 1537.jpeg — la ventanita de El Pub (1548), en la esquina de la
+      // 16 Av. (24 mm eq., 71,6°). Escala por la mujer y la altura del mostrador (1,1 m) → cámara a 3,6 m, horizontal a
+      // 1,24 m (base de los azulejos en v ≈ 0,81, con el zócalo horizontal: la fachada de Calle 8 está de frente).
+      // La foto dobla la esquina: el final de los azulejos (u ≈ 0,784) es la arista entre la fachada y la ochava del
+      // volumen, y lo que sigue a la derecha (barril, menú, puerta) cae sobre la ochava. Para eso el proyector está
+      // 1,5 m al este de esa arista (2,1 m al oeste de donde estaba), con la lente sin desplazar (centro 0) y sin estirar:
+      // sólo desde ahí la foto se pliega sola sobre las dos paredes. Marcada a las 10:02.7.
+      lugar: 'El Pub Restaurant', tipo: 'fotografía', punto: { lat: 25.7656115, lng: -80.2205937 }, radio: 4,
+      vistas: [
+        { imagen: 'registros/el-pub-foto-00.webp', apertura: 71.6, rumbo: 178.5, cabeceo: 0, giro: 0,
+          camara: { lat: 25.7656284, lng: -80.220378, alt: 1.24 }, mira: { lat: 25.765596, lng: -80.220377, alt: 1.24 } }
       ]
     }
   ]

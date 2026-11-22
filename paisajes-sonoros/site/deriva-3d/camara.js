@@ -10,6 +10,8 @@
 //   apertura → ángulo horizontal de la imagen (grados)
 //   centro   → desplazamiento del centro óptico respecto del centro de la imagen, en unidades
 //              normalizadas (−1…1 = de borde a borde). [0, 0] = centrado.
+//   estirar  → (opcional) cuánto más alta se proyecta la imagen respecto de su proporción original
+//              (1 = sin estirar, 1.1 = 10 % más alta con el mismo ancho). Se ajusta en encajar.html.
 
 export const RAD = Math.PI / 180;
 
@@ -38,6 +40,8 @@ export function ejes(v) {
 }
 
 const tanH = (v) => Math.tan((v.apertura * RAD) / 2);
+// tangente del semiángulo vertical: la de la proporción de la imagen, por `estirar`
+export const tanV = (v, aspecto) => (tanH(v) / aspecto) * (v.estirar || 1);
 
 // punto 3D → posición en la imagen: [u, v] con u = 0…1 de izquierda a derecha y v = 0…1 de arriba abajo.
 // Devuelve null si el punto está detrás de la cámara.
@@ -45,7 +49,7 @@ export function proyectar(v, aspecto, X, E = ejes(v)) {
   const d = [X[0] - v.pos[0], X[1] - v.pos[1], X[2] - v.pos[2]];
   const zc = punto(d, E.f);
   if (zc <= 0.05) return null;
-  const th = tanH(v), tv = th / aspecto, c = v.centro || [0, 0];
+  const th = tanH(v), tv = tanV(v, aspecto), c = v.centro || [0, 0];
   const nx = punto(d, E.der) / zc / th + c[0];
   const ny = punto(d, E.arr) / zc / tv + c[1];
   return [(nx + 1) / 2, (1 - ny) / 2, zc];
@@ -53,12 +57,12 @@ export function proyectar(v, aspecto, X, E = ejes(v)) {
 
 // dirección (unitaria) del rayo que pasa por el centro de la imagen
 export function rayoCentro(v, aspecto, E = ejes(v)) {
-  const th = tanH(v), tv = th / aspecto, c = v.centro || [0, 0];
+  const th = tanH(v), tv = tanV(v, aspecto), c = v.centro || [0, 0];
   return norma([0, 1, 2].map((i) => E.f[i] - c[0] * th * E.der[i] - c[1] * tv * E.arr[i]));
 }
 // dirección del rayo que pasa por (u, v) de la imagen
 export function rayo(v, aspecto, u, w, E = ejes(v)) {
-  const th = tanH(v), tv = th / aspecto, c = v.centro || [0, 0];
+  const th = tanH(v), tv = tanV(v, aspecto), c = v.centro || [0, 0];
   const nx = u * 2 - 1 - c[0], ny = 1 - w * 2 - c[1];
   return norma([0, 1, 2].map((i) => E.f[i] + nx * th * E.der[i] + ny * tv * E.arr[i]));
 }
@@ -70,8 +74,8 @@ export function configurarThree(THREE, cam, v, aspecto) {
   const m = new THREE.Matrix4().makeBasis(
     new THREE.Vector3(...E.der), new THREE.Vector3(...E.arr), new THREE.Vector3(-E.f[0], -E.f[1], -E.f[2]));
   cam.quaternion.setFromRotationMatrix(m);
-  cam.aspect = aspecto;
-  cam.fov = (2 * Math.atan(tanH(v) / aspecto)) / RAD;
+  cam.aspect = tanH(v) / tanV(v, aspecto);
+  cam.fov = (2 * Math.atan(tanV(v, aspecto))) / RAD;
   cam.updateProjectionMatrix();
   const c = v.centro || [0, 0];
   cam.projectionMatrix.elements[8] = -c[0];
@@ -109,7 +113,7 @@ export function normalizar(v, local) {
   if (v.mira) { const [mx, my] = local([v.mira.lng, v.mira.lat]); mira = [mx, my, v.mira.alt || 0]; }
   const o = v.rumbo != null && v.cabeceo != null ? { rumbo: v.rumbo, cabeceo: v.cabeceo } : orientacion(pos, mira);
   const n = { imagen: v.imagen, pos, rumbo: o.rumbo, cabeceo: o.cabeceo, giro: v.giro || 0,
-    apertura: v.apertura || 40, centro: v.centro || [0, 0], isometrica: !!v.isometrica };
+    apertura: v.apertura || 40, centro: v.centro || [0, 0], estirar: v.estirar || 1, isometrica: !!v.isometrica };
   if (!mira) { const d = rayoCentro(n, 1.45); mira = [0, 1, 2].map((i) => pos[i] + d[i] * 80); }
   n.mira = mira;
   return n.isometrica ? alejar(n) : n;
@@ -126,7 +130,7 @@ const NOMBRES = ['x', 'y', 'z', 'rumbo', 'cabeceo', 'giro', 'lt', 'cx', 'cy'];
 const PASOS = [0.01, 0.01, 0.01, 0.005, 0.005, 0.005, 1e-4, 1e-4, 1e-4];
 const aVector = (v) => [v.pos[0], v.pos[1], v.pos[2], v.rumbo, v.cabeceo, v.giro || 0,
   Math.log(tanH(v)), (v.centro || [0, 0])[0], (v.centro || [0, 0])[1]];
-const aVista = (p) => ({ pos: [p[0], p[1], p[2]], rumbo: p[3], cabeceo: p[4], giro: p[5],
+const aVistaBase = (p) => ({ pos: [p[0], p[1], p[2]], rumbo: p[3], cabeceo: p[4], giro: p[5],
   apertura: (2 * Math.atan(Math.exp(p[6]))) / RAD, centro: [p[7], p[8]] });
 
 export function residuos(v, pares, ancho, alto) {
@@ -159,6 +163,7 @@ function levenberg(v0, pares, ancho, alto, libres, lim, iter = 150) {
   if (libres.giro) idx.push(5);
   if (libres.apertura) idx.push(6);
   if (libres.centro) idx.push(7, 8);
+  const est = v0.estirar || 1, aVista = (q) => ({ ...aVistaBase(q), estirar: est }); // el ajuste no toca `estirar`
   let p = aVector(v0);
   let r = vectorResiduos(aVista(p), pares, ancho, alto, lim), c = costo(r);
   let lam = 1e-3;
@@ -324,6 +329,7 @@ export function calibrar(pares, ancho, alto, inicial, libres = { giro: true, ape
   }
   // apuntando al centro de los puntos marcados, desde la posición actual
   inicios.push({ ...inicios[0], ...orientacion(inicial.pos, cm) });
+  for (const v of inicios) v.estirar = inicial.estirar || 1;
   let mejor = null;
   for (const v0 of inicios) {
     const r = levenberg(v0, pares, ancho, alto, libres, lim);
