@@ -5,7 +5,9 @@
 //
 //  slug     → nombre de la carpeta / URL (no cambiar una vez impresos los QR)
 //  pistas   → se reproducen en orden; al terminar, vuelve a empezar si loop=true
-//  texto    → BORRADOR: reemplazar por los textos curatoriales definitivos
+//  texto    → BORRADOR: reemplazar por los textos curatoriales definitivos (si está vacío no se muestra)
+//  frases   → (opcional) frases cortas en inglés que se alternan con una animación mientras se escucha.
+//             Conviene que no pasen de unos 70 caracteres. El tiempo en pantalla depende del largo.
 // ─────────────────────────────────────────────────────────────
 
 window.MUESTRA = {
@@ -20,9 +22,20 @@ window.SITIOS = {
     numero: '01',
     nombre: 'Tower Hotel',
     lugar: 'Hotel',
-    texto:
-      '' +
-      '[Texto provisorio: podemos incluir datos de color o alguna reflexión poética sobre el lugar]',
+    texto: '',
+    frases: [
+      '1450 SW 7th Street. Built in 1920.',
+      'Before Little Havana had a name, this was a YMCA.',
+      'During World War II, its rooms became hospital wards.',
+      'Then the Tower Apartments. Then the Tower Hotel.',
+      'Jazz musicians rested here: Billie Holiday, Count Basie, Chet Baker.',
+      'One block away, the Ball & Chain kept the night going.',
+      'In the 1930s, a Jewish, working-class street.',
+      'From the 1960s on, the heart of Cuban exile in Miami.',
+      'In 1980, the Mariel boatlift brought a new wave of arrivals.',
+      'In 2018, Miami Motel Stories turned its rooms into a stage.',
+      'A century of people passing through.'
+    ],
     color: '#9a5a4a',
     loop: true,
     // Toma III recortada a 3:54 (el original completo está en ../audios/descartados/)
@@ -33,9 +46,19 @@ window.SITIOS = {
     numero: '02',
     nombre: 'Ball & Chain',
     lugar: 'Música y entretenimiento',
-    texto:
-      'Sala de música y entretenimiento de la Calle Ocho. ' +
-      '[Texto provisorio: reemplazar por el texto curatorial.]',
+    texto: '',
+    frases: [
+      'Calle Ocho, since 1935.',
+      'It opened as the Ball & Chain Saloon.',
+      'In the Jim Crow years, Black and Latin artists played this stage.',
+      'Billie Holiday. Count Basie. Nat King Cole. Chet Baker.',
+      'In the fifties, its owners had ties to the Teamsters and the mob.',
+      'Count Basie sued for unpaid fees, and won.',
+      'By 1958, the music had stopped.',
+      'In 2014 it reopened, still open to the sky.',
+      'Salsa and Latin jazz on the Pineapple Stage.',
+      'In 2018, Cardi B filmed “I Like It” here.'
+    ],
     color: '#8a4f37',
     loop: true,
     pistas: [
@@ -61,9 +84,19 @@ window.SITIOS = {
     numero: '04',
     nombre: 'Domino Park',
     lugar: 'Parque Máximo Gómez',
-    texto:
-      'El parque donde se juega dominó en la Calle Ocho. ' +
-      '[Texto provisorio: reemplazar por el texto curatorial.]',
+    texto: '',
+    frases: [
+      'Máximo Gómez Park. Everyone calls it Domino Park.',
+      'Named after the general of Cuba’s wars of independence.',
+      'Calle Ocho and 15th Avenue.',
+      'Tables in the shade. Dominoes and chess.',
+      'The old Cuban men come here to play.',
+      'To sit at the club tables, you must be 55 or older.',
+      'The click of the tiles is the sound of the place.',
+      'Busiest on Sundays.',
+      'A joke, an argument, a new hand.',
+      'Little Havana’s living room.'
+    ],
     color: '#455830',
     loop: true,
     pistas: [{ titulo: 'I', src: '../audio/domino_park.m4a' }]

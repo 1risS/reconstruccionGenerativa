@@ -15,7 +15,9 @@
   $(".numero").textContent = sitio.numero;
   $(".nombre").textContent = sitio.nombre;
   $(".lugar").textContent = sitio.lugar;
-  $(".texto").textContent = sitio.texto;
+  $(".texto").textContent = sitio.texto || "";
+  $(".texto").hidden = !sitio.texto;
+  if (sitio.frases && sitio.frases.length) iniciarFrases($(".frases"), sitio.frases);
 
   const audio = new Audio();
   audio.preload = "metadata";
@@ -137,4 +139,89 @@
   }
 
   cargar(0, false);
+
+  // ── frases que se alternan ──────────────────────────
+  // Cada frase entra palabra por palabra (sube y se enfoca), queda un rato según su largo y sale hacia arriba.
+  // Debajo, un filete del color del punto marca cuánto falta para la siguiente. Se detiene con la pestaña oculta.
+  // El contenedor toma el alto de la frase más larga, así la página no salta. Para lectores de pantalla va la lista completa.
+  function iniciarFrases(cont, frases) {
+    cont.hidden = false;
+    cont.innerHTML =
+      '<ul class="sr-only"></ul>' +
+      '<div class="frases-escena" aria-hidden="true"></div>' +
+      '<div class="frases-pie" aria-hidden="true"><span class="frases-n"></span><span class="frases-filete"><i></i></span></div>';
+    const lista = cont.querySelector("ul");
+    const escena = cont.querySelector(".frases-escena");
+    const num = cont.querySelector(".frases-n");
+    const filete = cont.querySelector(".frases-filete i");
+    frases.forEach((f) => {
+      const li = document.createElement("li");
+      li.textContent = f;
+      lista.appendChild(li);
+    });
+
+    const SALIDA = 700; // ms, igual que la transición de .frase.sale en estilo.css
+    const total = String(frases.length).padStart(2, "0");
+    let i = -1;
+    let reloj = null;
+
+    function crear(texto) {
+      const p = document.createElement("p");
+      p.className = "frase";
+      texto.split(" ").forEach((palabra, k) => {
+        const s = document.createElement("span");
+        s.textContent = palabra;
+        s.style.setProperty("--k", k);
+        p.appendChild(s);
+        p.appendChild(document.createTextNode(" "));
+      });
+      return p;
+    }
+
+    function medir() {
+      let alto = 0;
+      frases.forEach((f) => {
+        const p = crear(f);
+        p.classList.add("midiendo");
+        escena.appendChild(p);
+        alto = Math.max(alto, p.offsetHeight);
+        p.remove();
+      });
+      escena.style.height = alto + "px";
+    }
+
+    function siguiente() {
+      i = (i + 1) % frases.length;
+      const vieja = escena.querySelector(".frase:not(.sale)");
+      if (vieja) {
+        vieja.classList.add("sale");
+        setTimeout(() => vieja.remove(), SALIDA);
+      }
+      const nueva = crear(frases[i]);
+      escena.appendChild(nueva);
+      requestAnimationFrame(() => requestAnimationFrame(() => nueva.classList.add("entra")));
+
+      const palabras = frases[i].split(" ").length;
+      const dur = Math.min(9000, Math.max(4200, 2200 + frases[i].length * 65)) + palabras * 70;
+      num.textContent = `${String(i + 1).padStart(2, "0")} / ${total}`;
+      filete.style.transition = "none";
+      filete.style.transform = "scaleX(0)";
+      void filete.offsetWidth;
+      filete.style.transition = `transform ${dur}ms linear`;
+      filete.style.transform = "scaleX(1)";
+      reloj = setTimeout(siguiente, dur);
+    }
+
+    medir();
+    let ancho = cont.clientWidth;
+    addEventListener("resize", () => {
+      if (cont.clientWidth !== ancho) { ancho = cont.clientWidth; medir(); }
+    });
+    if (document.fonts) document.fonts.ready.then(medir);
+    document.addEventListener("visibilitychange", () => {
+      clearTimeout(reloj);
+      if (!document.hidden) { i -= 1; siguiente(); }
+    });
+    siguiente();
+  }
 })();
