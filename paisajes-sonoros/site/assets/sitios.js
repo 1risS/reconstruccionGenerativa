@@ -12,7 +12,7 @@
 
 window.MUESTRA = {
   titulo: 'Little Havana',
-  subtitulo: 'Studies in Simulation and Generative Reconstruction',
+  subtitulo: 'Between the Map and the Territory',
   artista: 'Viviana Zargón',
   sede: 'Miami Photographic Observatory · Aluna Art Foundation'
 }

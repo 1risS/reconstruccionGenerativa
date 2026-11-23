@@ -1,6 +1,6 @@
 # Little Havana — paisajes sonoros (QR)
 
-Muestra de Viviana Zargón "Little Havana: Studies on Simulation and Generative Reconstruction", en Miami Photographic Observatory y Aluna Art Foundation (Miami).
+Muestra de Viviana Zargón "Little Havana: Between the Map and the Territory", en Miami Photographic Observatory y Aluna Art Foundation (Miami).
 Cada QR abre una página que reproduce el paisaje sonoro de uno de los cinco puntos.
 
 | # | Punto | URL |
