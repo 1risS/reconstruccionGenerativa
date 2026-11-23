@@ -61,11 +61,8 @@ window.SITIOS = {
     ],
     color: '#8a4f37',
     loop: true,
-    pistas: [
-      { titulo: 'I', src: '../audio/ball_and_chain_00.m4a' },
-      { titulo: 'II', src: '../audio/ball_and_chain_01.m4a' },
-      { titulo: 'III', src: '../audio/ball_and_chain_02.m4a' }
-    ]
+    // Tramo de la toma II desde 3:30 (con fundido de entrada) y la toma I entera, que cierra con fundido.
+    pistas: [{ titulo: 'I', src: '../audio/ball_and_chain.m4a' }]
   },
 
   'casa-de-tabaco': {
