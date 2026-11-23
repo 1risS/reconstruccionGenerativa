@@ -19,6 +19,18 @@
   $(".texto").hidden = !sitio.texto;
   if (sitio.frases && sitio.frases.length) iniciarFrases($(".frases"), sitio.frases);
 
+  // fotos en loop como fondo de la página (assets/fotos.js)
+  const cuerpo = document.body;
+  const conFotos = !!(sitio.fotos && sitio.fotos.length && window.iniciarFotos);
+  if (conFotos) {
+    const escena = document.createElement("div");
+    escena.className = "fotos";
+    escena.setAttribute("aria-hidden", "true");
+    cuerpo.prepend(escena);
+    cuerpo.classList.add("con-fotos");
+    window.iniciarFotos(escena, sitio.fotos);
+  }
+
   // punto sin audio todavía (pistas vacío): sólo las frases y un aviso
   if (!sitio.pistas || !sitio.pistas.length) {
     $(".reproductor").classList.add("sin-audio");
@@ -82,6 +94,33 @@
   }
 
   boton.addEventListener("click", () => (audio.paused ? play() : audio.pause()));
+
+  // ── interfaz que se desvanece sobre las fotos ──
+  // Con fotos, mientras suena el audio los controles se desvanecen y quedan las fotos. Al tocar la pantalla
+  // vuelven por unos segundos. Recién un momento después de aparecer aceptan toques (.ui-llegando),
+  // así el mismo toque que los muestra no pausa el audio.
+  let relojUI = null;
+  function ocultarUI() {
+    if (audio.paused || arrastrando) return programarOcultar(4000);
+    cuerpo.classList.add("ui-oculta");
+  }
+  function programarOcultar(ms) {
+    clearTimeout(relojUI);
+    if (conFotos && !audio.paused) relojUI = setTimeout(ocultarUI, ms);
+  }
+  function mostrarUI() {
+    clearTimeout(relojUI);
+    if (!cuerpo.classList.contains("ui-oculta")) return;
+    cuerpo.classList.remove("ui-oculta");
+    cuerpo.classList.add("ui-llegando");
+    setTimeout(() => cuerpo.classList.remove("ui-llegando"), 450);
+  }
+  if (conFotos) {
+    document.addEventListener("pointerdown", () => { mostrarUI(); programarOcultar(4000); }, true);
+    $(".reproductor").addEventListener("focusin", () => { mostrarUI(); programarOcultar(4000); });
+    audio.addEventListener("playing", () => programarOcultar(1500));
+    audio.addEventListener("pause", mostrarUI);
+  }
 
   audio.addEventListener("playing", () => {
     boton.classList.remove("cargando");

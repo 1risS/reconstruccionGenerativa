@@ -7,7 +7,7 @@ Cada QR abre una página que reproduce el paisaje sonoro de uno de los cinco pun
 |---|-------|-----|
 | 01 | Tower Hotel | `/tower-hotel/` |
 | 02 | Ball & Chain | `/ball-and-chain/` |
-| 03 | Casa de Tabaco | `/casa-de-tabaco/` |
+| 03 | Casa Habano | `/casa-de-tabaco/` |
 | 04 | Domino Park | `/domino-park/` |
 | 05 | Deriva Calle 8 | `/deriva-calle-8/` |
 

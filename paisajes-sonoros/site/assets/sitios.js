@@ -8,6 +8,9 @@
 //  texto    → BORRADOR: reemplazar por los textos curatoriales definitivos (si está vacío no se muestra)
 //  frases   → (opcional) frases cortas en inglés que se alternan con una animación mientras se escucha.
 //             Conviene que no pasen de unos 70 caracteres. El tiempo en pantalla depende del largo.
+//  fotos    → (opcional) fotos que pasan en loop como fondo de la página (assets/fotos.js). src es relativo a la página.
+//             detalles: [x, y, zoom] con x, y entre 0 y 1 (0,0 = arriba a la izquierda). La cámara los recorre
+//             en orden sin detenerse. zoom 1 = la foto llenando la pantalla (en un teléfono, un tercio del ancho).
 // ─────────────────────────────────────────────────────────────
 
 window.MUESTRA = {
@@ -67,14 +70,21 @@ window.SITIOS = {
 
   'casa-de-tabaco': {
     numero: '03',
-    nombre: 'Casa de Tabaco',
+    nombre: 'Casa Habano',
     lugar: 'Tabaquería',
     texto:
       'Un local de torcido y venta de tabaco. ' +
       '[Texto provisorio: reemplazar por el texto curatorial.]',
     color: '#8a6a1c',
     loop: true,
-    pistas: [{ titulo: 'I', src: '../audio/casa_tabaco.m4a' }]
+    // Recortado a 2:23 con fundidos (el original completo está en ../audios/descartados/)
+    pistas: [{ titulo: 'I', src: '../audio/casa_tabaco.m4a' }],
+    fotos: [
+      { src: 'fotos/fachada.jpg', detalles: [[0.2, 0.42, 1.15], [0.37, 0.32, 1.35], [0.63, 0.45, 1.45], [0.76, 0.3, 1.2]] },
+      { src: 'fotos/street-view.jpg', detalles: [[0.2, 0.45, 1.1], [0.49, 0.52, 1.25], [0.85, 0.4, 1.1]] },
+      { src: 'fotos/diorama-04.jpg', detalles: [[0.18, 0.5, 1.2], [0.37, 0.5, 1.35], [0.6, 0.38, 1.3], [0.76, 0.45, 1.3], [0.76, 0.72, 1.4]] },
+      { src: 'fotos/diorama-06.jpg', detalles: [[0.23, 0.3, 1.3], [0.32, 0.35, 1.2], [0.58, 0.4, 1.3], [0.55, 0.6, 1.35], [0.82, 0.6, 1.25]] }
+    ]
   },
 
   'domino-park': {

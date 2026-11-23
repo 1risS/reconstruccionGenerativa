@@ -218,6 +218,32 @@ body {
 }
 .pistas button[aria-current="true"] { color: var(--sobre-acento); background: var(--accent); border-color: var(--accent); }
 
+/* ── fotos de fondo (assets/fotos.js) ──
+   Llenan toda la pantalla, fijas detrás de la página. Un degradé del color del papel arriba y abajo
+   deja leer el título y el pie. Mientras se ven los controles, un velo parejo aclara además todo el fondo;
+   al sonar el audio los controles y ese velo se desvanecen (body.ui-oculta) y quedan las fotos. */
+.fotos { position: fixed; inset: 0; z-index: 0; overflow: hidden; }
+.fotos .foto { position: absolute; inset: 0; opacity: 0; transition: opacity 1.8s ease; }
+.fotos .foto.visible { opacity: 1; }
+.fotos img { position: absolute; left: 0; top: 0; max-width: none; transform-origin: 0 0; will-change: transform; }
+.fotos::before, .fotos::after { content: ""; position: absolute; inset: 0; pointer-events: none; }
+.fotos::before {
+  background: linear-gradient(to bottom,
+    color-mix(in srgb, var(--bg) 94%, transparent) 0%,
+    color-mix(in srgb, var(--bg) 88%, transparent) 22%,
+    transparent 42%,
+    transparent 72%,
+    color-mix(in srgb, var(--bg) 88%, transparent) 86%,
+    color-mix(in srgb, var(--bg) 94%, transparent) 100%);
+  z-index: 1;
+}
+.fotos::after { background: var(--bg); opacity: 0.84; transition: opacity 1.2s ease; z-index: 1; }
+body.con-fotos .pagina { position: relative; z-index: 1; }
+body.con-fotos .reproductor > * { transition: opacity 1.2s ease; }
+body.ui-oculta .reproductor > * { opacity: 0; pointer-events: none; }
+body.ui-oculta .fotos::after { opacity: 0; }
+body.ui-llegando .reproductor > * { pointer-events: none; }
+
 .aviso { font-size: 0.9rem; color: var(--muted); text-align: center; }
 .reproductor.sin-audio > :not(.aviso) { display: none; }
 .error { color: #9a3b2c; }
