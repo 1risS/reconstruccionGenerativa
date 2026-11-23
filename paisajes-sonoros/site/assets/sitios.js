@@ -143,6 +143,15 @@ window.SITIOS = {
     ],
     color: '#3f5868',
     loop: true,
-    pistas: []
+    // 30 fragmentos al azar de Charade y McLintock! (1963, dominio público), nivelados y en orden aleatorio.
+    // Los cortes están en ../audios/tower-peliculas/
+    pistas: [{ titulo: 'I', src: '../audio/tower_theatre.m4a' }],
+    // torre-bn.jpg es chica (348 px): va con poco zoom
+    fotos: [
+      { src: 'fotos/fachada.jpg', detalles: [[0.6, 0.28, 1.3], [0.48, 0.6, 1.35], [0.45, 0.78, 1.3], [0.78, 0.68, 1.3]] },
+      { src: 'fotos/marquesina.jpg', detalles: [[0.42, 0.27, 1.4], [0.62, 0.27, 1.4], [0.5, 0.47, 1.25], [0.5, 0.75, 1.35], [0.77, 0.7, 1.4]] },
+      { src: 'fotos/torre-bn.jpg', detalles: [[0.55, 0.3, 1], [0.35, 0.65, 1.08]] },
+      { src: 'fotos/diorama.jpg', detalles: [[0.65, 0.25, 1.3], [0.4, 0.3, 1.2], [0.25, 0.6, 1.3], [0.68, 0.55, 1.4], [0.75, 0.72, 1.3]] }
+    ]
   }
 }
