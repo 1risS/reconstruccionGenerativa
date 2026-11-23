@@ -219,6 +219,7 @@ body {
 .pistas button[aria-current="true"] { color: var(--sobre-acento); background: var(--accent); border-color: var(--accent); }
 
 .aviso { font-size: 0.9rem; color: var(--muted); text-align: center; }
+.reproductor.sin-audio > :not(.aviso) { display: none; }
 .error { color: #9a3b2c; }
 
 /* ── índice ───────────────────────────────────────── */

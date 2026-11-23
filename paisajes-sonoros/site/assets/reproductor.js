@@ -19,6 +19,13 @@
   $(".texto").hidden = !sitio.texto;
   if (sitio.frases && sitio.frases.length) iniciarFrases($(".frases"), sitio.frases);
 
+  // punto sin audio todavía (pistas vacío): sólo las frases y un aviso
+  if (!sitio.pistas || !sitio.pistas.length) {
+    $(".reproductor").classList.add("sin-audio");
+    $(".aviso").textContent = "El paisaje sonoro estará disponible pronto.";
+    return;
+  }
+
   const audio = new Audio();
   audio.preload = "metadata";
   const boton = $(".boton");

@@ -112,5 +112,29 @@ window.SITIOS = {
     color: '#685236',
     loop: true,
     pistas: [{ titulo: 'I', src: '../audio/deriva_calle_8.m4a' }]
+  },
+
+  // Sin registro sonoro propio (el cine está cerrado): el audio será un montaje de fragmentos de las películas
+  // que se pasaban en los años 60. Mientras pistas esté vacío, la página muestra sólo las frases y un aviso.
+  'tower-theatre': {
+    numero: '06',
+    nombre: 'Tower Theatre',
+    lugar: 'Cine',
+    texto: '',
+    frases: [
+      'Calle Ocho and 15th Avenue. Since 1926.',
+      'A movie palace with a thousand seats.',
+      'In 1931 it was remodeled, and gained its tower.',
+      'Its spire greeted the Cubans arriving after 1959.',
+      'In 1960, it was among the first in Miami to subtitle films in Spanish.',
+      'Hollywood on the screen. Spanish underneath.',
+      'Reading in Spanish, listening in English.',
+      'A new language, learned in the dark.',
+      'For many exiles, a first door into American life.',
+      'Today the screen is dark.'
+    ],
+    color: '#3f5868',
+    loop: true,
+    pistas: []
   }
 }
