@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="es">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#eaeaea">
-  <title>Deriva Calle 8 · Little Havana</title>
+  <title>Calle Ocho Walk · Little Havana</title>
   <script src="../assets/marco.js"></script>
   <script>
     // si se abrió como /deriva-3d (sin barra final), las rutas relativas fallan: corregir la URL
@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="mapa.css">
 </head>
 <body>
-  <div id="mapa" aria-label="Mapa 3D del recorrido"></div>
+  <div id="mapa" aria-label="3D map of the walk"></div>
   <!-- la panorámica fija mientras carga el 3D; mapa.js la ubica donde la va a proyectar la ciudad -->
   <img class="pano-foto" id="pano-foto" src="../portada/panoramica.webp" alt="" aria-hidden="true">
   <div class="vineta" aria-hidden="true"></div>
@@ -26,11 +26,11 @@
   <section class="inicio" id="inicio">
     <header class="muestra" id="muestra"></header>
     <div class="sitio">
-      <h2 class="nombre">Deriva Calle 8</h2>
-      <p class="lugar">De 13 a 17 Avenida por una vereda, volviendo por la otra hasta la 15</p>
+      <h2 class="nombre">Calle Ocho Walk</h2>
+      <p class="lugar">From 13th to 17th Avenue along one sidewalk, back along the other to 15th</p>
     </div>
-    <button class="comenzar" id="comenzar" disabled>Cargando mapa…</button>
-    <p class="aviso">Se recomienda usar auriculares.</p>
+    <button class="comenzar" id="comenzar" disabled>Loading map…</button>
+    <p class="aviso">Headphones recommended.</p>
   </section>
 
   <!-- nota de esquina (los momentos que marcó la artista) -->
@@ -44,27 +44,27 @@
   </div>
 
   <div class="fin" id="fin">
-    <p>fin del recorrido</p>
+    <p>end of the walk</p>
     <button class="reiniciar" id="reiniciar" tabindex="-1">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5V2L7 6l5 4V7a6 6 0 1 1-6 6H4a8 8 0 1 0 8-8z"/></svg>
-      volver a empezar
+      start again
     </button>
   </div>
 
-  <button class="seguir" id="seguir" hidden>Seguir recorrido</button>
+  <button class="seguir" id="seguir" hidden>Follow the walk</button>
 
   <!-- controles -->
   <section class="panel" id="panel" hidden>
     <!-- la línea es el recorrido: el punto avanza con el audio y se puede arrastrar -->
     <div class="linea">
-      <input id="rango" type="range" min="0" max="1000" step="1" value="0" aria-label="Posición en el recorrido">
+      <input id="rango" type="range" min="0" max="1000" step="1" value="0" aria-label="Position along the walk">
     </div>
     <div class="fila">
-      <button class="paso" id="anterior" aria-label="Punto de interés anterior">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.4 5.4 14 4l-8 8 8 8 1.4-1.4L8.8 12z"/></svg>anterior
+      <button class="paso" id="anterior" aria-label="Previous point of interest">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.4 5.4 14 4l-8 8 8 8 1.4-1.4L8.8 12z"/></svg>previous
       </button>
-      <button class="paso" id="siguiente" aria-label="Punto de interés siguiente">
-        siguiente<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.6 5.4 10 4l8 8-8 8-1.4-1.4 6.6-6.6z"/></svg>
+      <button class="paso" id="siguiente" aria-label="Next point of interest">
+        next<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.6 5.4 10 4l8 8-8 8-1.4-1.4 6.6-6.6z"/></svg>
       </button>
     </div>
   </section>

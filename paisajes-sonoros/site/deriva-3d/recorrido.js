@@ -76,26 +76,26 @@ window.RECORRIDO = {
 
   puntos: [
     // ── ida, vereda norte (hacia el oeste) ──
-    { t: '0:00',                      lat: 25.7658353, lng: -80.2182399, nota: 'Pajaritos · inicio' },
+    { t: '0:00',                      lat: 25.7658353, lng: -80.2182399, nota: 'Birds · start' },
     { t: '0:46.7',                    lat: 25.765808,  lng: -80.2191451, nota: 'Guantanamera' },
     { t: '1:57.7',                    lat: 25.7657893, lng: -80.219765,  nota: 'Ball & Chain' },
     { t: '3:58.2',                    lat: 25.7657697, lng: -80.220411,  nota: 'El Cristo Restaurant' },
     { t: '4:29.5',                    lat: 25.7657638, lng: -80.220608,  nota: 'Top Cigars · Skinny Louie' },
-    { t: '4:34.5', hasta: '4:46.8',   lat: 25.7657627, lng: -80.220643,  nota: 'Semáforo · Calle 8 y 16 Av.' },
-    { t: '5:38.4',                    lat: 25.7657477, lng: -80.2211411, nota: 'Pasa un bus' },
+    { t: '4:34.5', hasta: '4:46.8',   lat: 25.7657627, lng: -80.220643,  nota: 'Traffic light · Calle 8 & 16th Ave.' },
+    { t: '5:38.4',                    lat: 25.7657477, lng: -80.2211411, nota: 'A bus goes by' },
     { t: '5:53.1',                    lat: 25.7657443, lng: -80.2212543, nota: 'Mr. Cigars' },
-    { t: '6:09.3',                    lat: 25.7657379, lng: -80.2214678, nota: 'Se oye Los Montaditos Bar' },
-    { t: '7:19.9',                    lat: 25.7657097, lng: -80.2224,    nota: 'Esquina de la 17 Av. · cruza la Calle 8' },
-    { t: '7:21.0',                    lat: 25.7656965, lng: -80.2224,    nota: "Se oye Tumba'o" },
+    { t: '6:09.3',                    lat: 25.7657379, lng: -80.2214678, nota: 'Los Montaditos Bar can be heard' },
+    { t: '7:19.9',                    lat: 25.7657097, lng: -80.2224,    nota: 'Corner of 17th Ave. · crossing Calle 8' },
+    { t: '7:21.0',                    lat: 25.7656965, lng: -80.2224,    nota: "Tumba'o can be heard" },
     // ── vuelta, vereda sur (hacia el este) ──
-    { t: '7:32.7',                    lat: 25.7655569, lng: -80.2224,    nota: 'PNC Bank · esquina de la 17 Av.' },
-    { t: '7:58.0',                    lat: 25.765567,  lng: -80.2220658, nota: "Se oye Sala'o" },
+    { t: '7:32.7',                    lat: 25.7655569, lng: -80.2224,    nota: 'PNC Bank · corner of 17th Ave.' },
+    { t: '7:58.0',                    lat: 25.765567,  lng: -80.2220658, nota: "Sala'o can be heard" },
     { t: '9:27.2',                    lat: 25.7656026, lng: -80.2208879, nota: 'Ciao Havana' },
     { t: '9:51.2',                    lat: 25.7656092, lng: -80.2206715, nota: "Alfaro's" },
-    { t: '10:02.7',                   lat: 25.7656115, lng: -80.2205937, nota: 'El Pub · Calle 8 y 16 Av.' },
+    { t: '10:02.7',                   lat: 25.7656115, lng: -80.2205937, nota: 'El Pub · Calle 8 & 16th Ave.' },
     { t: '10:33.2',                   lat: 25.7656185, lng: -80.2203621 },
     { t: '11:25.3',                   lat: 25.7656261, lng: -80.2201121, nota: 'La Colada Gourmet' },
-    { t: '12:08.1',                   lat: 25.7656323, lng: -80.2199068, nota: 'Pasa una moto' },
+    { t: '12:08.1',                   lat: 25.7656323, lng: -80.2199068, nota: 'A motorbike goes by' },
     { t: '12:23.9',                   lat: 25.7656346, lng: -80.219831,  nota: 'El Exquisito' }
   ],
 
@@ -125,22 +125,22 @@ window.RECORRIDO = {
         // la cámara sale de 6 pares imagen ↔ modelo del teatro (esquina NE a 0, 5 y 10 m, esquina SE a 10 m, punta de la
         // torre a 18 m y su pedestal a 11 m), con el mismo ajuste que calibrar.html: errores de 4 a 17 px.
         // Va primero (a la altura de la calle, como la foto de Ball & Chain) y el dron cierra.
-        { imagen: 'registros/tower-theater-foto-00.webp', tipo: 'fotografía', apertura: 58.43, rumbo: -143.19, cabeceo: -8.1, giro: 1.03,
+        { imagen: 'registros/tower-theater-foto-00.webp', tipo: 'photograph', apertura: 58.43, rumbo: -143.19, cabeceo: -8.1, giro: 1.03,
           camara: { lat: 25.7658532, lng: -80.2194087, alt: 1.94 }, mira: { lat: 25.7656392, lng: -80.2195864, alt: 6.17 } },
-        { imagen: 'registros/tower-theater-diorama-00.webp', tipo: 'diorama generado por IA', isometrica: true, apertura: 42,
+        { imagen: 'registros/tower-theater-diorama-00.webp', tipo: 'AI-generated diorama', isometrica: true, apertura: 42,
           camara: { lat: 25.765945, lng: -80.219124, alt: 60 }, mira: { lat: 25.76546, lng: -80.21966, alt: 4 } },
         // cenital/tower_hotel_00.jpf — dron a 54,9 m justo encima del teatro, cámara a −90° (datos del XMP de DJI).
         // Rumbo −97,8° = el borde de arriba de la foto mira al oeste (Calle 8 queda a la derecha). Cabeceo 89 y no 90
         // (a 90 el rumbo queda indefinido); la mira está 1 m al oeste del nadir, en la dirección del eje óptico.
         // Del diorama a la cenital y de la cenital al diorama de noche no se vuela (llega: 'fundido'): el vuelo sólo
         // mostraba mapa vacío y un giro brusco al pasar por el nadir.
-        { imagen: 'registros/tower-theatre-cenital-00.webp', tipo: 'fotografía aérea cenital', apertura: 73.7, llega: 'fundido',
+        { imagen: 'registros/tower-theatre-cenital-00.webp', tipo: 'overhead aerial photograph', apertura: 73.7, llega: 'fundido',
           rumbo: -97.8, cabeceo: 89, giro: 0,
           camara: { lat: 25.7654547, lng: -80.2197256, alt: 54.9 }, mira: { lat: 25.7654535, lng: -80.2197355, alt: 0 } },
-        { imagen: 'registros/tower-theater-diorama-02.webp', tipo: 'diorama generado por IA', isometrica: true, apertura: 40, llega: 'fundido',
+        { imagen: 'registros/tower-theater-diorama-02.webp', tipo: 'AI-generated diorama', isometrica: true, apertura: 40, llega: 'fundido',
           camara: { lat: 25.76546, lng: -80.218962, alt: 72 }, mira: { lat: 25.76546, lng: -80.21966, alt: 4 } },
         // la foto del dron va última: es la última imagen anamórfica que se recompone antes de volver a la panorámica
-        { imagen: 'registros/tower-theatre-dron-00.webp', tipo: 'fotografía aérea', apertura: 73.7, huella: true, rumbo: -137.2, cabeceo: 22.2, giro: -0.1,
+        { imagen: 'registros/tower-theatre-dron-00.webp', tipo: 'aerial photograph', apertura: 73.7, huella: true, rumbo: -137.2, cabeceo: 22.2, giro: -0.1,
           camara: { lat: 25.7657892, lng: -80.2194265, alt: 19.5 }, mira: { lat: 25.7655532, lng: -80.2196669, alt: 5 } }
       ]
     },
@@ -164,7 +164,7 @@ window.RECORRIDO = {
       // se recompone a la altura de los ojos), después sube a los dos dioramas. Si empezara por un diorama, la foto
       // se apagaba al acercarse y desde la vereda no se veía nada (el diorama cae en techos, visto desde 1 km).
       vistas: [
-        { imagen: 'registros/ball-and-chain-foto-00.webp', tipo: 'fotografía', apertura: 21, huella: true,
+        { imagen: 'registros/ball-and-chain-foto-00.webp', tipo: 'photograph', apertura: 21, huella: true,
           camara: { lat: 25.76562, lng: -80.219765, alt: 1.6 }, mira: { lat: 25.765815, lng: -80.219765, alt: 2 } },
         // Los dioramas se encajan para que el FRENTE DE BALL & CHAIN coincida con el de la foto (pedido de la artista):
         // base de la fachada en el piso, borde del toldo a 2,34 m y cartel «BALL & CHAIN» a 3,76–4,43 m, como en la foto,
@@ -173,11 +173,11 @@ window.RECORRIDO = {
         // de la cuadra, no los 28 m hasta la esquina, y el cartel del dibujo queda más angosto que el de la foto.
         // de noche: base en y ≈ 650, toldo 497, cartel 388–420 (x 403–630) → 62 px/m en vertical; inclinación 13°
         // (por la vereda del dibujo) → 63,6 px/m, la imagen entera mide 25,1 m sobre la pared
-        { imagen: 'registros/ball-and-chain-fachada-00.webp', tipo: 'diorama generado por IA', isometrica: true, apertura: 17.8,
+        { imagen: 'registros/ball-and-chain-fachada-00.webp', tipo: 'AI-generated diorama', isometrica: true, apertura: 17.8,
           camara: { lat: 25.765116, lng: -80.2196889, alt: 20.31 }, mira: { lat: 25.7658166, lng: -80.2197161, alt: 2.31 } },
         // de día: base en y ≈ 620, toldo 518, cartel 428–456 (x 400–604) → 43,5 px/m en vertical; inclinación 16,5°
         // → 45,4 px/m, la imagen entera mide 35,2 m sobre la pared
-        { imagen: 'registros/ball-and-chain-fachada-01.webp', tipo: 'diorama generado por IA', isometrica: true, apertura: 24.8,
+        { imagen: 'registros/ball-and-chain-fachada-01.webp', tipo: 'AI-generated diorama', isometrica: true, apertura: 24.8,
           camara: { lat: 25.7651279, lng: -80.2196678, alt: 25.7 }, mira: { lat: 25.7658173, lng: -80.2196945, alt: 3.01 } }
       ]
     },
@@ -188,7 +188,7 @@ window.RECORRIDO = {
       // Por las personas: ≈ 15,6 m de ancho en la pared y las cabezas bien debajo del centro → cámara
       // a 1,6 m inclinada ~8° hacia arriba (el centro de la foto cae a ~4,3 m en la pared).
       // La artista marcó que se oye a las 4:29.5, a la ida (vereda norte, frente a la puerta): se dispara ahí.
-      lugar: 'Top Cigars · Skinny Louie', tipo: 'fotografía', punto: { lat: 25.7657638, lng: -80.220608 }, radio: 4,
+      lugar: 'Top Cigars · Skinny Louie', tipo: 'photograph', punto: { lat: 25.7657638, lng: -80.220608 }, radio: 4,
       vistas: [
         // El borde derecho de Skinny Louie (u ≈ 0,81; a la derecha empieza el edificio blanco de dos pisos) cae en el
         // final del volumen (lng −80.220553): con ≈ 14,6 m de pared en la foto, el centro queda 1 m al este del pin.
@@ -209,7 +209,7 @@ window.RECORRIDO = {
       // La artista no marcó cuándo se oye. Se descubre a la VUELTA, por la misma vereda sur: el caminante pasa
       // a ~3 m del punto de la foto hacia las 11:28 (radio 10 para que no se dispare a la ida, desde la
       // vereda norte, que queda a ~14 m). Va antes que el Tower Theater, que está más adelante, en la esquina.
-      lugar: 'Cuban Cigars Corp', tipo: 'fotografía', radio: 10,
+      lugar: 'Cuban Cigars Corp', tipo: 'photograph', radio: 10,
       vistas: [
         { imagen: 'registros/cuban-cigars-foto-00.webp', apertura: 62,
           camara: { lat: 25.765658, lng: -80.220001, alt: 1.6 }, mira: { lat: 25.765604, lng: -80.220001, alt: 2 } }
@@ -228,7 +228,7 @@ window.RECORRIDO = {
       // Guantanamera y Cubaocho comparten el volumen de 91 m que llega a la esquina de la 15 Av., pero son locales
       // distintos: cada uno es un lugar aparte, con su nombre en el pie y su propio travelling (antes iban juntos bajo
       // «Guantanamera · Cubaocho» y la foto de Cubaocho salía con el nombre de Guantanamera).
-      lugar: 'Guantanamera', tipo: 'fotografía', punto: { lat: 25.765808, lng: -80.2191451 }, radio: 4,
+      lugar: 'Guantanamera', tipo: 'photograph', punto: { lat: 25.765808, lng: -80.2191451 }, radio: 4,
       vistas: [
         // La foto está tomada desde la galería: la pared del fondo (puerta con cortinas, piso en v ≈ 0,71, cielorraso en
         // v ≈ 0,17) es la que se pega en la fachada del volumen (lat 25.765818). Con la cámara horizontal a 1,5 m, el piso
@@ -247,7 +247,7 @@ window.RECORRIDO = {
       // Cubaocho (Museum & Performing Arts Center), en el mismo volumen que Guantanamera, hacia la esquina de la 15 Av.
       // Se dispara cuando el caminante (vereda norte, a la ida) pasa frente a la fachada de la foto (lng −80.2192855,
       // ~1:02). Si Guantanamera todavía está en el aire, espera a que vuelva; Ball & Chain (1:57.7) espera a Cubaocho.
-      lugar: 'Cubaocho', tipo: 'fotografía', punto: { lat: 25.7658038, lng: -80.2192855 }, radio: 4,
+      lugar: 'Cubaocho', tipo: 'photograph', punto: { lat: 25.7658038, lng: -80.2192855 }, radio: 4,
       vistas: [
         // fachadas/drive/cubaocho/Cuba 8 1759.jpg — Cubaocho desde la vereda de enfrente (24 mm eq., 71,6°), de noche.
         // La esquina del edificio con la 15 Av. (u ≈ 0,02) va en la esquina del volumen (lng −80.219395); la escala sale
@@ -267,7 +267,7 @@ window.RECORRIDO = {
       // El costado blanco de la izquierda cae sobre la pared este del vecino (lng −80.220462). Las alturas de los dos
       // volúmenes se corrigieron en calibracion.js → alturas (el local, 4,2 m: el borde del cartel; el vecino, 6,8 m: medido en esta foto y en la de Top Cigars).
       // Marcada a las 3:58.2.
-      lugar: 'El Cristo Restaurant', tipo: 'fotografía', punto: { lat: 25.7657697, lng: -80.220411 }, radio: 4,
+      lugar: 'El Cristo Restaurant', tipo: 'photograph', punto: { lat: 25.7657697, lng: -80.220411 }, radio: 4,
       vistas: [
         { imagen: 'registros/el-cristo-foto-00.webp', apertura: 64,
           camara: { lat: 25.765659, lng: -80.220371, alt: 1.6 }, mira: { lat: 25.765791, lng: -80.220371, alt: 1.6 } }
@@ -278,7 +278,7 @@ window.RECORRIDO = {
       // vereda sur: entran Mr. Cigars, el 1603 y el Social Club (~11 m de pared) → cámara a ~24 m. El centro de
       // la foto cae en la franja de los carteles, ~2,8 m.
       // Marcada a las 5:53.1.
-      lugar: 'Mr. Cigars', tipo: 'fotografía', punto: { lat: 25.7657443, lng: -80.2212543 }, radio: 4,
+      lugar: 'Mr. Cigars', tipo: 'photograph', punto: { lat: 25.7657443, lng: -80.2212543 }, radio: 4,
       vistas: [
         // La foto cubre ≈ 10,5 m de pared (puerta del 1603 ≈ 0,95 m = 0,09 del ancho). Centrada en el pin, el Social Club
         // (borde derecho) caía en un hueco de OSM al este del volumen (lng > −80.221218): se corre 1,6 m al oeste para
@@ -302,7 +302,7 @@ window.RECORRIDO = {
       // (1520). A la vuelta no hay lugar: Cuban Cigars y el Tower cierran el recorrido. Se descubren a la IDA, desde la
       // vereda de enfrente, cuando el caminante pasa frente a ellos (~2:17; si Ball & Chain todavía está en el aire,
       // espera a que vuelva). Las dos fotos son de cerca y frontales; no llegan al techo.
-      lugar: 'El Exquisito · La Colada Gourmet', tipo: 'fotografía', punto: { lat: 25.7657861, lng: -80.21987 }, radio: 4,
+      lugar: 'El Exquisito · La Colada Gourmet', tipo: 'photograph', punto: { lat: 25.7657861, lng: -80.21987 }, radio: 4,
       vistas: [
         // fachadas/drive/el-exquisito-restaurant/El exquisito Cafeteria _1505.jpeg — 24 mm eq. (71,6°). La puerta del 1510
         // (≈ 1 m) da la cámara a 3,65 m de la vidriera, horizontal a 1,46 m (la base cae en v ≈ 0,87). El reflejo del
@@ -323,7 +323,7 @@ window.RECORRIDO = {
       // mirando 3,3° hacia arriba (base en v ≈ 0,64). El parapeto de Ciao queda a 5,5 m: es la altura del volumen en
       // calibracion.js → alturas (OSM tenía 15 m); el frontón del Diner sobresale y cae en el cielo.
       // Se descubre a la vuelta, en la vereda sur, al pasar frente al Diner (~9:11).
-      lugar: 'Ciao Havana · El Cuban Diner', tipo: 'fotografía', punto: { lat: 25.7655992, lng: -80.221 }, radio: 4,
+      lugar: 'Ciao Havana · El Cuban Diner', tipo: 'photograph', punto: { lat: 25.7655992, lng: -80.221 }, radio: 4,
       vistas: [
         { imagen: 'registros/el-cuban-diner-foto-00.webp', apertura: 71.6, rumbo: 180, cabeceo: -3.3, giro: 0,
           camara: { lat: 25.7657528, lng: -80.2210047, alt: 1.6 }, mira: { lat: 25.7655813, lng: -80.2210047, alt: 2.69 } }
@@ -337,7 +337,7 @@ window.RECORRIDO = {
       // volumen, y lo que sigue a la derecha (barril, menú, puerta) cae sobre la ochava. Para eso el proyector está
       // 1,5 m al este de esa arista (2,1 m al oeste de donde estaba), con la lente sin desplazar (centro 0) y sin estirar:
       // sólo desde ahí la foto se pliega sola sobre las dos paredes. Marcada a las 10:02.7.
-      lugar: 'El Pub Restaurant', tipo: 'fotografía', punto: { lat: 25.7656115, lng: -80.2205937 }, radio: 4,
+      lugar: 'El Pub Restaurant', tipo: 'photograph', punto: { lat: 25.7656115, lng: -80.2205937 }, radio: 4,
       vistas: [
         { imagen: 'registros/el-pub-foto-00.webp', apertura: 71.6, rumbo: 178.5, cabeceo: 0, giro: 0,
           camara: { lat: 25.7656284, lng: -80.220378, alt: 1.24 }, mira: { lat: 25.765596, lng: -80.220377, alt: 1.24 } }
@@ -348,7 +348,7 @@ window.RECORRIDO = {
   // dentro de proyecciones: [ … ] con un `punto` sobre el recorrido (o un `radio` que alcance) para dispararlo.
   // proyecciones_pendientes: [
   //   {
-  //     lugar: '336 SW 15 Av.', tipo: 'diorama generado por IA',
+  //     lugar: '336 SW 15 Av.', tipo: 'AI-generated diorama',
   //     vistas: [
   //       { imagen: 'registros/336-sw15-diorama-00.webp', isometrica: true, apertura: 40,
   //         camara: { lat: 25.769374, lng: -80.219364, alt: 48 }, mira: { lat: 25.76975, lng: -80.21978, alt: 2 } },

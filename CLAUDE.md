@@ -30,7 +30,7 @@ también en un iPhone con Safari (es el caso más delicado para el audio).
 
 ## Restricciones que no se ven en el código
 
-- **Los QR ya están impresos.** No cambiar el dominio ni los slugs/carpetas de `site/` (`tower-hotel`, `ball-and-chain`, `casa-de-tabaco`, `domino-park`, `deriva-calle-8`). `/deriva-3d/` es una página aparte y no reemplaza a `/deriva-calle-8/`.
+- **Los QR ya están impresos.** No cambiar el dominio ni los slugs/carpetas de `site/` (`tower-hotel`, `ball-and-chain`, `casa-de-tabaco`, `domino-park`, `deriva-calle-8`). `/deriva-calle-8/` redirige a `/deriva-3d/` (`site/_redirects` y una página de redirección para el servidor local). Los textos visibles para el público van en inglés (el código sigue en español).
 - **Peticiones Range para el audio:** Safari en iOS necesita respuestas 206. Eso está implementado en `scripts/servidor-local.mjs` y en `functions/audio/[[path]].js` (y su copia para la película del modo video, `functions/deriva-3d/video/[[path]].js`) (Pages Function, porque Cloudflare Pages sirve los estáticos completos). Si se toca una de las dos, revisar la otra.
 
 ## Arquitectura

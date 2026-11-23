@@ -9,7 +9,7 @@ Cada QR abre una página que reproduce el paisaje sonoro de uno de los cinco pun
 | 02 | Ball & Chain | `/ball-and-chain/` |
 | 03 | Casa Habano | `/casa-de-tabaco/` |
 | 04 | Domino Park | `/domino-park/` |
-| 05 | Deriva Calle 8 | `/deriva-calle-8/` |
+| 05 | Calle Ocho Walk | `/deriva-calle-8/` → redirige a `/deriva-3d/` (`site/_redirects`) |
 
 ## Estructura
 
@@ -62,7 +62,7 @@ python3 -m venv .venv && .venv/bin/pip install "torch<2.9" "torchaudio<2.9" demu
 
 ## Prueba de concepto: deriva en mapa 3D (`/deriva-3d/`)
 
-Página aparte (no reemplaza a `/deriva-calle-8/`, cuyo QR ya está impreso). Mapa 3D (MapLibre + OpenFreeMap,
+El QR impreso de `/deriva-calle-8/` redirige acá (`site/_redirects`, y `deriva-calle-8/index.html` repite la redirección para el servidor local). Los textos que ve el público están en inglés. Mapa 3D (MapLibre + OpenFreeMap,
 sin claves ni costo) que reproduce el recorrido sincronizado con `deriva_calle_8.m4a`.
 
 - `site/deriva-3d/recorrido.js` ← **puntos del recorrido** (tiempo del audio + coordenadas, `hasta` para las pausas)

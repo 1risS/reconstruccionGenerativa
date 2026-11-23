@@ -1,0 +1,4 @@
+# El QR impreso del punto 05 abre /deriva-calle-8/: ahora lleva al recorrido 3D.
+/deriva-calle-8 /deriva-3d/ 302
+/deriva-calle-8/ /deriva-3d/ 302
+/deriva-calle-8/* /deriva-3d/ 302

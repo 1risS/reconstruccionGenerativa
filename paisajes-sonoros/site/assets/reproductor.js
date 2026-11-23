@@ -5,14 +5,13 @@
   const $ = (s) => document.querySelector(s);
 
   if (!sitio) {
-    $("#app").innerHTML = '<p class="error">Punto sonoro no encontrado.</p>';
+    $("#app").innerHTML = '<p class="error">Sound point not found.</p>';
     return;
   }
 
   document.documentElement.style.setProperty("--accent", sitio.color);
   document.title = `${sitio.nombre} · ${M.titulo}`;
   $(".muestra").innerHTML = `<span class="m-titulo">${M.titulo}: ${M.subtitulo}</span><span class="m-sede">${M.sede}</span>`;
-  $(".numero").textContent = sitio.numero;
   $(".nombre").textContent = sitio.nombre;
   $(".lugar").textContent = sitio.lugar;
   $(".texto").textContent = sitio.texto || "";
@@ -34,7 +33,7 @@
   // punto sin audio todavía (pistas vacío): sólo las frases y un aviso
   if (!sitio.pistas || !sitio.pistas.length) {
     $(".reproductor").classList.add("sin-audio");
-    $(".aviso").textContent = "El paisaje sonoro estará disponible pronto.";
+    $(".aviso").textContent = "The soundscape will be available soon.";
     return;
   }
 
@@ -61,7 +60,7 @@
     sitio.pistas.forEach((p, i) => {
       const b = document.createElement("button");
       b.textContent = p.titulo;
-      b.setAttribute("aria-label", `Parte ${i + 1}`);
+      b.setAttribute("aria-label", `Part ${i + 1}`);
       b.addEventListener("click", () => cargar(i, true));
       contPistas.appendChild(b);
     });
@@ -89,7 +88,7 @@
     boton.classList.add("cargando");
     audio.play().catch((e) => {
       boton.classList.remove("cargando");
-      if (e.name !== "AbortError") aviso.textContent = "Toca el botón para escuchar.";
+      if (e.name !== "AbortError") aviso.textContent = "Tap the button to listen.";
     });
   }
 
@@ -125,15 +124,15 @@
   audio.addEventListener("playing", () => {
     boton.classList.remove("cargando");
     boton.setAttribute("aria-pressed", "true");
-    boton.setAttribute("aria-label", "Pausar");
-    aviso.textContent = "Se recomienda usar auriculares.";
+    boton.setAttribute("aria-label", "Pause");
+    aviso.textContent = "Headphones recommended.";
     aviso.classList.remove("error");
   });
   audio.addEventListener("waiting", () => boton.classList.add("cargando"));
   audio.addEventListener("pause", () => {
     boton.classList.remove("cargando");
     boton.setAttribute("aria-pressed", "false");
-    boton.setAttribute("aria-label", "Reproducir");
+    boton.setAttribute("aria-label", "Play");
   });
   audio.addEventListener("loadedmetadata", () => (tTotal.textContent = fmt(audio.duration)));
   audio.addEventListener("timeupdate", () => {
@@ -153,7 +152,7 @@
   });
   audio.addEventListener("error", () => {
     boton.classList.remove("cargando");
-    aviso.textContent = "No se pudo cargar el audio. Revisa la conexión e intentá de nuevo.";
+    aviso.textContent = "Could not load the audio. Check your connection and try again.";
     aviso.classList.add("error");
   });
 

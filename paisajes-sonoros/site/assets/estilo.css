@@ -71,13 +71,6 @@ body {
 
 /* ── sitio ────────────────────────────────────────── */
 .sitio { display: flex; flex-direction: column; gap: 0.6rem; }
-.numero {
-  font-family: var(--display);
-  font-weight: 600;
-  font-size: 1.05rem;
-  font-variant-numeric: tabular-nums;
-  color: var(--muted);
-}
 .nombre {
   font-family: var(--display);
   font-weight: 400;

@@ -544,7 +544,7 @@ map.on('load', async () => {
 
   const btn = $('#comenzar');
   btn.disabled = false;
-  btn.textContent = 'Comenzar';
+  btn.textContent = 'Start';
 });
 map.on('error', (e) => console.warn('mapa:', e && e.error));
 
@@ -1185,7 +1185,7 @@ function cuadro(ahora) {
       $('#pie-lugar').textContent = vu.p.lugar || '';
       $('#pie-tipo').textContent = (vu.p.vistas[vu.k] || {}).tipo || vu.p.tipo || '';   // la vista dominante
       const n = vu.p.vistas.length;
-      $('#pie-n').textContent = n > 1 ? `punto de vista ${vu.k + 1} / ${n}` : '';
+      $('#pie-n').textContent = n > 1 ? `viewpoint ${vu.k + 1} / ${n}` : '';
       elPie.classList.add('visible');
     } else if (mir && mir.i > 0.5 && iniciado) {
       const m = mir.m;
@@ -1396,7 +1396,7 @@ $('#comenzar').addEventListener('click', () => {
 });
 
 // ── controles ──────────────────────────────────────
-// No hay play/pausa: el audio arranca con "Comenzar" (o "volver a empezar") y sigue solo. Saltar de punto
+// No hay play/pausa: el audio arranca con "Start" (o "start again") y sigue solo. Saltar de punto
 // o soltar la línea lo retoma si se había cortado (final del audio, una llamada, el celular que lo pausó).
 function play() {
   audio.play().catch((e) => console.warn(e));
@@ -1513,7 +1513,7 @@ map.on('click', (e) => {
 // ── controles del sistema (pantalla bloqueada, auriculares) ──
 if ('mediaSession' in navigator) {
   navigator.mediaSession.metadata = new MediaMetadata({
-    title: 'Deriva Calle 8', artist: M ? M.artista : '', album: M ? `${M.titulo}: ${M.subtitulo}` : '',
+    title: 'Calle Ocho Walk', artist: M ? M.artista : '', album: M ? `${M.titulo}: ${M.subtitulo}` : '',
   });
   const h = (a, f) => { try { navigator.mediaSession.setActionHandler(a, f); } catch (e) {} };
   h('play', play);

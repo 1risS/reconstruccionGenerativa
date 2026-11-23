@@ -48,7 +48,7 @@ window.SITIOS = {
   'ball-and-chain': {
     numero: '02',
     nombre: 'Ball & Chain',
-    lugar: 'Música y entretenimiento',
+    lugar: 'Music and entertainment',
     texto: '',
     frases: [
       'Calle Ocho, since 1935.',
@@ -71,10 +71,10 @@ window.SITIOS = {
   'casa-de-tabaco': {
     numero: '03',
     nombre: 'Casa Habano',
-    lugar: 'Tabaquería',
+    lugar: 'Cigar shop',
     texto:
-      'Un local de torcido y venta de tabaco. ' +
-      '[Texto provisorio: reemplazar por el texto curatorial.]',
+      'A shop where cigars are rolled and sold. ' +
+      '[Placeholder: replace with the curatorial text.]',
     color: '#8a6a1c',
     loop: true,
     // Recortado a 2:23 con fundidos (el original completo está en ../audios/descartados/)
@@ -90,7 +90,7 @@ window.SITIOS = {
   'domino-park': {
     numero: '04',
     nombre: 'Domino Park',
-    lugar: 'Parque Máximo Gómez',
+    lugar: 'Máximo Gómez Park',
     texto: '',
     frases: [
       'Máximo Gómez Park. Everyone calls it Domino Park.',
@@ -109,13 +109,14 @@ window.SITIOS = {
     pistas: [{ titulo: 'I', src: '../audio/domino_park.m4a' }]
   },
 
+  // El QR impreso de /deriva-calle-8/ redirige a /deriva-3d/ (site/_redirects y deriva-calle-8/index.html).
+  // La entrada se mantiene por el color, el número y la regeneración de los QR.
   'deriva-calle-8': {
     numero: '05',
-    nombre: 'Deriva Calle 8',
-    lugar: 'Recorrido por la Calle Ocho',
-    texto:
-      'Una deriva a lo largo de la Calle Ocho. ' +
-      '[Texto provisorio: reemplazar por el texto curatorial.]',
+    nombre: 'Calle Ocho Walk',
+    lugar: 'A walk along Calle Ocho',
+    enlace: 'deriva-3d/',
+    texto: '',
     color: '#685236',
     loop: true,
     pistas: [{ titulo: 'I', src: '../audio/deriva_calle_8.m4a' }]
@@ -126,7 +127,7 @@ window.SITIOS = {
   'tower-theatre': {
     numero: '06',
     nombre: 'Tower Theatre',
-    lugar: 'Cine',
+    lugar: 'Movie theater',
     texto: '',
     frases: [
       'Calle Ocho and 15th Avenue. Since 1926.',

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -12,14 +12,13 @@
   <main class="pagina" id="app">
     <header class="muestra"></header>
     <section class="sitio">
-      <span class="numero"></span>
       <h1 class="nombre"></h1>
       <p class="lugar"></p>
       <p class="texto"></p>
       <div class="frases" hidden></div>
     </section>
     <section class="reproductor">
-      <button class="boton" aria-pressed="false" aria-label="Reproducir">
+      <button class="boton" aria-pressed="false" aria-label="Play">
         <svg class="anillo" viewBox="0 0 120 120" aria-hidden="true">
           <circle class="pista" cx="60" cy="60" r="52"/>
           <circle class="avance" cx="60" cy="60" r="52"/>
@@ -31,10 +30,10 @@
       </button>
       <div class="pistas"></div>
       <div class="barra">
-        <input id="rango" type="range" min="0" max="1000" value="0" aria-label="Posición">
+        <input id="rango" type="range" min="0" max="1000" value="0" aria-label="Position">
         <div class="tiempos"><span id="actual">0:00</span><span id="total">–:––</span></div>
       </div>
-      <p class="aviso">Se recomienda usar auriculares.</p>
+      <p class="aviso">Headphones recommended.</p>
     </section>
   </main>
   <script src="../assets/sitios.js"></script>
