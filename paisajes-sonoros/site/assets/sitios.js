@@ -9,6 +9,7 @@
 //  frases   → (opcional) frases cortas en inglés que se alternan con una animación mientras se escucha.
 //             Conviene que no pasen de unos 70 caracteres. El tiempo en pantalla depende del largo.
 //  fotos    → (opcional) fotos que pasan en loop como fondo de la página (assets/fotos.js). src es relativo a la página.
+//             En vez de src puede llevar video (+ poster): se ve mudo y en loop. viaje: segundos entre detalles.
 //             detalles: [x, y, zoom] con x, y entre 0 y 1 (0,0 = arriba a la izquierda). La cámara los recorre
 //             en orden sin detenerse. zoom 1 = la foto llenando la pantalla (en un teléfono, un tercio del ancho).
 // ─────────────────────────────────────────────────────────────
@@ -42,7 +43,11 @@ window.SITIOS = {
     color: '#9a5a4a',
     loop: true,
     // Toma III recortada a 3:54 (el original completo está en ../audios/descartados/)
-    pistas: [{ titulo: 'I', src: '../audio/tower_02.m4a' }]
+    pistas: [{ titulo: 'I', src: '../audio/tower_02.m4a' }],
+    // Diorama del hotel. Con una sola foto la cámara recorre los detalles en ciclo, sin detenerse.
+    fotos: [
+      { src: 'fotos/diorama.jpg', detalles: [[0.6, 0.3, 1.25], [0.82, 0.36, 1.45], [0.67, 0.52, 1.4], [0.47, 0.66, 1.35], [0.27, 0.55, 1.3], [0.5, 0.8, 1.2]] }
+    ]
   },
 
   'ball-and-chain': {
@@ -65,7 +70,16 @@ window.SITIOS = {
     color: '#8a4f37',
     loop: true,
     // Tramo de la toma II desde 3:30 (con fundido de entrada) y la toma I entera, que cierra con fundido.
-    pistas: [{ titulo: 'I', src: '../audio/ball_and_chain.m4a' }]
+    pistas: [{ titulo: 'I', src: '../audio/ball_and_chain.m4a' }],
+    // Video del lugar, mudo y en loop (el final se funde con el principio). La cámara recorre los detalles sin parar.
+    fotos: [
+      {
+        video: 'video/ball-and-chain.mp4',
+        poster: 'video/ball-and-chain.jpg',
+        viaje: 9,
+        detalles: [[0.5, 0.42, 1.1], [0.34, 0.55, 1.3], [0.58, 0.34, 1.22], [0.66, 0.6, 1.35], [0.44, 0.48, 1.15]]
+      }
+    ]
   },
 
   'casa-de-tabaco': {

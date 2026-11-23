@@ -218,7 +218,7 @@ body {
 .fotos { position: fixed; inset: 0; z-index: 0; overflow: hidden; }
 .fotos .foto { position: absolute; inset: 0; opacity: 0; transition: opacity 1.8s ease; }
 .fotos .foto.visible { opacity: 1; }
-.fotos img { position: absolute; left: 0; top: 0; max-width: none; transform-origin: 0 0; will-change: transform; }
+.fotos img, .fotos video { position: absolute; left: 0; top: 0; max-width: none; transform-origin: 0 0; will-change: transform; }
 .fotos::before, .fotos::after { content: ""; position: absolute; inset: 0; pointer-events: none; }
 .fotos::before {
   background: linear-gradient(to bottom,
