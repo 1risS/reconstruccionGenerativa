@@ -103,11 +103,11 @@ window.SITIOS = {
 
   'domino-park': {
     numero: '04',
-    nombre: 'Domino Park',
+    nombre: "Domino's Park",
     lugar: 'Máximo Gómez Park',
     texto: '',
     frases: [
-      'Máximo Gómez Park. Everyone calls it Domino Park.',
+      "Máximo Gómez Park. Everyone calls it Domino's Park.",
       'Named after the general of Cuba’s wars of independence.',
       'Calle Ocho and 15th Avenue.',
       'Tables in the shade. Dominoes and chess.',
@@ -120,7 +120,10 @@ window.SITIOS = {
     ],
     color: '#455830',
     loop: true,
-    pistas: [{ titulo: 'I', src: '../audio/domino_park.m4a' }]
+    pistas: [{ titulo: 'I', src: '../audio/domino_park.m4a' }],
+    fotos: [
+      { src: 'fotos/jugadores.jpg', detalles: [[0.3, 0.45, 1.05], [0.55, 0.5, 1.15], [0.78, 0.45, 1.1], [0.5, 0.4, 1]] }
+    ]
   },
 
   // El QR impreso de /deriva-calle-8/ redirige a /deriva-3d/ (site/_redirects y deriva-calle-8/index.html).
