@@ -85,6 +85,49 @@ export const ESTILOS = [
 
 const PROPIAS = ['veredas', 'calzadas', 'carriles'];
 const FANTASMA = ESTILOS.find((e) => e.id === 'fantasma'), MAQUETA = ESTILOS.find((e) => e.id === 'maqueta');
+// VACÍO: Fantasma sin nada más que las imágenes. El mapa base, el cielo y la niebla son de un único color (el fondo
+// de Fantasma): no se ven manzanas, calles ni la línea del horizonte. Es el de la panorámica, la partida y la vuelta
+// al dron (mapa.js → mezclar(t, true)): ahí, fuera de la foto, no se tiene que ver nada hasta que aparece la maqueta.
+const VACIO = (() => {
+  const f = FANTASMA.base.fondo;
+  return { ...FANTASMA, id: 'vacio', piso: hex(f), niebla: hex(f),
+    base: Object.fromEntries(Object.keys(FANTASMA.base).map((k) => [k, f])), cielo: cieloOscuro(f, f, f) };
+})();
+
+// PALETAS de la maqueta (menú desplegable arriba a la derecha, sólo durante el recorrido). Misma estructura que la
+// original (tres fachadas: rosa, crema y blanco; techo gris; papel) en tonos cada vez más oscuros. `papel` es el fondo,
+// la niebla y el cielo; el mapa base se oscurece en la misma proporción (cada canal × papel / papel de Yeso).
+// sombra: multiplicador de la cara en sombra. pisoSombra: [r, g, b, fuerza] de la sombra de los edificios en el piso.
+export const PALETAS = [
+  { id: 'yeso', nombre: 'Yeso', nota: 'la original, como el diorama del flyer',
+    fachadas: ['#f5d4c9', '#f2ede0', '#e8e0c9'], techo: '#d9d9d4', papel: '#eaeaea', piso: '#a8a6a2',
+    sombra: [0.70, 0.69, 0.71], pisoSombra: [0.36, 0.34, 0.33, 0.32], tono: 'claro', texto: { color: '#6a6763', halo: '#eaeaea' } },
+  { id: 'arcilla', nombre: 'Arcilla', nota: 'yeso entonado, papel gris',
+    fachadas: ['#dba596', '#d4c8b0', '#c8b690'], techo: '#adaaa4', papel: '#c4c0ba', piso: '#8a8681',
+    sombra: [0.68, 0.66, 0.69], pisoSombra: [0.28, 0.26, 0.25, 0.36], tono: 'claro', texto: { color: '#4b4743', halo: '#c4c0ba' } },
+  { id: 'tabaco', nombre: 'Tabaco', nota: 'rosa viejo, crema tostada, techos de plomo',
+    fachadas: ['#ad7666', '#a59680', '#947f5f'], techo: '#75726d', papel: '#6f6964', piso: '#57524d',
+    sombra: [0.64, 0.62, 0.66], pisoSombra: [0.16, 0.15, 0.15, 0.40], tono: 'oscuro', texto: { color: '#e4ded5', halo: '#38342f' } },
+  { id: 'penumbra', nombre: 'Penumbra', nota: 'la maqueta con la luz de la sala baja',
+    fachadas: ['#7c4f45', '#73675a', '#685943'], techo: '#4a4845', papel: '#383532', piso: '#2e2b29',
+    sombra: [0.60, 0.58, 0.63], pisoSombra: [0.06, 0.05, 0.05, 0.45], tono: 'oscuro', texto: { color: '#d6d0c6', halo: '#1c1a19' } },
+  { id: 'carbon', nombre: 'Carbón', nota: 'casi a oscuras: sólo se adivinan los colores',
+    fachadas: ['#54352f', '#4b443b', '#463b2e'], techo: '#2e2d2b', papel: '#1b1a19', piso: '#161514',
+    sombra: [0.58, 0.56, 0.62], pisoSombra: [0, 0, 0, 0.5], tono: 'oscuro', texto: { color: '#bdb6ab', halo: '#0c0b0b' } },
+];
+const hexDe = (c) => '#' + c.map((x) => Math.round(Math.max(0, Math.min(1, x)) * 255).toString(16).padStart(2, '0')).join('');
+const muestraDe = (p) => `linear-gradient(170deg, ${p.fachadas[0]} 0 40%, ${p.fachadas[1]} 40% 52%, ${p.fachadas[2]} 52% 64%, ${p.techo} 64% 76%, ${p.piso} 76%)`;
+// el estilo Maqueta con una paleta
+function maquetaCon(p) {
+  const r = hex(p.papel).map((x, i) => x / hex('#eaeaea')[i]);
+  const base = {};
+  for (const [k, v] of Object.entries(MAQUETA.base)) base[k] = hexDe(hex(v).map((x, i) => x * r[i]));
+  const cielo = { ...MAQUETA.cielo, 'sky-color': p.papel, 'horizon-color': p.papel, 'fog-color': p.papel };
+  return { ...MAQUETA, niebla: hex(p.papel), piso: hex(p.piso), tono: p.tono, base: { ...base, texto: p.texto }, texto: p.texto,
+    cielo, muestra: muestraDe(p),
+    paleta: { fachadas: p.fachadas.map(hex), techo: hex(p.techo), sombra: p.sombra, pisoSombra: p.pisoSombra } };
+}
+const CLAVE_PALETA = 'deriva-paleta-maqueta';
 
 // mezcla de colores: '#rrggbb' o [r, g, b] en 0…1
 const aRGB = (c) => (Array.isArray(c) ? c : hex(c));
@@ -131,7 +174,12 @@ export function iniciarEstilos(map, ciudad, { fijo = null } = {}) {
     }
   }
 
-  const ctl = { actual: fijo ? null : FANTASMA, t: -1, mezclar };
+  // paleta de la maqueta: ?paleta=<id> > la última elegida > Yeso
+  let idPaleta = new URLSearchParams(location.search).get('paleta');
+  if (!idPaleta) try { idPaleta = localStorage.getItem(CLAVE_PALETA); } catch (e) {}
+  let maq = maquetaCon(PALETAS.find((p) => p.id === idPaleta) || PALETAS[0]);
+
+  const ctl = { actual: fijo ? null : FANTASMA, t: -1, vacio: false, mezclar };
   function aplicar(est, { cielo = est.cielo, paleta = () => base(est.base), tono = est.tono } = {}) {
     ctl.actual = est;
     if (ciudad) ciudad.setEstilo(est);
@@ -143,25 +191,58 @@ export function iniciarEstilos(map, ciudad, { fijo = null } = {}) {
     map.getContainer().style.background = css(est.niebla);
     map.triggerRepaint();
   }
-  // t = 0 Fantasma … 1 Maqueta
-  function mezclar(t) {
+  // t = 0 Fantasma … 1 Maqueta. vacio: en vez de Fantasma, Vacío (sin mapa base ni horizonte; ver VACIO)
+  function mezclar(t, vacio = false) {
     t = Math.max(0, Math.min(1, t));
+    if (vacio !== ctl.vacio) ctl.t = -1;
     if (t === ctl.t || (t > 0 && t < 1 && Math.abs(t - ctl.t) < 0.004)) return;
-    ctl.t = t;
-    if (t === 0) return aplicar(FANTASMA);
-    if (t === 1) return aplicar(MAQUETA);
-    const est = { ...MAQUETA, id: 'fundido', fantasma: 1 - t, transparente: true, ocluye: true,
-      niebla: mix(FANTASMA.niebla, MAQUETA.niebla, t), tinta: mix(FANTASMA.tinta, MAQUETA.tinta, t),
-      piso: mix(FANTASMA.piso, MAQUETA.piso, t) };
-    aplicar(est, { cielo: mezclarCielo(FANTASMA.cielo, MAQUETA.cielo, t), paleta: () => base(FANTASMA.base, MAQUETA.base, t),
-      tono: t >= 0.5 ? MAQUETA.tono : FANTASMA.tono });
+    ctl.t = t; ctl.vacio = vacio;
+    const F = vacio ? VACIO : FANTASMA;
+    if (t === 0) return aplicar(F);
+    if (t === 1) return aplicar(maq);
+    const est = { ...maq, id: 'fundido', fantasma: 1 - t, transparente: true, ocluye: true,
+      niebla: mix(F.niebla, maq.niebla, t), tinta: mix(F.tinta, maq.tinta, t),
+      piso: mix(F.piso, maq.piso, t) };
+    aplicar(est, { cielo: mezclarCielo(F.cielo, maq.cielo, t), paleta: () => base(F.base, maq.base, t),
+      tono: t >= 0.5 ? maq.tono : F.tono });
   }
 
-  if (fijo) aplicar(ESTILOS.find((e) => e.id === fijo) || MAQUETA);
+  if (fijo) aplicar(fijo === 'maqueta' ? maquetaCon(PALETAS[0]) : ESTILOS.find((e) => e.id === fijo) || MAQUETA);
   else {
     // el fundido pinta el mapa base en cada cuadro: sin la transición propia de MapLibre (300 ms), que lo atrasaría
     try { map.style.stylesheet.transition = { duration: 0, delay: 0 }; } catch (e) {}
     mezclar(0);
+    menuPaletas();
   }
   return ctl;
+
+  // ── menú de paletas (mapa.css: .paletas) ──
+  function menuPaletas() {
+    const nav = document.createElement('nav');
+    nav.className = 'paletas';
+    nav.setAttribute('aria-label', 'Model colors');
+    nav.innerHTML = `<button class="paletas-abrir" aria-expanded="false" aria-controls="paletas-lista"><span></span></button>
+<ul class="paletas-lista" id="paletas-lista" role="radiogroup" aria-label="Model colors" hidden>${PALETAS.map((p) =>
+      `<li><button role="radio" data-paleta="${p.id}" aria-checked="false"><i style="background:${muestraDe(p)}"></i><b>${p.nombre}</b><small>${p.nota}</small></button></li>`).join('')}</ul>`;
+    document.body.appendChild(nav);
+    const abrir = nav.querySelector('.paletas-abrir'), lista = nav.querySelector('.paletas-lista');
+    const mostrar = (ver) => { lista.hidden = !ver; abrir.setAttribute('aria-expanded', ver); };
+    function marcar(p) {
+      abrir.setAttribute('aria-label', `Model colors: ${p.nombre}`);
+      abrir.querySelector('span').style.background = muestraDe(p);
+      nav.querySelectorAll('[data-paleta]').forEach((b) => b.setAttribute('aria-checked', b.dataset.paleta === p.id));
+    }
+    marcar(PALETAS.find((p) => p.id === idPaleta) || PALETAS[0]);
+    abrir.addEventListener('click', () => mostrar(lista.hidden));
+    lista.addEventListener('click', (ev) => {
+      const b = ev.target.closest('[data-paleta]');
+      if (!b) return;
+      const p = PALETAS.find((x) => x.id === b.dataset.paleta);
+      idPaleta = p.id; maq = maquetaCon(p); marcar(p);
+      try { localStorage.setItem(CLAVE_PALETA, p.id); } catch (e) {}
+      const t = ctl.t; ctl.t = -1; mezclar(t, ctl.vacio);   // vuelve a pintar con la paleta nueva
+    });
+    document.addEventListener('pointerdown', (ev) => { if (!nav.contains(ev.target)) mostrar(false); });
+    document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') mostrar(false); });
+  }
 }

@@ -20,8 +20,13 @@ uniform sampler2D uSolProfC; uniform mat4 uSolVPC; uniform vec2 uSolTexelC; unif
 uniform mat4 uProyVP[${MAX_PROY}]; uniform vec3 uProyPos[${MAX_PROY}]; uniform vec2 uProyNF[${MAX_PROY}];
 uniform float uProyInt[${MAX_PROY}]; uniform sampler2D uProyTex[${MAX_PROY}]; uniform sampler2D uProyProf[${MAX_PROY}];
 uniform float uProyLado[${MAX_PROY}]; uniform float uProyTol[${MAX_PROY}]; uniform vec4 uOla; uniform float uOlaLuz;
+// capa de cada ranura: las imágenes se componen de la capa 0 hacia arriba (huellas superpuestas de un lugar: la que va
+// antes en recorrido.js queda encima; ver componer). Las de la misma capa, en el orden de las ranuras.
+uniform float uProyCapa[${MAX_PROY}];
 uniform vec3 uCaminante; uniform float uLinterna; uniform vec2 uFoco; uniform vec2 uRadio; uniform vec3 uNiebla;
 uniform float uEstilo; uniform float uFantasma; uniform vec3 uCamara; uniform float uTiempo; uniform vec3 uTinta; uniform vec3 uPisoCol;
+// paleta de la maqueta (estilos.js → PALETAS): tres fachadas, techo, multiplicador de la cara en sombra y sombra del piso (rgb + fuerza)
+uniform vec3 uMaqA; uniform vec3 uMaqB; uniform vec3 uMaqC; uniform vec3 uMaqTecho; uniform vec3 uMaqSombra; uniform vec4 uMaqPiso;
 varying vec3 vPos;
 
 // Sombras del sol con dos mapas de profundidad ortográficos: uno CERCANO, fino, alrededor del foco (se rehace
@@ -58,9 +63,24 @@ float sombraSol(vec3 p, float ndl) {
 }
 float lineal(float d, vec2 nf) { float z = d * 2.0 - 1.0; return 2.0 * nf.x * nf.y / (nf.y + nf.x - z * (nf.y - nf.x)); }
 // imagen proyectada sobre el punto p (con normal n): rgb + alfa
-// tol: cuánto puede estar el punto detrás de lo que ve el proyector (por metro de distancia), según el tamaño del texel
+// tol: cuánto puede estar el punto detrás de lo que ve el proyector (por metro de distancia), según el tamaño del texel.
+// tol NEGATIVO = RELLENO (vistas con relleno: la panorámica): la imagen cae también donde el proyector no ve (detrás de
+// un volumen o en caras que le dan la espalda), con el color de lo que tapa. Desde el punto de vista no cambia nada
+// (lo tapado no se ve), y al moverse la cámara los huecos que se destapan quedan con la foto estirada, continua, en
+// vez de agujeros oscuros: la descomposición se ve como la misma imagen que se deforma.
+// borde suave del cuadro para las proyecciones con relleno (tol < 0): al moverse la cámara, el límite de la foto no
+// corta en seco contra el fondo sino que se desvanece (1 en el resto). Desde el punto de vista (pos, el proyector)
+// no actúa: la foto se ve entera, igual que la imagen fija.
+float bordeRelleno(mat4 vp, vec3 p, vec3 pos, float tol) {
+  if (tol >= 0.0) return 1.0;
+  vec4 c = vp * vec4(p, 1.0);
+  vec2 q = abs(c.xy / max(c.w, 1e-6));
+  float b = (1.0 - smoothstep(0.75, 1.0, q.x)) * (1.0 - smoothstep(0.7, 1.0, q.y));
+  return mix(b, 1.0, smoothstep(60.0, 5.0, distance(uCamara, pos)));
+}
 vec4 proy(vec3 p, vec3 n, mat4 vp, vec3 pos, vec2 nf, float inten, sampler2D tex, sampler2D prof, float tol) {
   if (inten < 0.002) return vec4(0.0);
+  bool relleno = tol < 0.0; tol = abs(tol);
   // gradientes de la imagen ANTES de cualquier descarte: en el borde de la proyección, si un vecino del bloque de
   // 2×2 píxeles ya salió, dFdx da cualquier cosa, la GPU lee un mipmap chico (el promedio oscuro de la foto) y queda
   // una raya punteada en el contorno de la imagen
@@ -69,7 +89,10 @@ vec4 proy(vec3 p, vec3 n, mat4 vp, vec3 pos, vec2 nf, float inten, sampler2D tex
   vec2 gx = dFdx(uv0), gy = dFdy(uv0);
   vec3 h = pos - p; float dh = length(h);
   float fr = dot(n, h / dh);
-  if (fr < 0.01) return vec4(0.0);
+  // (sólo se descarta lo que da la espalda: lo rasante se atenúa más abajo, salvo cerca del punto de vista. Con un
+  // corte en 0,01 el piso a más de ~150 m quedaba sin imagen desde una foto a la altura de los ojos: una raya negra
+  // en el horizonte, entre la calle y el cielo)
+  if (fr <= 0.0 && !relleno) return vec4(0.0);
   // la imagen se lee en el punto EXACTO (si no, desde el punto de vista la vereda y la pared no empalman: un
   // corrimiento sobre la normal desplaza distinto el piso que las paredes). El corrimiento de 12 cm sobre la
   // normal es sólo para la prueba de profundidad (evita que la superficie se tape a sí misma).
@@ -80,12 +103,12 @@ vec4 proy(vec3 p, vec3 n, mat4 vp, vec3 pos, vec2 nf, float inten, sampler2D tex
   vec2 uv = q.xy * 0.5 + 0.5;
   vec4 c2 = vp * vec4(p + n * 0.12, 1.0);
   float visto = lineal(texture2D(prof, uv).r, nf);
-  if (lineal(c2.z / c2.w * 0.5 + 0.5, nf) > visto + 0.35 + tol * visto) return vec4(0.0);
+  if (!relleno && lineal(c2.z / c2.w * 0.5 + 0.5, nf) > visto + 0.35 + tol * visto) return vec4(0.0);
   vec4 col = textureGrad(tex, uv, gx, gy);
   // las superficies que reciben la imagen muy de costado se atenúan (vistas desde otro lugar son estiramientos).
   // Desde el punto de vista del proyector no hay estiramiento: ahí la imagen va entera, aunque caiga rasante
   // (p. ej. la vereda en las fotos tomadas a la altura de los ojos, que si no quedaba grisada).
-  float rasante = mix(smoothstep(0.01, 0.12, fr), 1.0, smoothstep(12.0, 2.0, distance(uCamara, pos)));
+  float rasante = relleno ? bordeRelleno(vp, p, pos, -1.0) : mix(smoothstep(0.01, 0.12, fr), 1.0, smoothstep(12.0, 2.0, distance(uCamara, pos)));
   return vec4(col.rgb, col.a * inten * rasante);
 }
 // líneas paralelas con antialias que se funden en un gris al alejarse (evita el moiré)
@@ -121,6 +144,12 @@ float mascara(float lado, float s) { return lado > 0.5 ? 1.0 - s : (lado < -0.5 
 const vec3 LUZ_OLA = vec3(1.0, 0.86, 0.62);
 // composición "sobre" con color premultiplicado
 void sobre(inout vec3 P, inout float A, vec3 c, float a) { P = c * a + P * (1.0 - a); A = a + A * (1.0 - a); }
+// compone las imágenes de las ranuras (rgb + alfa ya calculados) por capas: primero la 0, encima la 1, etc.
+void componer(inout vec3 P, inout float A, vec4 prs[${MAX_PROY}]) {
+  for (int c = 0; c < 4; c++)
+    for (int i = 0; i < ${MAX_PROY}; i++)
+      if (int(uProyCapa[i] + 0.5) == c) sobre(P, A, prs[i].rgb, prs[i].a);
+}
 
 // cercanía: las imágenes se materializan sólo alrededor de la cámara, con un borde de celdas al azar
 float cerca(vec3 p) {
@@ -284,12 +313,14 @@ void main() {
   float kc = e == 3 ? cerca(vPos) : 1.0;
   vec2 ol = ola(vPos);
   vec3 P = vec3(0.0); float A = 0.0; vec4 pr;
+  vec4 prs[${MAX_PROY}];
   #pragma unroll_loop_start
   for ( int i = 0; i < ${MAX_PROY}; i ++ ) {
     pr = proy(vPos, n, uProyVP[ i ], uProyPos[ i ], uProyNF[ i ], uProyInt[ i ], uProyTex[ i ], uProyProf[ i ], uProyTol[ i ]);
-    sobre(P, A, pr.rgb, pr.a * mascara(uProyLado[ i ], ol.x) * (e == 3 ? max(kc, llega(uProyPos[ i ])) : 1.0));
+    prs[ i ] = vec4(pr.rgb, pr.a * mascara(uProyLado[ i ], ol.x) * (e == 3 ? max(kc, llega(uProyPos[ i ])) : 1.0));
   }
   #pragma unroll_loop_end
+  componer(P, A, prs);
   vec3 img = P / max(A, 1e-4);
   float luzOla = ol.y * (0.35 + 0.65 * A);
 
@@ -361,9 +392,9 @@ void main() {
     // MAQUETA: como el diorama del flyer. Fachadas de yeso pintado (rosa, crema, blanco) y techos grises
     // bajo una luz de estudio pareja: la sombra no es negra, apenas un gris cálido. Sin tramado, linterna
     // ni ventanas; sólo un trazo muy fino en las aristas, del color de la cara pero más oscuro.
-    vec3 cLuz = techo ? vec3(0.85, 0.85, 0.83)
-              : mix(mix(vec3(0.96, 0.83, 0.79), vec3(0.95, 0.93, 0.88), step(0.4, tono)), vec3(0.91, 0.88, 0.79), step(0.8, tono));
-    col = mix(cLuz * vec3(0.70, 0.69, 0.71), cLuz, 0.3 + 0.7 * kl);
+    // Los colores salen de la paleta elegida (uMaq*, ver PALETAS en estilos.js).
+    vec3 cLuz = techo ? uMaqTecho : mix(mix(uMaqA, uMaqB, step(0.4, tono)), uMaqC, step(0.8, tono));
+    col = mix(cLuz * uMaqSombra, cLuz, 0.3 + 0.7 * kl);
     col = mix(col, vid.rgb * mix(0.8, 1.02, kl), vid.a);   // frames del video, con la misma luz de estudio
     col = mix(col, col * 0.62, linFina * 0.85);   // trazo: el mismo color de la cara, más oscuro
     col = mix(col, uNiebla, lejos);                           // se funde con el papel
@@ -410,12 +441,14 @@ void main() {
   float kc = e == 3 ? cerca(vPos) : 1.0;
   vec2 ol = ola(vPos);
   vec3 Q = vec3(0.0); float B = 0.0; vec4 pr;
+  vec4 prs[${MAX_PROY}];
   #pragma unroll_loop_start
   for ( int i = 0; i < ${MAX_PROY}; i ++ ) {
     pr = proy(vPos, n, uProyVP[ i ], uProyPos[ i ], uProyNF[ i ], uProyInt[ i ], uProyTex[ i ], uProyProf[ i ], uProyTol[ i ]);
-    sobre(Q, B, pr.rgb, pr.a * mascara(uProyLado[ i ], ol.x) * (e == 3 ? max(kc, llega(uProyPos[ i ])) : 1.0));
+    prs[ i ] = vec4(pr.rgb, pr.a * mascara(uProyLado[ i ], ol.x) * (e == 3 ? max(kc, llega(uProyPos[ i ])) : 1.0));
   }
   #pragma unroll_loop_end
+  componer(Q, B, prs);
   vec3 img = Q / max(B, 1e-4);
   float ki = 1.0;   // cuánto se ven las imágenes en el piso
 
@@ -445,7 +478,7 @@ void main() {
   } else if (e == 7) {
     // maqueta: sólo una sombra gris suave, sin tramado
     float sh = 1.0 - sombraSol(vPos + vec3(0.0, 0.0, 0.25), uSolDir.z);
-    sobre(P, A, vec3(0.36, 0.34, 0.33), sh * 0.32 * (1.0 - uFantasma));
+    sobre(P, A, uMaqPiso.rgb, sh * uMaqPiso.a * (1.0 - uFantasma));
   } else if (e != 2) {
     float sh = 1.0 - sombraSol(vPos + vec3(0.0, 0.0, 0.25), uSolDir.z);
     sobre(P, A, vec3(0.14, 0.14, 0.30), sh * 0.6);
@@ -475,8 +508,8 @@ void main() {
   vec3 Q = vec3(0.0); float B = 0.0; vec4 pr;
   #pragma unroll_loop_start
   for ( int i = 0; i < ${MAX_PROY}; i ++ ) {
-    pr = proy(vPos, n, uProyVP[ i ], uProyPos[ i ], uProyNF[ i ], uProyInt[ i ], uProyTex[ i ], uProyProf[ i ], uProyTol[ i ]);
-    sobre(Q, B, pr.rgb, pr.a * mascara(uProyLado[ i ], ol.x));
+    pr = proy(vPos, n, uProyVP[ i ], uProyPos[ i ], uProyNF[ i ], uProyInt[ i ], uProyTex[ i ], uProyProf[ i ], abs(uProyTol[ i ]));   // con prueba de profundidad aunque sea relleno
+    sobre(Q, B, pr.rgb, pr.a * mascara(uProyLado[ i ], ol.x) * bordeRelleno(uProyVP[ i ], vPos, uProyPos[ i ], uProyTol[ i ]));
   }
   #pragma unroll_loop_end
   B *= uTelon; Q *= uTelon;   // color premultiplicado
@@ -498,7 +531,7 @@ void main() {
   #pragma unroll_loop_start
   for ( int i = 0; i < ${MAX_PROY}; i ++ ) {
     if (uRanura[ i ] > 0.5) {
-      pr = proy(vPos, n, uProyVP[ i ], uProyPos[ i ], uProyNF[ i ], uProyInt[ i ], uProyTex[ i ], uProyProf[ i ], uProyTol[ i ]);
+      pr = proy(vPos, n, uProyVP[ i ], uProyPos[ i ], uProyNF[ i ], uProyInt[ i ], uProyTex[ i ], uProyProf[ i ], abs(uProyTol[ i ]));
       sobre(Q, B, pr.rgb, pr.a * mascara(uProyLado[ i ], ol.x));
     }
   }
@@ -679,7 +712,8 @@ export async function crearCiudad(THREE, { url, local, sol, vistas, alturas = []
     const cam = new THREE.PerspectiveCamera(30, 1.45, v.isometrica ? Math.max(2, dist * 0.3) : 2, v.lejos || Math.max(900, dist * 1.6 + 300));
     // tolerancia de profundidad: 0,004 por metro con una apertura de 40° (el valor de siempre), y proporcional al
     // ángulo de un texel para las demás. Con un teleobjetivo a 1 km, un 0,4 % fijo dejaría pasar la imagen a paredes tapadas.
-    const tol = 0.004 * Math.min(1, Math.tan(((v.apertura || 40) / 2) * Math.PI / 180) / Math.tan(20 * Math.PI / 180));
+    // (negativa con v.relleno: ver proy())
+    const tol = (v.relleno ? -1 : 1) * 0.004 * Math.min(1, Math.tan(((v.apertura || 40) / 2) * Math.PI / 180) / Math.tan(20 * Math.PI / 180));
     const p = { v, idx, cam, tol, listo: false, vp: new THREE.Matrix4(), int: 0 };
     // FONDO (sólo dioramas, vistas isometrica): la imagen pegada en un plano dentro del cono del proyector, detrás
     // del lugar. Desde el punto de vista exacto coincide con la proyección y completa lo que la maqueta no tiene. Sólo
@@ -702,7 +736,10 @@ export async function crearCiudad(THREE, { url, local, sol, vistas, alturas = []
     // cilindro alrededor del proyector, a RADIO_CIELO metros, que abarca la imagen. Como recibe sólo los rayos que
     // no encontraron nada antes, techos, paredes y calles siguen recibiendo lo suyo. Se enciende al llegar al punto
     // de vista (ver setCamara): visto desde lejos sería un panel suelto en el aire.
-    if (!v.isometrica) {
+    // Con `telon` (la panorámica del dron) no va: el telón lejano ya recibe el cielo, y este arco, a 350 m, recibía
+    // casi toda la foto (el mapa de profundidad no tiene el piso) por delante de la ciudad. Desde el dron calzaba,
+    // pero apenas la cámara se movía se corría con mucha paralaje mientras se apagaba: una doble imagen.
+    if (!v.isometrica && !telon) {
       p.cielo = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.ShaderMaterial({
         uniforms: { uRanura: { value: new Array(MAX_PROY).fill(0) }, uOp: { value: 0 } },   // + los compartidos, más abajo (uniforms todavía no existe)
         vertexShader: VERT_TELON, fragmentShader: FRAG_CIELO, side: THREE.DoubleSide,
@@ -761,7 +798,7 @@ export async function crearCiudad(THREE, { url, local, sol, vistas, alturas = []
     uProyInt: { value: new Array(MAX_PROY).fill(0) },
     uProyTex: { value: new Array(MAX_PROY).fill(vacia) },
     uProyProf: { value: new Array(MAX_PROY).fill(vacia) },
-    uProyLado: { value: new Array(MAX_PROY).fill(0) }, uProyTol: { value: new Array(MAX_PROY).fill(0.004) }, uOla: { value: new THREE.Vector4(0, 0, 0, -1) }, uOlaLuz: { value: 0 },
+    uProyLado: { value: new Array(MAX_PROY).fill(0) }, uProyCapa: { value: new Array(MAX_PROY).fill(0) }, uProyTol: { value: new Array(MAX_PROY).fill(0.004) }, uOla: { value: new THREE.Vector4(0, 0, 0, -1) }, uOlaLuz: { value: 0 },
     uCaminante: { value: new THREE.Vector3() }, uLinterna: { value: 0 },
     uFoco: { value: new THREE.Vector2(cx, cy) }, uRadio: { value: new THREE.Vector2(...R_FOCO) },
     uNiebla: { value: new THREE.Color(0.42, 0.30, 0.33) },
@@ -770,6 +807,9 @@ export async function crearCiudad(THREE, { url, local, sol, vistas, alturas = []
     uEstilo: { value: 0 }, uFantasma: { value: 0 }, uCamara: { value: new THREE.Vector3(0, 0, 1e4) }, uTiempo: { value: 0 },
     uCorte: { value: new THREE.Vector4(0, 0, 0, 0) },
     uTinta: { value: new THREE.Vector3(0.62, 0.78, 1.0) }, uPisoCol: { value: new THREE.Vector3(0.30, 0.235, 0.245) },
+    uMaqA: { value: new THREE.Vector3(0.96, 0.83, 0.79) }, uMaqB: { value: new THREE.Vector3(0.95, 0.93, 0.88) },
+    uMaqC: { value: new THREE.Vector3(0.91, 0.88, 0.79) }, uMaqTecho: { value: new THREE.Vector3(0.85, 0.85, 0.83) },
+    uMaqSombra: { value: new THREE.Vector3(0.70, 0.69, 0.71) }, uMaqPiso: { value: new THREE.Vector4(0.36, 0.34, 0.33, 0.32) },
     // paredes con frames del video (se encienden cuando carga el atlas)
     uVidAtlas: { value: vacia }, uVidCelda: { value: new THREE.Vector4(1, 1, 1, 1) }, uVidX0: { value: new THREE.Vector2() },
     uVidN: { value: new THREE.Vector2() }, uVidOp: { value: 0 }, uTira: { value: 0 },
@@ -841,7 +881,8 @@ export async function crearCiudad(THREE, { url, local, sol, vistas, alturas = []
       if (!p.cielo) continue;
       const i = ranuras.findIndex((r) => r.p === p && !r.sucio);
       const d = Math.hypot(cam.x - p.v.pos[0], cam.y - p.v.pos[1], cam.z - p.v.pos[2]);
-      const t = Math.min(1, Math.max(0, (CIELO_LLEGA - d) / (CIELO_LLEGA - 1.5)));
+      const llega = p.v.cieloLlega || CIELO_LLEGA;   // (la foto del arranque lo trae desde más lejos: ver mapa.js)
+      const t = Math.min(1, Math.max(0, (llega - d) / (llega - 1.5)));
       const k = i >= 0 ? p.int * t * t * (3 - 2 * t) : 0;
       p.cielo.material.uniforms.uRanura.value.forEach((_, j, a) => (a[j] = j === i ? 1 : 0));
       p.cielo.material.uniforms.uOp.value = k;
@@ -899,7 +940,7 @@ export async function crearCiudad(THREE, { url, local, sol, vistas, alturas = []
     reajustar(idx) {
       const p = proys[idx];
       if (!p) return;
-      p.tol = 0.004 * Math.min(1, Math.tan(((p.v.apertura || 40) / 2) * Math.PI / 180) / Math.tan(20 * Math.PI / 180));
+      p.tol = (p.v.relleno ? -1 : 1) * 0.004 * Math.min(1, Math.tan(((p.v.apertura || 40) / 2) * Math.PI / 180) / Math.tan(20 * Math.PI / 180));
       p.ajustar(p.aspecto || 1.45);
     },
     // Altura de techo que la cámara tiene que superar en (x, y), en metros locales: la del edificio que contiene el
@@ -984,6 +1025,7 @@ export async function crearCiudad(THREE, { url, local, sol, vistas, alturas = []
       ranuras.forEach((r, i) => {
         uniforms.uProyInt.value[i] = r.p && !r.sucio ? w(r.p) : 0;
         uniforms.uProyLado.value[i] = (ola && r.p && ola.lados[r.p.idx]) || 0;
+        uniforms.uProyCapa.value[i] = r.p ? Math.min(3, r.p.v.capa || 0) : 0;
       });
       if (ola) uniforms.uOla.value.set(ola.centro[0], ola.centro[1], ola.centro[2], ola.radio);
       else uniforms.uOla.value.w = -1;
@@ -1002,8 +1044,14 @@ export async function crearCiudad(THREE, { url, local, sol, vistas, alturas = []
     setRadio(a, b) { uniforms.uRadio.value.set(a, b); },
     // estilo: { indice, niebla, tinta, piso ([r,g,b] tal cual se ven), transparente (la malla se mezcla en vez de tapar),
     //          ocluye (transparente pero sin dejar ver lo que está detrás de la superficie más cercana),
-    //          fantasma (0…1, sólo con la maqueta: cuánto se funde hacia Fantasma) }
-    setEstilo({ indice, niebla, tinta, piso, transparente, ocluye, fantasma = 0 }) {
+    //          fantasma (0…1, sólo con la maqueta: cuánto se funde hacia Fantasma),
+    //          paleta (sólo con la maqueta: { fachadas: [3 × [r,g,b]], techo, sombra, pisoSombra: [r,g,b,fuerza] }) }
+    setEstilo({ indice, niebla, tinta, piso, transparente, ocluye, fantasma = 0, paleta = null }) {
+      if (paleta) {
+        uniforms.uMaqA.value.set(...paleta.fachadas[0]); uniforms.uMaqB.value.set(...paleta.fachadas[1]);
+        uniforms.uMaqC.value.set(...paleta.fachadas[2]); uniforms.uMaqTecho.value.set(...paleta.techo);
+        uniforms.uMaqSombra.value.set(...paleta.sombra); uniforms.uMaqPiso.value.set(...paleta.pisoSombra);
+      }
       oclusor.visible = !!(transparente && ocluye);
       uniforms.uEstilo.value = indice;
       uniforms.uFantasma.value = fantasma;

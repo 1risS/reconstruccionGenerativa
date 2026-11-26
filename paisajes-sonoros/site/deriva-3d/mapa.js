@@ -116,6 +116,32 @@ const aLocal = ([lng, lat]) => {
 };
 const aLngLat = (x, y) => new maplibregl.MercatorCoordinate(ORIGEN.x + x * ESCALA, ORIGEN.y - y * ESCALA, 0).toLngLat();
 
+// ── manos de la Calle 8 ────────────────────────────
+// El eje de la calle sale del propio recorrido (ida por una vereda y vuelta por la otra): la dirección principal de
+// los puntos, centrado entre las dos veredas. mano(x, y) > 0 de un lado del eje y < 0 del otro (≈ ±8,5 m en las veredas).
+// La cámara mira siempre hacia las fachadas de la vereda por la que camina, y sólo se hacen los travellings de los
+// lugares de esa misma mano (los de enfrente no).
+const EJE = (() => {
+  const P = K.map((k) => aLocal([k.lng, k.lat]));
+  const mx = P.reduce((s, p) => s + p[0], 0) / P.length, my = P.reduce((s, p) => s + p[1], 0) / P.length;
+  let sxx = 0, syy = 0, sxy = 0;
+  for (const [x, y] of P) { sxx += (x - mx) ** 2; syy += (y - my) ** 2; sxy += (x - mx) * (y - my); }
+  const a = 0.5 * Math.atan2(2 * sxy, sxx - syy), n = [-Math.sin(a), Math.cos(a)];   // n: normal al eje
+  const lat = P.map(([x, y]) => (x - mx) * n[0] + (y - my) * n[1]);
+  return { mx, my, n, c: (Math.min(...lat) + Math.max(...lat)) / 2, rumboN: Math.atan2(n[0], n[1]) / RAD };
+})();
+const mano = (x, y) => (x - EJE.mx) * EJE.n[0] + (y - EJE.my) * EJE.n[1] - EJE.c;
+const MIRA_VEREDA = 8;    // grados que la mirada se abre de la dirección de la marcha hacia las fachadas de su vereda:
+                          // mira casi siempre al frente; a las paredes sólo en los travellings y en las pausas
+const MIRA_PAUSA = 35;    // hasta dónde gira la cabeza hacia sus fachadas en las pausas (nunca hacia las de enfrente)
+// rumbo de la mirada del caminante: adelante y abierto `abre` grados hacia su vereda (cruzando la calle, sólo adelante)
+function rumboVereda(e, abre = MIRA_VEREDA) {
+  const [x, y] = aLocal([e.lng, e.lat]), m = mano(x, y);
+  const fachadas = m >= 0 ? EJE.rumboN : EJE.rumboN + 180;
+  const w = clamp((Math.abs(m) - 2) / 4, 0, 1);
+  return e.rumbo + clamp(difAng(e.rumbo, fachadas), -abre, abre) * w;
+}
+
 function estado(t) {
   const n = K.length - 1;
   if (t <= K[0].t) return { ...K[0], k: 0, pausa: false, caminando: false };
@@ -165,7 +191,11 @@ const LUGARES = (R.proyecciones || []).map((p, grupo) => {
     const c = CAL.vistas[v.imagen];
     const vista = { ...normalizar(c ? { ...v, ...c, imagen: v.imagen } : v, aLocal), idx: VISTAS.length, aspecto: 1.45,
       tipo: v.tipo || p.tipo || '',     // el pie dice qué es la imagen que se está viendo
-      llega: v.llega };                 // 'fundido': sin vuelo desde la vista anterior (ver TRASLADO_FUNDIDO)
+      llega: v.llega,                   // 'fundido': sin vuelo desde la vista anterior (ver TRASLADO_FUNDIDO)
+      lugar: v.lugar };                 // (opcional) otro nombre en el pie para esta vista (p. ej. el Domino Park en el Tower)
+    // la foto del arranque llena la pantalla (cubre, no entra entera) y su cielo se ve desde lejos: se la mira desde
+    // que la partida baja y mientras la cámara camina hasta el caminante (ver ARRANQUE y ciudad.js → cieloLlega)
+    if (p.arranque) Object.assign(vista, { cubrir: true, cieloLlega: 150 });
     // vistas isométricas (camara.js): la cámara está a ~1 km con un teleobjetivo. El vuelo se calcula con su
     // equivalente CERCANA (misma dirección, apertura de 40°, `iso` veces más cerca) y recién al final la cámara se
     // aleja por su eje cerrando el campo de visión en la misma proporción: un dolly zoom (ver camaraCalle).
@@ -178,11 +208,20 @@ const LUGARES = (R.proyecciones || []).map((p, grupo) => {
     VISTAS.push(vista);
     return vista;
   });
-  // huella: la vista que queda proyectada (tenue) fuera del tramo; la marcada con huella: true, o la primera
+  // huella: la vista que queda proyectada (tenue) fuera del tramo; la marcada con huella: true, o la primera.
+  // Si hay varias marcadas, quedan todas superpuestas (huellas), la que va antes en la lista ENCIMA de las demás
+  // (capa: ciudad.js las compone de la capa 0 hacia arriba). `huella` es la primera de ellas.
   const iHuella = Math.max(0, p.vistas.findIndex((v) => v.huella)), huella = vistas[iHuella];
+  const huellas = vistas.filter((v, i) => p.vistas[i].huella);
+  if (!huellas.length) huellas.push(huella);
+  huellas.forEach((v, i) => (v.capa = huellas.length > 1 ? huellas.length - 1 - i : 0));
+  // desdeLejos (recorrido.js): sus imágenes van una capa por encima de las demás (p. ej. sobre la foto del arranque)
+  if (p.desdeLejos) vistas.forEach((v) => (v.capa = (v.capa || 0) + 1));
   // punto que dispara el travelling: donde se tomó la foto que queda como huella (o `punto` en recorrido.js)
   const ref = p.punto || (CAL.vistas[huella.imagen] || {}).camara || p.vistas[iHuella].camara;
-  return { ...p, grupo, huella, vistas, centro: aLocal([ref.lng, ref.lat]), radio: p.radio || RADIO_LUGAR,
+  // mano del lugar: de qué lado de la calle está la fachada que muestra la huella
+  return { ...p, grupo, huella, huellas, vistas, centro: aLocal([ref.lng, ref.lat]), radio: p.radio || RADIO_LUGAR,
+    mano: Math.sign(mano(huella.mira[0], huella.mira[1])),
     repite: (p.repite || []).map((i) => vistas[i]).filter(Boolean) };
 });
 // TRAVELLING POR CERCANÍA: cuando el caminante entra a RADIO_LUGAR metros del punto de una foto, la cámara lo deja,
@@ -208,7 +247,8 @@ function pasadas(L) {
   for (let t = 0; t <= fin; t += PASO_T) {
     const e = estado(t), [x, y] = aLocal([e.lng, e.lat]);
     const d = Math.hypot(x - L.centro[0], y - L.centro[1]);
-    if (!dentro && d < L.radio) { dentro = true; res.push(t); }
+    // sólo cuenta si el caminante va por la vereda del lugar (no se miran los de enfrente)
+    if (!dentro && d < L.radio && mano(x, y) * L.mano > 0) { dentro = true; res.push(t); }
     else if (dentro && d > L.radio * 1.4) dentro = false; // histéresis: no se dispara dos veces en el borde
   }
   return res;
@@ -218,7 +258,8 @@ const viaje = (t, v) => {
   const e = estado(t), [x, y] = aLocal([e.lng, e.lat]);
   return clamp(4 + Math.hypot(v.posEq[0] - x, v.posEq[1] - y, v.posEq[2] - OJO) / 6, 5, 8);
 };
-const PROYS = LUGARES.flatMap((L) => pasadas(L).map((t, i) => ({ ...L, desde: t, vistas: i === 0 ? L.vistas : L.repite })))
+// (el lugar con `arranque`, la foto del punto de partida, va siempre al principio: ver ARRANQUE más abajo)
+const PROYS = LUGARES.flatMap((L) => (L.arranque ? [0] : pasadas(L)).map((t, i) => ({ ...L, desde: t, vistas: i === 0 ? L.vistas : L.repite })))
   .filter((p) => p.vistas.length).sort((a, b) => a.desde - b.desde);
 PROYS.forEach((p, i) => {
   const prev = PROYS[i - 1];
@@ -235,6 +276,60 @@ PROYS.forEach((p, i) => {
 // el último puede terminar después del audio: el recorrido cierra con la imagen recompuesta. Pero si la cámara ni
 // siquiera llegaría al primer punto de vista antes del final, ese travelling no se hace.
 for (let i = PROYS.length - 1; i >= 0; i--) if (PROYS[i].desde + PROYS[i].subida > K[K.length - 1].t - 2) PROYS.splice(i, 1);
+// ── ARRANQUE: la foto del punto de partida (recorrido.js → lugar con `arranque: true`) ──
+// La partida (el travelling del dron a la vereda, ver iniciarPartida) no baja a los ojos del caminante sino al punto
+// exacto donde se tomó la foto, y la foto se va encendiendo mientras baja: al llegar, la imagen ocupa la pantalla
+// recompuesta sobre la cuadra en 3D (Fantasma). La cámara termina de acomodarse al eje de la foto (ARRANQUE_GIRO), se
+// queda quieta CONTEMPLA segundos y después avanza por la vereda hasta alcanzar al caminante, que ya empezó a andar:
+// se entra en la escena y la foto se descompone sobre las fachadas. Los tiempos de ese tramo se fijan al llegar (la
+// partida va con el reloj, no con el audio). Si no hay partida (sin panorámica, ?t=…), es un travelling común desde t = 0.
+const ARRANQUE = PROYS.find((p) => p.arranque) || null;
+const ARRANQUE_QUIETO = 4;  // segundos quieta en la foto, después del giro
+const ARRANQUE_PASO = 3.4;   // metros por segundo con que la cámara camina de la foto hasta alcanzar al caminante
+const ARRANQUE_GIRO = 3.5;   // segundos en que la cámara pasa de la mirada de la partida al eje de la foto
+const ARRANQUE_FANTASMA = [0.86, 1];   // tramo de la partida en que la maqueta vuelve a Fantasma al llegar a la foto
+let arranqueListo = true;    // false mientras dura la partida que baja a la foto
+if (ARRANQUE) ARRANQUE.orig = { desde: ARRANQUE.desde, inicio: ARRANQUE.inicio, subida: ARRANQUE.subida, bajada: ARRANQUE.bajada, hasta: ARRANQUE.hasta };
+// al empezar (o volver a empezar): con partida, la foto espera la llegada; sin partida, tramo común
+function prepararArranque(conPartida) {
+  if (!ARRANQUE) return;
+  Object.assign(ARRANQUE, ARRANQUE.orig, { desdeFoto: false });
+  arranqueListo = !conPartida;
+}
+// la partida llegó al punto de vista de la foto en el momento t del audio
+function reprogramarArranque(t) {
+  if (!ARRANQUE || arranqueListo) return;
+  arranqueListo = true;
+  if (t > ARRANQUE.orig.hasta) return;   // se empezó más adelante (?t=…): ya no corresponde
+  const p = ARRANQUE, n = p.vistas.length;
+  // (la quietud en la foto es un poco más corta que CONTEMPLA: el giro ya la hace quieta y el caminante se aleja)
+  const resto = n * ARRANQUE_QUIETO + p.vistas.slice(1).reduce((s, v) => s + traslado(v), 0);
+  p.desde = p.inicio = t;
+  p.subida = ARRANQUE_GIRO;
+  // la bajada es una caminata por la vereda hasta alcanzar al caminante: dura lo que pide la distancia que hay que
+  // recorrer a ARRANQUE_PASO (el caminante también avanza mientras tanto)
+  const tb = t + p.subida + resto, V = p.vistas[n - 1].pos;
+  let b = 8;
+  for (let i = 0; i < 4; i++) {
+    const e = estado(tb + b), [x, y] = aLocal([e.lng, e.lat]);
+    b = clamp(Math.hypot(V[0] - x, V[1] - y) / ARRANQUE_PASO, 6, 24);
+  }
+  p.bajada = b;
+  p.hasta = tb + p.bajada;
+  p.desdeFoto = true;   // hasta la bajada, la cámara sale del punto de vista y no de los ojos del caminante
+  const i = PROYS.indexOf(p), sig = PROYS[i + 1];
+  if (sig && sig.inicio < p.hasta + SUELTA + 2) console.warn('arranque: se pisa con', sig.lugar);
+  if (sig) sig.anticipa = clamp(sig.inicio - (p.hasta + SUELTA), 2, ANTICIPA);
+}
+// 0…1: la cámara del arranque ya dejó la foto y camina por la vereda (0 durante la partida y mientras mira la foto)
+const CAMINA_FUNDIDO = 2.5;   // segundos en que se encienden las huellas `desdeLejos` al echar a andar
+function caminaArranque(t) {
+  if (!ARRANQUE) return 1;
+  if (!arranqueListo) return 0;
+  return suave(clamp((t - (ARRANQUE.hasta - ARRANQUE.bajada)) / CAMINA_FUNDIDO, 0, 1));
+}
+// posición del punto de vista de la foto del arranque (adonde baja la partida)
+const posArranque = () => ARRANQUE && ARRANQUE.vistas[0].pos;
 const mmss = (t) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
 if (PARAMS.has('tramos')) console.log('travellings:\n' + PROYS.map((p) => `${mmss(p.desde)}–${mmss(p.hasta)}  ${p.lugar} (${p.vistas.length} vista${p.vistas.length > 1 ? 's' : ''})`).join('\n'));
 
@@ -254,9 +349,10 @@ function pesosProy(p, t) {
 // OLA: cuando un lugar pasa de una imagen a otra (entre dos vistas, al empezar si la huella no es la primera vista,
 // y al terminar si la última no es la huella) no hay fundido: las dos quedan encendidas y un frente sale del lugar y
 // se expande por la ciudad cambiando una por otra (ver ola() en ciudad.js). f = avance 0…1.
+// (sale y entra pueden ser listas: las huellas superpuestas de un lugar se van o vuelven juntas)
 const olaEntre = (p, sale, entra, f) => ({
-  lados: { [sale.idx]: -1, [entra.idx]: 1 },
-  centro: entra.mira,
+  lados: Object.fromEntries([...[sale].flat().map((v) => [v.idx, -1]), ...[entra].flat().map((v) => [v.idx, 1])]),
+  centro: [entra].flat()[0].mira,
   radio: p.radioOla * Math.pow(f, 1.6),
   luz: Math.sqrt(Math.sin(Math.PI * clamp(f, 0, 1))),
 });
@@ -275,22 +371,49 @@ function intensidades(t) {
   const enCurso = new Set(PROYS.filter(activo).map((p) => p.grupo));
   // mientras se mira un lugar (desde que la cabeza gira hacia él hasta que vuelve la huella) las huellas de los
   // demás se apagan: si no, se superponen a la imagen (p. ej. el dron del Tower cubre toda la vereda sur)
-  let foco = 0;
+  // (la foto del arranque sólo apaga las huellas mientras se la mira quieta: cuando la cámara echa a andar por la
+  // vereda, las huellas `desdeLejos` se encienden encima de ella; ver caminaArranque)
+  let foco = 0, focoLejos = 0;
   for (const p of PROYS) {
     if (!activo(p)) continue;
     const f = t < p.inicio ? suave((t - p.inicio + p.anticipa) / p.anticipa)
       : t <= p.hasta ? 1 : 1 - suave((t - p.hasta) / POST);
     foco = Math.max(foco, f);
+    focoLejos = Math.max(focoLejos, p === ARRANQUE ? f * (1 - caminaArranque(t)) : f);
   }
   // las huellas aparecen de a poco a medida que el caminante se acerca (entre 150 y 70 m de la fachada): así no
   // saltan de golpe y, como se ordenan por intensidad, las 6 ranuras quedan para los lugares más cercanos
   const e = estado(t), [cx, cy] = aLocal([e.lng, e.lat]);
-  const cerca = (p) => suave(clamp((150 - Math.hypot(p.huella.mira[0] - cx, p.huella.mira[1] - cy)) / 80, 0, 1));
+  // (las `desdeLejos` no esperan a que el caminante se acerque: se ven desde el principio de la cuadra)
+  const cerca = (p) => p.desdeLejos ? 1 : suave(clamp((150 - Math.hypot(p.huella.mira[0] - cx, p.huella.mira[1] - cy)) / 80, 0, 1));
+  const apaga = (p) => (p.desdeLejos ? focoLejos : foco);
   const hechos = new Set();
   for (const p of PROYS) {
     if (activo(p) ? false : enCurso.has(p.grupo) || hechos.has(p.grupo)) continue;
     hechos.add(p.grupo);
     const v0 = p.vistas[0].idx, ult = p.vistas[p.vistas.length - 1].idx, h = p.huella.idx;
+    // la foto del arranque se enciende mientras la partida baja hacia su punto de vista (ARRANQUE)
+    if (p === ARRANQUE && !arranqueListo) {
+      arr[v0] = pano && pano.partida ? suave(clamp((pano.partida.f - 0.6) / 0.35, 0, 1)) : 0;
+      continue;
+    }
+    // huellas superpuestas (varias vistas con huella: true): en reposo están todas; al empezar se van todas menos la
+    // primera vista, y al terminar vuelven todas menos la última (ésas pasan de 1 a REPOSO sin ola)
+    if (p.huellas.length > 1 && !(t >= p.inicio && t <= p.hasta)) {
+      const H = p.huellas, vUlt = p.vistas[p.vistas.length - 1], vPri = p.vistas[0];
+      if (t > p.hasta && t < p.hasta + POST) {
+        const f = suave((t - p.hasta) / POST), vuelven = H.filter((v) => v !== vUlt);
+        for (const v of vuelven) arr[v.idx] = REPOSO;
+        if (H.includes(vUlt)) arr[ult] = 1 - (1 - REPOSO) * f; else arr[ult] = resto(f);
+        if (vuelven.length) ola = olaEntre(p, H.includes(vUlt) ? [] : vUlt, vuelven, f);
+      } else if (t >= p.inicio - p.anticipa && t < p.inicio) {
+        const f = suave((t - p.inicio + p.anticipa) / p.anticipa), salen = H.filter((v) => v !== vPri);
+        for (const v of salen) arr[v.idx] = REPOSO * resto(f);
+        arr[v0] = REPOSO + (1 - REPOSO) * f;
+        if (salen.length) ola = olaEntre(p, salen, vPri, f);
+      } else for (const v of H) arr[v.idx] = REPOSO * (1 - apaga(p)) * cerca(p);
+      continue;
+    }
     if (t >= p.inicio && t <= p.hasta) {
       const pesos = pesosProy(p, t);
       pesos.forEach((w, k) => (arr[p.vistas[k].idx] = w));
@@ -313,7 +436,7 @@ function intensidades(t) {
         arr[ult] = resto(f);
         arr[h] = REPOSO;
         ola = olaEntre(p, p.vistas[p.vistas.length - 1], p.huella, f);
-      } else arr[h] = 1 - (1 - REPOSO) * f;
+      } else arr[h] = p.sinHuella ? 1 - f : 1 - (1 - REPOSO) * f;   // sinHuella: se apaga del todo
     } else if (t >= p.inicio - p.anticipa && t < p.inicio) { // la huella cede el lugar a la primera vista
       const f = suave((t - p.inicio + p.anticipa) / p.anticipa);
       if (v0 !== h) {
@@ -321,7 +444,7 @@ function intensidades(t) {
         arr[v0] = REPOSO + (1 - REPOSO) * f;
         ola = olaEntre(p, p.huella, p.vistas[0], f);
       } else arr[h] = REPOSO + (1 - REPOSO) * f; // la huella es la primera vista: sube de REPOSO a 1
-    } else arr[h] = REPOSO * (1 - foco) * cerca(p);
+    } else arr[h] = p.sinHuella ? 0 : REPOSO * (1 - apaga(p)) * cerca(p);
   }
   return { arr, ola };
 }
@@ -363,6 +486,10 @@ function zonaLibre() {
 function encuadre(v) {
   const W = window.innerWidth, H = window.innerHeight, z = zonaLibre();
   const th = Math.tan((v.apertura * RAD) / 2), tv = (th / v.aspecto) * (v.estirar || 1), c = v.centro || [0, 0];
+  if (v.cubrir) {   // llena toda la pantalla (se recorta lo que sobra), centrada
+    const f = Math.max(W / (2 * th), H / (2 * tv));
+    return { fov: (2 * Math.atan(H / 2 / f)) / RAD, xp: 0.5 + (f * c[0] * th) / W, yp: 0.5 - (f * c[1] * tv) / H };
+  }
   const f = Math.min(W / (2 * 1.06 * th), z.alto / (2 * 1.04 * tv));
   // en la imagen proyectada, el centro de la foto está en (−c0·th, −c1·tv) respecto del eje (tangentes)
   return { fov: (2 * Math.atan(H / 2 / f)) / RAD, xp: 0.5 + (f * c[0] * th) / W, yp: (z.arriba + z.alto / 2 - f * c[1] * tv) / H };
@@ -373,10 +500,17 @@ function encuadreEq(v) {
   if (v.iso <= 1) return e;
   return { ...e, fov: (2 * Math.atan(Math.tan((e.fov / 2) * RAD) * v.iso)) / RAD };
 }
+// avance de 0 a 1 con velocidad trapezoidal: acelera en el primer 30 %, parejo en el medio, frena en el último 30 %
+function parejo(u, a = 0.3) {
+  const vp = 1 / (1 - a);
+  if (u < a) return (vp * u * u) / (2 * a);
+  if (u > 1 - a) return 1 - (vp * (1 - u) * (1 - u)) / (2 * a);
+  return vp * (u - a / 2);
+}
 // vuelo activo en t: w = 0 (ojos del caminante) … 1 (punto de vista de la imagen)
 function vuelo(t) {
   for (const p of PROYS) {
-    if (t < p.inicio || t > p.hasta) continue;
+    if (t < p.inicio || t > p.hasta || (p === ARRANQUE && !arranqueListo)) continue;
     const pesos = pesosProy(p, t);
     // hacia una vista con fundido la cámara no viaja: salta de un punto de vista al otro a mitad del fundido (a oscuras)
     for (let k = 1; k < pesos.length; k++) {
@@ -398,7 +532,9 @@ function vuelo(t) {
       const b = Math.sin(Math.PI * f);
       r *= 1 + 0.3 * b; z *= 1 + 0.35 * b;
     }
-    const w = suave(clamp((t - p.inicio) / p.subida, 0, 1)) * suave(clamp((p.hasta - t) / p.bajada, 0, 1));
+    // (en el arranque, la bajada es una caminata: acelera, va a paso parejo y se funde con el paso del caminante)
+    const xb = clamp((p.hasta - t) / p.bajada, 0, 1);
+    const w = suave(clamp((t - p.inicio) / p.subida, 0, 1)) * (p.desdeFoto ? 1 - parejo(1 - xb) : suave(xb));
     // cuánto pesan los dioramas en este momento (para ocultar lo que los tapa: ciudad.setCorte)
     const kIso = pesos.reduce((a, q, i) => a + (p.vistas[i].isometrica ? q : 0), 0);
     return { p, w, k: pesos.indexOf(Math.max(...pesos)), T: m, polarV: { th, r, z }, fov, xp, yp, dR, dP, giro, lnIso, kIso };
@@ -444,7 +580,8 @@ window.__mapa = map; // para depurar desde la consola
 
 // panorámica: { vista, ciudad (cuando cargó), listo (momento en que se vio), apagando (al comenzar),
 //              vuelta (al terminar: de dónde sale la cámara y cuándo llega al dron) }
-const VISTA_PANO = INICIO_PANO ? { ...normalizar(PANO, aLocal), lejos: PANO.lejos } : null;
+// relleno: la foto cae también en lo que el dron no ve (ciudad.js → proy), sin huecos oscuros al descomponerse
+const VISTA_PANO = INICIO_PANO ? { ...normalizar(PANO, aLocal), lejos: PANO.lejos, relleno: true } : null;
 const nuevoPano = () => ({ vista: VISTA_PANO, ciudad: null, listo: 0, cuadros: 0, apagando: 0, vuelta: null });
 let pano = INICIO_PANO ? nuevoPano() : null;
 let crear3D = null;   // { THREE, crearCiudad }: para volver a armar la ciudad de la panorámica al terminar
@@ -458,6 +595,9 @@ let capaRegistros = null;
 let ciudad = null;
 let estilos = null;   // Fantasma y Maqueta, y el fundido entre los dos (estilos.js)
 let mezclaEstilo = INICIO_PANO ? 0 : 1;   // 0 = Fantasma, 1 = Maqueta
+// fondo Vacío (sin mapa base ni horizonte, estilos.js → VACIO) en vez de Fantasma: en la panorámica y la partida,
+// hasta que la maqueta termina de aparecer, y otra vez en la vuelta al dron
+let fondoVacio = INICIO_PANO;
 
 map.on('load', async () => {
   const capas = map.getStyle().layers;
@@ -530,7 +670,8 @@ map.on('load', async () => {
         url: 'edificios.json', local: aLocal, sol: { azimut: 235, elevacion: 14 },
         vistas: VISTAS, alturas: CAL.alturas, repintar: () => map.triggerRepaint(),
         // frames del video de la caminata en las fachadas (paredes-video.js); ?sinvideo los apaga
-        paredes: PARAMS.has('sinvideo') || !window.PAREDES_VIDEO ? null : { ...window.PAREDES_VIDEO, collage: PARAMS.has('collage') },
+        // la textura arranca oculta (opacidad 0): sólo se enciende con la tecla T
+        paredes: PARAMS.has('sinvideo') || !window.PAREDES_VIDEO ? null : { ...window.PAREDES_VIDEO, opacidad: 0, collage: PARAMS.has('collage') },
       });
       map.setLayoutProperty('edificios-3d', 'visibility', 'none');
       window.__ciudad = ciudad; // para depurar desde la consola
@@ -540,7 +681,7 @@ map.on('load', async () => {
   } catch (e) { console.warn('No se pudieron cargar los registros 3D', e); }
   // los estilos se aplican a la ciudad del recorrido y a la de la panorámica (si ya está)
   const ambas = { setEstilo: (est) => { if (ciudad) ciudad.setEstilo(est); if (pano && pano.ciudad) pano.ciudad.setEstilo(est); } };
-  try { estilos = iniciarEstilos(map, ambas); estilos.mezclar(mezclaEstilo); } catch (e) { console.warn('No se pudieron armar los estilos', e); }
+  try { estilos = iniciarEstilos(map, ambas); estilos.mezclar(mezclaEstilo, fondoVacio); } catch (e) { console.warn('No se pudieron armar los estilos', e); }
 
   const btn = $('#comenzar');
   btn.disabled = false;
@@ -769,7 +910,9 @@ function esquivarEdificios(c, ojos, vu) {
   // mientras va hacia un diorama (o vuelve de él) los volúmenes del medio están ocultos (CORTE): no hay nada que
   // esquivar, y subir de golpe sobre un techo invisible era un salto desconcertante a la salida de la foto del Tower
   const corte = vu.w * (vu.kIso || 0) > 0.001;
-  const techo = corte ? 0 : Math.max(adentro, cerca);
+  // en el arranque la cámara camina por la vereda (de la foto al caminante), pegada a las fachadas: sólo se esquiva
+  // lo que quedaría adentro de un volumen, no lo que está cerca (si no, subía hasta los techos)
+  const techo = corte ? 0 : vu.p.desdeFoto ? adentro : Math.max(adentro, cerca);
   const falta = techo > 0 ? Math.max(0, techo + 1.5 - c[2]) : 0;
   elevVuelo = Math.max(falta, elevVuelo * Math.exp(-dt * 2.5));
   return elevVuelo;
@@ -794,6 +937,13 @@ function camaraCalle(e, rumboCam, pitchCam, vu) {
   const wz = alto ? suave(clamp(w / 0.55, 0, 1)) : w;
   const wh = alto ? suave(clamp((w - 0.3) / 0.7, 0, 1)) : w;
   let c = [x + (V[0] - x) * wh, y + (V[1] - y) * wh, alt + (V[2] - alt) * wz];
+  // arranque: de la foto al caminante la cámara camina con el balanceo de los pasos del caminante (los que se oyen)
+  let rollViaje = 0;
+  if (vu.p.desdeFoto && w < 1 && andando) {
+    const m = w * clamp((1 - w) * 6, 0, 1);   // (quieta en la foto; lo que falta lo pone el lerp de alt)
+    c[2] += (alt - OJO) * m;
+    rollViaje = roll * m;
+  }
   // la cabeza ya venía girando hacia el lugar (ANTICIPA): el resto del giro se reparte en la primera mitad del viaje
   const fv = suave(clamp(w / 0.5, 0, 1));
   // DOLLY ZOOM hacia las vistas isométricas: en la segunda mitad del viaje la cámara se aleja del lugar por la misma
@@ -811,7 +961,7 @@ function camaraCalle(e, rumboCam, pitchCam, vu) {
   const quiero = {
     rumbo: rumboCam + difAng(rumboCam, L.rumbo + vu.dR) * fv,
     pitch: pitchCam + (L.alto + vu.dP - pitchCam) * fv,      // puede pasar de PITCH_CALLE (fotos al horizonte)
-    giro: roll * (1 - w) + vu.giro * w,
+    giro: roll * (1 - w) + vu.giro * w + rollViaje,
     f: (g * H) / 2 / Math.tan((fovEq / 2) * RAD),
     cx: W * (0.5 + (vu.xp - 0.5) * w), cy: H * (0.5 + (vu.yp - 0.5) * w),
   };
@@ -953,7 +1103,7 @@ function setModo(nuevo, { dur } = {}) {
   seguir = true;
   const e = estado(tActual());
   if (modo === 'calle') {
-    camRumbo = e.rumbo; camPitch = PITCH_CALLE; mirarYaw = mirarPitch = 0;
+    camRumbo = rumboVereda(e); camPitch = PITCH_CALLE; mirarYaw = mirarPitch = 0;
     transicion(() => map.flyTo({ ...camaraCalle(e, camRumbo, camPitch), duration: dur ?? 2600, essential: true }));
   } else if (modo === 'aerea') {
     camRumbo = e.rumbo; orbita = 0;
@@ -1102,7 +1252,9 @@ function camaraPartida(ahora) {
   pa.f = f;
   const u = f * f * f * (f * (f * 6 - 15) + 10);   // arranca y llega con velocidad y aceleración cero
   const e = estado(tActual());
-  const E = [...aLocal([e.lng, e.lat]), OJO];
+  // con la foto del arranque, baja al punto donde se tomó (a la altura de los ojos) en vez de a los ojos del caminante
+  const pA = !arranqueListo && posArranque();
+  const E = pA ? [pA[0], pA[1], OJO] : [...aLocal([e.lng, e.lat]), OJO];
   const d = [Math.sin(e.rumbo * RAD), Math.cos(e.rumbo * RAD)];
   const P = pano.vista.pos, A = pa.desde;
   const C1 = [P[0] + 420, P[1] + 380, P[2] + 90];                  // al noreste y arriba del dron, cerca del cono de la foto
@@ -1113,9 +1265,15 @@ function camaraPartida(ahora) {
     const techo = ciudad.alturaCerca(c[0], c[1], 3);
     if (techo > 0 && techo + 2 > c[2]) c[2] += (techo + 2 - c[2]) * (1 - suave(clamp((f - 0.95) / 0.05, 0, 1)));
   }
-  // la mirada: de la foto (lo que miraba el dron) a la vereda, adelante del caminante, con el pitch de la calle
-  const w = suave(clamp((f - 0.35) / 0.55, 0, 1));
-  const Tf = [E[0] + d[0] * 60, E[1] + d[1] * 60, OJO - 60 * Math.tan((90 - PITCH_CALLE) * RAD)];
+  // la mirada: de la foto (lo que miraba el dron) a la vereda, adelante del caminante y hacia sus fachadas, con el
+  // pitch de la calle (la misma con que sigue la cámara de calle)
+  // Con la foto del arranque, la mirada final es la de la foto, a un punto lejano (a 60 m, en los últimos metros de la
+  // bajada la cámara se desplaza de costado y el rumbo daba un tirón de ~10° justo antes de llegar), y termina de girar
+  // antes, cuando la cámara todavía está alta.
+  const w = pA ? suave(clamp((f - 0.3) / 0.5, 0, 1)) : suave(clamp((f - 0.35) / 0.55, 0, 1));
+  const rv = pA ? ARRANQUE.vistas[0].rumbo : rumboVereda(e), dv = [Math.sin(rv * RAD), Math.cos(rv * RAD)];
+  const dT = pA ? 400 : 60;
+  const Tf = [E[0] + dv[0] * dT, E[1] + dv[1] * dT, OJO - dT * Math.tan((90 - PITCH_CALLE) * RAD)];
   const L = mirarA(c, [0, 1, 2].map((i) => pa.mira0[i] + (Tf[i] - pa.mira0[i]) * w));
   const fov = pa.fov0 + (fovCalle() - pa.fov0) * w;
   if (Math.abs(map.getVerticalFieldOfView() - fov) > 0.01) map.setVerticalFieldOfView(fov);
@@ -1127,6 +1285,7 @@ function camaraPartida(ahora) {
     camRumbo = L.rumbo; camPitch = PITCH_CALLE;
     document.body.classList.add('modo-calle');
     salirDePano();
+    reprogramarArranque(tActual());
   }
 }
 // foto fija mientras carga el 3D, ubicada exactamente donde la va a dibujar la proyección
@@ -1145,11 +1304,12 @@ function panoCuadro(ahora) {
   const v = pano.vuelta;
   const entra = v && !v.llega ? suave(clamp(((ahora - v.ini) / 1000 / VUELTA_SEG - 0.55) / 0.45, 0, 1)) : 1;
   // en la partida, la imagen sigue entera mientras se descompone y se apaga cuando la cámara ya va hacia la calle
-  const sale = pano.partida ? 1 - suave(clamp((pano.partida.f - 0.4) / 0.35, 0, 1)) : 1;
+  const sale = pano.partida ? 1 - suave(clamp((pano.partida.f - 0.3) / 0.4, 0, 1)) : 1;
   if (pano.ciudad) pano.ciudad.setIntensidades([entra * sale * (1 - suave(clamp(s / PANO_APAGA, 0, 1)))]);
-  // el telón (el cielo de la foto) acompaña la descomposición al principio, y se va antes de que se vea como un
-  // panel suelto en el aire
-  if (pano.ciudad && pano.ciudad.setTelon) pano.ciudad.setTelon(pano.partida ? 1 - suave(clamp((pano.partida.f - 0.12) / 0.2, 0, 1)) : 1);
+  // el telón (el cielo de la foto) se va con la imagen, apenas antes: si se apagaba solo al principio, el cielo
+  // quedaba oscuro mientras la ciudad seguía entera y la foto parecía oscurecerse. Cuando la cámara gira hacia la
+  // calle (y el telón se vería como un panel suelto) ya no está.
+  if (pano.ciudad && pano.ciudad.setTelon) pano.ciudad.setTelon(pano.partida ? 1 - suave(clamp((pano.partida.f - 0.22) / 0.3, 0, 1)) : 1);
   if (s > PANO_APAGA + 0.5) {
     if (pano.ciudad) {
       if (capaRegistros) capaRegistros.escena.remove(pano.ciudad.grupo);
@@ -1182,10 +1342,12 @@ function cuadro(ahora) {
 
     // pie del registro
     if (vu && (modo !== 'calle' || vu.w > 0.4)) {
-      $('#pie-lugar').textContent = vu.p.lugar || '';
-      $('#pie-tipo').textContent = (vu.p.vistas[vu.k] || {}).tipo || vu.p.tipo || '';   // la vista dominante
-      const n = vu.p.vistas.length;
-      $('#pie-n').textContent = n > 1 ? `viewpoint ${vu.k + 1} / ${n}` : '';
+      const vk = vu.p.vistas[vu.k] || {};   // la vista dominante
+      $('#pie-lugar').textContent = vk.lugar || vu.p.lugar || '';
+      $('#pie-tipo').textContent = vk.tipo || vu.p.tipo || '';
+      // la numeración cuenta sólo las vistas con el mismo nombre (el Domino Park dentro del Tower no suma al Tower)
+      const mismas = vu.p.vistas.filter((v) => (v.lugar || vu.p.lugar) === (vk.lugar || vu.p.lugar)), n = mismas.length;
+      $('#pie-n').textContent = n > 1 ? `viewpoint ${mismas.indexOf(vk) + 1} / ${n}` : '';
       elPie.classList.add('visible');
     } else if (mir && mir.i > 0.5 && iniciado) {
       const m = mir.m;
@@ -1246,19 +1408,21 @@ function cuadro(ahora) {
     else if (!iniciado || (modo === 'general' && terminado)) {
       if (!map.isMoving()) map.setBearing(map.getBearing() + dt * 2.5);
     } else if (!enTransicion && modo === 'calle') {
-      // hacia dónde mira: adelante, o la fachada del registro, o alrededor durante la escucha
-      let objR = e.rumbo, objP = PITCH_CALLE;
+      // hacia dónde mira: al frente (apenas abierto hacia su vereda), o la fachada del registro, o en la escucha
+      // va y viene entre el frente y las fachadas de su vereda (nunca hacia las de enfrente)
+      const base = rumboVereda(e);
+      let objR = base, objP = PITCH_CALLE;
       if (mir) {
         const dist = metros(e, mir.m.c);
         const rM = rumbo(e, mir.m.c);
         const pM = Math.min(PITCH_CALLE, 90 + Math.atan2(mir.m.zc - OJO, dist) / RAD);
-        objR = e.rumbo + difAng(e.rumbo, rM) * mir.i;
+        objR = base + difAng(base, rM) * mir.i;
         objP = PITCH_CALLE + (pM - PITCH_CALLE) * mir.i;
       } else if (e.pausa) {
-        objR = e.rumbo + 38 * Math.sin(e.tPausa * 0.22);
+        objR = base + difAng(base, rumboVereda(e, MIRA_PAUSA)) * (0.5 - 0.5 * Math.cos(e.tPausa * 0.22));
         objP = PITCH_CALLE + 3 * Math.sin(e.tPausa * 0.13);
       }
-      for (const { a, T } of at || []) { // la cabeza se va girando hacia el lugar de enfrente que se va a revelar
+      for (const { a, T } of at || []) { // la cabeza se va girando hacia el lugar de su vereda que se va a revelar
         const L = mirarA([...aLocal([e.lng, e.lat]), OJO], T);
         objR += difAng(objR, L.rumbo) * a;
         objP += (L.pitch - objP) * a;
@@ -1270,7 +1434,14 @@ function cuadro(ahora) {
       camRumbo += difAng(camRumbo, objR + mirarYaw) * k;
       camPitch += (clamp(objP + mirarPitch, 55, PITCH_CALLE) - camPitch) * k;
       if (!vu && Math.abs(map.getVerticalFieldOfView() - fovCalle()) > 0.01) map.setVerticalFieldOfView(fovCalle());
-      map.jumpTo(camaraCalle(e, camRumbo, camPitch, vu));
+      // arranque: hasta la bajada, la cámara parte del punto de vista de la foto (adonde la dejó la partida), quieta;
+      // en la bajada vuelve a ser la de los ojos del caminante y la cámara avanza por la vereda hasta alcanzarlo
+      let eCam = e;
+      if (vu && vu.p.desdeFoto && t < vu.p.hasta - vu.p.bajada) {
+        const pA = vu.p.vistas[0].pos, ll = aLngLat(pA[0], pA[1]);
+        eCam = { ...e, lng: ll.lng, lat: ll.lat, caminando: false };
+      }
+      map.jumpTo(camaraCalle(eCam, camRumbo, camPitch, vu));
     } else if (!enTransicion && modo === 'aerea' && seguir) {
       if (e.pausa && !audio.paused) orbita += dt * 7;
       else orbita *= Math.exp(-dt * 0.8);
@@ -1298,20 +1469,27 @@ function estiloCuadro(ahora, dt, vu, t) {
   if (!estilos) return;
   const rampa = (f, [a, b]) => suave(clamp((f - a) / (b - a), 0, 1));
   const v = pano && !pano.apagando && pano.vuelta;
-  if (pano && pano.partida) mezclaEstilo = rampa(pano.partida.f, MAQUETA_PARTIDA);
+  // si la partida baja a la foto del arranque, la maqueta aparece igual al bajar, pero vuelve a Fantasma al llegar al
+  // punto de vista, mientras la foto termina de encenderse (como en los demás travellings)
+  if (pano && pano.partida && !pano.partida.llega) {
+    mezclaEstilo = rampa(pano.partida.f, MAQUETA_PARTIDA) * (arranqueListo ? 1 : 1 - rampa(pano.partida.f, ARRANQUE_FANTASMA));
+  }
   else if (v) {
     // parte de donde estaba (si el recorrido terminó mirando una foto, ya es Fantasma)
     if (v.m0 == null) v.m0 = mezclaEstilo;
     mezclaEstilo = v.m0 * (1 - rampa(clamp((ahora - v.ini) / 1000 / VUELTA_SEG, 0, 1), FANTASMA_VUELTA));
-  } else if (vu && !pano) {
+  } else if (vu && (!pano || (pano.partida && pano.partida.llega && vu.p.desdeFoto))) {
     // en un travelling: atado al vuelo de la cámara (va con el audio; si se salta, salta con la cámara)
     const p = vu.p, sube = (t - p.inicio) / p.subida, baja = (t - (p.hasta - p.bajada)) / p.bajada;
-    mezclaEstilo = 1 - rampa(sube, FANTASMA_LLEGA) * (1 - rampa(baja, MAQUETA_SALE));
+    // el arranque llega ya en Fantasma (desde la partida) y pasa a Maqueta recién al alcanzar al caminante
+    mezclaEstilo = p.desdeFoto ? rampa(baja, MAQUETA_SALE) : 1 - rampa(sube, FANTASMA_LLEGA) * (1 - rampa(baja, MAQUETA_SALE));
   } else {
     const obj = pano && !pano.apagando ? 0 : 1;
     mezclaEstilo += clamp(obj - mezclaEstilo, -dt / FUNDIDO_ESTILO, dt / FUNDIDO_ESTILO);
   }
-  estilos.mezclar(mezclaEstilo);
+  if (v || (pano && !pano.apagando && !pano.partida)) fondoVacio = true;
+  else if (mezclaEstilo >= 1) fondoVacio = false;   // la maqueta ya está entera: los travellings vuelven a Fantasma
+  estilos.mezclar(mezclaEstilo, fondoVacio);
 }
 // MODO VIDEO (tecla V, sin botón): la película de la caminata (paredes-video.js → pelicula), armada a 12 fps con
 // el tiempo del audio, se ve en un panel sobre la pared de la vereda del caminante. Como cada cuadro sale de dónde está
@@ -1345,10 +1523,11 @@ function sincronizarPelicula(t) {
   }
 }
 // tecla H: oculta o vuelve a mostrar la interfaz durante el recorrido; tecla T, la textura del video en las paredes
-let uiOcultaUsuario = false, texturaVideo = true;
+let uiOcultaUsuario = false, texturaVideo = false;   // la textura del video arranca oculta
 document.addEventListener('keydown', (ev) => {
   if (ev.metaKey || ev.ctrlKey || ev.altKey || ev.repeat || /INPUT|TEXTAREA|SELECT/.test(ev.target.tagName) && ev.target.type !== 'range') return;
   if (ev.key === 'h' || ev.key === 'H') uiOcultaUsuario = !uiOcultaUsuario;
+  if (ev.key === ' ' && !/BUTTON|INPUT/.test(ev.target.tagName)) { ev.preventDefault(); alternarPausa(); }
   if (ev.key === 'v' || ev.key === 'V') alternarVideo();
   if ((ev.key === 't' || ev.key === 'T') && ciudad && window.PAREDES_VIDEO) {
     texturaVideo = !texturaVideo;
@@ -1391,13 +1570,28 @@ $('#comenzar').addEventListener('click', () => {
   $('#panel').hidden = false;
   altoPanel();
   // descenso a la vereda: desde la panorámica, el travelling en que la imagen se descompone (si no, un flyTo)
-  if (!iniciarPartida()) setModo(VISTA, { dur: salirDePano() ? 6500 : 4200 });
+  prepararArranque(true);   // la partida baja a la foto del arranque (si no hay partida, se deshace)
+  if (!iniciarPartida()) { prepararArranque(false); setModo(VISTA, { dur: salirDePano() ? 6500 : 4200 }); }
   setTimeout(() => $('#inicio').remove(), 900);
 });
 
 // ── controles ──────────────────────────────────────
-// No hay play/pausa: el audio arranca con "Start" (o "start again") y sigue solo. Saltar de punto
-// o soltar la línea lo retoma si se había cortado (final del audio, una llamada, el celular que lo pausó).
+// El audio arranca con "Start" (o "start again"). El botón de pausa (o la barra espaciadora) lo corta y lo
+// retoma; saltar de punto o soltar la línea también lo retoma (final del audio, una llamada, el celular que lo pausó).
+let reanudando = false;   // retomar desde la pausa no vuelve a bajar a la vereda (se queda en la vista elegida)
+function alternarPausa() {
+  if (!iniciado || terminado) return;
+  if (audio.paused) { reanudando = !audio.ended; play(); }
+  else audio.pause();
+}
+function marcarPausa() {
+  const p = audio.paused;
+  $('#pausa').classList.toggle('en-pausa', p);
+  $('#pausa').setAttribute('aria-label', p ? 'Play' : 'Pause');
+}
+$('#pausa').addEventListener('click', alternarPausa);
+audio.addEventListener('pause', marcarPausa);
+audio.addEventListener('play', marcarPausa);
 function play() {
   audio.play().catch((e) => console.warn(e));
   mantenerPantalla();
@@ -1405,6 +1599,8 @@ function play() {
 function ir(t) {
   epilogo = null;
   t = Math.max(0, Math.min(duracion() - 0.1, t));
+  // un salto (anterior, la línea) deja el arranque como un travelling común: la partida ya no está
+  if (ARRANQUE && arranqueListo && ARRANQUE.desdeFoto) prepararArranque(false);
   audio.currentTime = t;
   if (iniciado && audio.paused) play();
   if (modo !== 'calle' && !(modo === 'aerea' && seguir) && !panoActiva()) {
@@ -1453,11 +1649,13 @@ rango.addEventListener('change', () => {
 });
 
 audio.addEventListener('playing', () => {
+  if (reanudando) { reanudando = false; return; }
   // si se vuelve a reproducir después del final (anterior, la línea, volver a empezar), se baja otra vez a la vereda
   // (desde la panorámica, con el mismo vuelo largo que al comenzar)
   if (iniciado && (modo !== VISTA || panoActiva())) {
     ocultarFin();
-    if (!iniciarPartida()) setModo(VISTA, { dur: salirDePano() ? 6500 : 3500 });
+    prepararArranque(true);   // la partida baja a la foto del arranque (si no hay partida, se deshace)
+    if (!iniciarPartida()) { prepararArranque(false); setModo(VISTA, { dur: salirDePano() ? 6500 : 3500 }); }
   }
 });
 audio.addEventListener('loadedmetadata', () => altoPanel());

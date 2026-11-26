@@ -125,6 +125,15 @@ body.pano-lista .pano-foto, body.pano-fuera .pano-foto { opacity: 0; }
 }
 .paso svg { width: 1.2rem; height: 1.2rem; fill: currentColor; flex: none; }
 .paso:active { border-color: var(--accent); color: var(--accent); }
+.pausa {
+  display: inline-grid; place-items: center; flex: none; width: 2.9rem; height: 2.9rem; padding: 0;
+  border: 1px solid var(--line); border-radius: 50%; background: transparent; color: var(--fg); cursor: pointer;
+}
+.pausa svg { width: 1.3rem; height: 1.3rem; fill: currentColor; grid-area: 1 / 1; }
+.pausa .i-play { display: none; }
+.pausa.en-pausa .i-play { display: block; }
+.pausa.en-pausa .i-pausa { display: none; }
+.pausa:active { border-color: var(--accent); color: var(--accent); }
 button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 
 /* ── editor ───────────────────────────────────────── */
@@ -188,14 +197,35 @@ body.pano-final .fin {
 /* ── interfaz: sólo durante el recorrido (mapa.js pone body.ui-visible; la tecla H la oculta y la vuelve a mostrar).
    En la panorámica, la partida, la vuelta y el final no se ve: al final quedan sólo «fin del recorrido» y el botón.
    Se oculta con opacidad y no con `hidden`: el panel sigue ocupando su lugar y el encuadre de las fotos no salta. */
-.panel, .estado, .seguir, .maplibregl-ctrl-bottom-left { transition: opacity 0.8s; }
+.panel, .estado, .seguir, .paletas, .maplibregl-ctrl-bottom-left { transition: opacity 0.8s; }
 .maplibregl-ctrl-bottom-right { transition: bottom 0.3s, opacity 0.8s; }
-body:not(.ui-visible) :is(.panel, .estado, .pie, .seguir, .maplibregl-ctrl-bottom-right, .maplibregl-ctrl-bottom-left) {
+body:not(.ui-visible) :is(.panel, .estado, .pie, .seguir, .paletas, .maplibregl-ctrl-bottom-right, .maplibregl-ctrl-bottom-left) {
   opacity: 0 !important; pointer-events: none !important;
 }
-body:not(.ui-visible) .panel * { visibility: hidden; transition: visibility 0s 0.8s; }   /* sin foco de teclado */
+body:not(.ui-visible) :is(.panel, .paletas) * { visibility: hidden; transition: visibility 0s 0.8s; }   /* sin foco de teclado */
+
+/* ── paletas de la maqueta (estilos.js → menuPaletas) ── */
+.paletas { position: fixed; z-index: 6; top: max(0.75rem, env(safe-area-inset-top)); right: 0.75rem;
+  display: flex; flex-direction: column; align-items: flex-end; gap: 0.4rem; font-size: 0.85rem; }
+.paletas-abrir { width: 2.4rem; height: 2.4rem; padding: 0.3rem; border-radius: 50%; cursor: pointer;
+  border: 1px solid var(--line); background: var(--panel); }
+.paletas-abrir[aria-expanded="true"] { border-color: var(--accent); }
+.paletas-abrir span, .paletas-lista i { display: block; width: 100%; height: 100%; border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.15); }
+.paletas-lista { margin: 0; padding: 0.35rem; list-style: none; width: 16.5rem; max-width: calc(100vw - 1.5rem);
+  border-radius: 14px; border: 1px solid var(--line); background: var(--panel);
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+.paletas-lista button { display: grid; grid-template-columns: 1.6rem 1fr; align-items: center; gap: 0 0.65rem;
+  width: 100%; padding: 0.45rem 0.5rem; border: 0; border-radius: 9px; background: none; text-align: left; cursor: pointer; }
+.paletas-lista button:hover { background: rgba(0,0,0,0.05); }
+.paletas-lista button[aria-checked="true"] { background: rgba(0,0,0,0.08); }
+.paletas-lista button[aria-checked="true"] b { color: var(--accent); }
+.paletas-lista i { width: 1.6rem; height: 1.6rem; grid-row: span 2; }
+.paletas-lista b { font-family: var(--display); font-weight: 500; font-size: 1.05rem; }
+.paletas-lista small { grid-column: 2; color: var(--muted); font-size: 0.72rem; line-height: 1.25; }
 
 body.modo-calle #mapa { cursor: grab; }
 body.modo-calle #mapa:active { cursor: grabbing; }
 
 /* botón del modo video (entre anterior y siguiente) */
+body.editando .paletas { display: none; }

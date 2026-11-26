@@ -42,13 +42,21 @@
 //    tipo      → qué es esta imagen (fotografía, fotografía aérea, diorama generado por IA…). El pie
 //                muestra el de la vista que se está viendo; si una vista no lo tiene, usa el tipo del lugar.
 //    huella    → (opcional) true en la vista que queda proyectada (tenue) fuera del tramo; si ninguna lo
-//                tiene, la huella es la primera. Hay una sola huella por lugar, para que no se superpongan.
+//                tiene, la huella es la primera. Si varias lo tienen, quedan todas superpuestas y la que va antes
+//                en la lista queda ENCIMA (p. ej. El Cristo: el detalle de la entrada sobre la foto del edificio).
+//    lugar     → (opcional) otro nombre en el pie mientras se ve esta vista (el Domino Park dentro del Tower).
 //    isometrica→ (opcional) true en los dioramas de IA, que casi no tienen perspectiva. La cámara se aleja a ~1,2 km
 //                por el mismo eje con un teleobjetivo (camara/mira/apertura se dan como si fuera una cámara cercana;
 //                lo calibrado en calibrar.html ya queda lejos). Al ir a ese punto de vista, la cámara hace un dolly
 //                zoom: se aleja mientras cierra el campo de visión y la ciudad se aplana hasta volverse maqueta.
 //    llega     → (opcional) 'fundido': no se vuela desde la vista anterior. Ésta se apaga, la cámara corta a oscuras
 //                y la nueva se enciende ya recompuesta (2,4 s en vez de 6). Para cuando el vuelo sólo muestra mapa vacío.
+//  desdeLejos  → (opcional) true: la huella se ve desde lejos (no espera a que el caminante se acerque) y va una capa
+//                por encima de las demás imágenes (p. ej. sobre la foto del arranque mientras la cámara camina).
+//  sinHuella   → (opcional) true: el lugar no deja huella; al terminar el travelling su imagen se apaga del todo.
+//  arranque    → (opcional, un solo lugar) la foto del punto de partida: la partida (el vuelo desde la panorámica del
+//                dron) baja a su punto de vista en vez de a los ojos del caminante; ahí la foto ocupa la pantalla y
+//                después la cámara avanza por la vereda hasta alcanzar al caminante (ver ARRANQUE en mapa.js).
 //  No hay máximo de imágenes: se proyectan a la vez sólo las que se están viendo (hasta 6 simultáneas).
 //
 // Abrí la página con ?editar al final de la URL para marcar puntos sobre el mapa
@@ -105,11 +113,30 @@ window.RECORRIDO = {
 
   proyecciones: [
     {
+      // fachadas/drive/pajaritos-1/Arbolito.jpeg — iPhone 17 Pro, 24 mm eq. en vertical (3:4 → 56,8° de ancho). El punto de
+      // partida (26/11/2026): la vereda norte frente a Pajaritos / Havana Collection (1421, el gallo), mirando al oeste por
+      // la vereda; en el arbolito del cordón están los pájaros que se oyen al principio del audio. Al fondo, la torre del
+      // Tower Theater. Cámara detrás del árbol (que queda a ~4 m), cerca del cordón, a 1,5 m y mirando 3,5° hacia abajo
+      // (la base del árbol); el rumbo sale del punto de fuga de la calle. Encajada con la base de las fachadas de la
+      // vereda norte. La pidió la galería: la primera parte del recorrido, hasta el primer punto, se veía pobre.
+      // arranque: la partida baja a este punto de vista y la foto ocupa la pantalla sobre la cuadra en 3D; después la
+      // cámara entra en la escena, avanzando por la vereda hasta los ojos del caminante (ARRANQUE en mapa.js).
+      // sinHuella: después no queda pegada en las paredes; mira a lo largo de la vereda y desde el caminante se veía
+      // estirada sobre toda la fachada hasta Guantanamera.
+      lugar: "Birds' tree · start", tipo: 'photograph', arranque: true, sinHuella: true,
+      vistas: [
+        { imagen: 'registros/arbolito-foto-00.webp', apertura: 56.8, rumbo: -86, cabeceo: 3.5, giro: 0,
+          // la mira está lejos (150 m por el eje de la foto): al entrar en la escena la cámara avanza ~50 m por la vereda y,
+          // si pasaba por encima de la mira, se daba vuelta a mirarla
+          camara: { lat: 25.765805, lng: -80.21822, alt: 1.5 }, mira: { lat: 25.765899, lng: -80.2197112, alt: -7.67 } }
+      ]
+    },
+    {
       // drone/tower_theatre_00.jpeg — captura aérea desde la esquina de Calle 8 y 15 Av, mirando al suroeste.
       // Cámara calculada a partir de esquinas del teatro y del cruce peatonal (ver calibracion.js, se puede
       // retocar en calibrar.html). El volumen del teatro en edificios.json se midió sobre esta misma foto.
-      // Orden: la foto de la artista desde la esquina, diorama de día, la foto cenital sobre el techo, diorama de noche y,
-      // al final, la foto del dron (pedido de la artista: que sea la última imagen anamórfica en apreciarse).
+      // Orden: la foto de la artista desde la esquina, diorama de día, la foto cenital sobre el techo, diorama de noche, las
+      // dos del Domino Park y, al final, la foto del dron (pedido de la artista: que sea la última imagen anamórfica en apreciarse).
       // Las cámaras de los dioramas están calibradas en calibracion.js con las esquinas del teatro (techo y base):
       // dan casi ortográficas (apertura ≈ 3,4°), con ~22 px de error por las proporciones inventadas por la IA.
       // El teatro está en la vereda sur, en la esquina de la 15 Av. La artista no marcó cuándo se oye. Cierra el
@@ -139,6 +166,21 @@ window.RECORRIDO = {
           camara: { lat: 25.7654547, lng: -80.2197256, alt: 54.9 }, mira: { lat: 25.7654535, lng: -80.2197355, alt: 0 } },
         { imagen: 'registros/tower-theater-diorama-02.webp', tipo: 'AI-generated diorama', isometrica: true, apertura: 40, llega: 'fundido',
           camara: { lat: 25.76546, lng: -80.218962, alt: 72 }, mira: { lat: 25.76546, lng: -80.21966, alt: 4 } },
+        // DOMINO PARK (26/11/2026): el parque (Máximo Gómez Park) está enfrente del teatro, cruzando la 15 Av. (esquina SE de
+        // Calle 8). El recorrido no pasa por ahí, así que va dentro del cierre del Tower, antes del dron (que sigue siendo la
+        // última imagen), con su propio nombre en el pie. El parque no tiene volúmenes: las fotos caen sobre el piso, el
+        // cerco y el edificio de Old's Havana (1440), bajado a 5 m en calibracion.js → alturas (OSM le daba 14,8 m).
+        // fachadas/drive/domino-park/_Domino Park 0215.JPG — Sony A7R III, 24 mm (73,7°), desde la 15 Av. peatonal, junto a la
+        // esquina NO del parque, mirando la entrada (el arco DOMINO PARK, en el cerco oeste) y las astas. Cámara ajustada con
+        // la esquina del cerco y los pilares del arco, ubicados sobre el polígono del parque de OSM y la foto del dron.
+        { imagen: 'registros/domino-park-foto-00.webp', lugar: 'Domino Park', tipo: 'photograph', apertura: 73.7, rumbo: 115, cabeceo: -2, giro: 0,
+          camara: { lat: 25.7656161, lng: -80.2195535, alt: 1.5 }, mira: { lat: 25.7655591, lng: -80.2194181, alt: 2.02 } },
+        // fachadas/drive/domino-park/DJI_20261109160410_0173_D.jpg — DJI Mini 4 Pro (24 mm eq., 73,7° en 16:9). El XMP da la
+        // posición (sobre la 15 Av., en el cruce), 9,2 m de altura, rumbo 125,7° y −20,8° de cabeceo. El GPS estaba corrido:
+        // la cámara se movió 6 m al suroeste (y a 10 m de altura) hasta que el cerco del parque (OSM) y la vereda sur calzan
+        // con la foto. Del dron del parque al dron del Tower: las dos tomas aéreas desde la misma esquina.
+        { imagen: 'registros/domino-park-dron-00.webp', lugar: 'Domino Park', tipo: 'aerial photograph', apertura: 73.7, rumbo: 125.7, cabeceo: 20.8, giro: 0,
+          camara: { lat: 25.765685, lng: -80.219611, alt: 10 }, mira: { lat: 25.7655625, lng: -80.2194218, alt: 1.12 } },
         // la foto del dron va última: es la última imagen anamórfica que se recompone antes de volver a la panorámica
         { imagen: 'registros/tower-theatre-dron-00.webp', tipo: 'aerial photograph', apertura: 73.7, huella: true, rumbo: -137.2, cabeceo: 22.2, giro: -0.1,
           camara: { lat: 25.7657892, lng: -80.2194265, alt: 19.5 }, mira: { lat: 25.7655532, lng: -80.2196669, alt: 5 } }
@@ -166,6 +208,14 @@ window.RECORRIDO = {
       vistas: [
         { imagen: 'registros/ball-and-chain-foto-00.webp', tipo: 'photograph', apertura: 21, huella: true,
           camara: { lat: 25.76562, lng: -80.219765, alt: 1.6 }, mira: { lat: 25.765815, lng: -80.219765, alt: 2 } },
+        // fachadas/drive/ball-and-chain/IMG_1497 2.jpeg (26/11/2026) — iPhone 17 Pro, 35 mm eq. (52,6°), desde la esquina de
+        // la 15 Av., del lado este del cruce, mirando al noroeste: Ball & Chain, Azúcar y la Little Havana Cigar Factory, que
+        // dobla la esquina. La parte derecha de la foto cae en la fachada de la tabaquería sobre la 15 Av. (la cara este del
+        // volumen de 60 m). Cámara ajustada con la esquina de la tabaquería (pie y techo) y el cartel verde de Ball & Chain
+        // (lng −80.21976, 4,1 m): ~36 px de error. El primer piso de la tabaquería es más alto que el volumen (6 m, que
+        // manda Ball & Chain): esa parte cae en el cielo de la proyección.
+        { imagen: 'registros/ball-and-chain-esquina-00.webp', tipo: 'photograph', apertura: 52.6, rumbo: -49.16, cabeceo: 0.05, giro: 0,
+          camara: { lat: 25.7657013, lng: -80.2194593, alt: 1.5 }, mira: { lat: 25.7658188, lng: -80.2196101, alt: 1.48 } },
         // Los dioramas se encajan para que el FRENTE DE BALL & CHAIN coincida con el de la foto (pedido de la artista):
         // base de la fachada en el piso, borde del toldo a 2,34 m y cartel «BALL & CHAIN» a 3,76–4,43 m, como en la foto,
         // con el centro del cartel donde está el de la foto (lng −80.21976). La IA dibujó la fachada más alta de lo real en
@@ -189,14 +239,22 @@ window.RECORRIDO = {
       // a 1,6 m inclinada ~8° hacia arriba (el centro de la foto cae a ~4,3 m en la pared).
       // La artista marcó que se oye a las 4:29.5, a la ida (vereda norte, frente a la puerta): se dispara ahí.
       lugar: 'Top Cigars · Skinny Louie', tipo: 'photograph', punto: { lat: 25.7657638, lng: -80.220608 }, radio: 4,
+      // Desde el 26/11/2026 son dos fotos: primero la de cerca (de día, desde el cordón) y después la de noche desde
+      // enfrente. Las dos quedan como huella, superpuestas, la de cerca encima (como El Cristo).
       vistas: [
+        // fachadas/drive/top-cigars/IMG_1585.jpeg — iPhone, gran angular (14 mm eq., 102°), de frente desde el cordón de la
+        // vereda norte: Kung Fu Chicken, Top Cigars (1551, al centro) y Skinny Louie. Cámara horizontal ajustada a dónde
+        // deja la foto de noche los bordes del frente de Top Cigars (5,3 m), el 1551 y el pie de la puerta (así las dos
+        // huellas calzan): a 5,7 m del frente y a 1,54 m, ~50 px de error.
+        { imagen: 'registros/top-cigars-foto-01.webp', apertura: 102, rumbo: 0, cabeceo: 0, giro: 0, huella: true,
+          camara: { lat: 25.7657309, lng: -80.2206255, alt: 1.54 }, mira: { lat: 25.765782, lng: -80.2206255, alt: 1.54 } },
         // El borde derecho de Skinny Louie (u ≈ 0,81; a la derecha empieza el edificio blanco de dos pisos) cae en el
         // final del volumen (lng −80.220553): con ≈ 14,6 m de pared en la foto, el centro queda 1 m al este del pin.
         // Lo de la derecha (el mural de cajones de madera) es la pared OESTE del edificio vecino, que se ve por el
         // pasaje de 2,7 m: cae en la pared oeste de ese volumen con ~20 px de diferencia. El borde de arriba de la
         // fachada (y ≈ 492 de 1200 px) queda a 5,3 m en la pared: esa es la altura del volumen en calibracion.js →
         // alturas (con más, el cielo de la foto caía sobre la pared).
-        { imagen: 'registros/top-cigars-foto-00.webp', apertura: 43,
+        { imagen: 'registros/top-cigars-foto-00.webp', apertura: 43, huella: true,
           camara: { lat: 25.765605, lng: -80.220598, alt: 1.6 }, mira: { lat: 25.765782, lng: -80.220598, alt: 4.3 } }
       ]
     },
@@ -228,7 +286,9 @@ window.RECORRIDO = {
       // Guantanamera y Cubaocho comparten el volumen de 91 m que llega a la esquina de la 15 Av., pero son locales
       // distintos: cada uno es un lugar aparte, con su nombre en el pie y su propio travelling (antes iban juntos bajo
       // «Guantanamera · Cubaocho» y la foto de Cubaocho salía con el nombre de Guantanamera).
-      lugar: 'Guantanamera', tipo: 'photograph', punto: { lat: 25.765808, lng: -80.2191451 }, radio: 4,
+      // desdeLejos (pedido de la artista, 26/11): su huella se ve desde el principio de la cuadra, sin esperar a que el
+      // caminante se acerque, y queda ENCIMA de la foto del arbolito cuando la cámara echa a andar desde ella.
+      lugar: 'Guantanamera', tipo: 'photograph', punto: { lat: 25.765808, lng: -80.2191451 }, radio: 4, desdeLejos: true,
       vistas: [
         // La foto está tomada desde la galería: la pared del fondo (puerta con cortinas, piso en v ≈ 0,71, cielorraso en
         // v ≈ 0,17) es la que se pega en la fachada del volumen (lat 25.765818). Con la cámara horizontal a 1,5 m, el piso
@@ -267,9 +327,26 @@ window.RECORRIDO = {
       // El costado blanco de la izquierda cae sobre la pared este del vecino (lng −80.220462). Las alturas de los dos
       // volúmenes se corrigieron en calibracion.js → alturas (el local, 4,2 m: el borde del cartel; el vecino, 6,8 m: medido en esta foto y en la de Top Cigars).
       // Marcada a las 3:58.2.
+      // Desde el 26/11/2026 son tres fotos, de la más chica a la más grande (pedido de la artista): el detalle de la
+      // entrada, la entrada con el cartel y el edificio entero con el cielo. Las tres quedan como huella, superpuestas,
+      // la más chica encima. Se recomponen en ese orden, con la ola entre una y otra.
+      // Las dos nuevas son de noche y de cerca, frontales y horizontales. Para que las tres huellas calcen entre sí, sus
+      // cámaras no salen de la escena real (el patio y las vidrieras están bajo el toldo, retirados del frente del
+      // volumen) sino de dónde deja cada detalle la foto del edificio con su calibración (calibracion.js, encajar.html):
+      // los dos carteles OPEN y la puerta (jamba y pie) caen en el frente del volumen; la entrada se ajustó a esos puntos
+      // y el detalle, a los de la entrada (OPEN, taza, jamba, mapa). Errores de ~20 y ~30 px. Los carteles de arriba
+      // (RESTAURANT) en la foto del edificio caen detrás del volumen, en el cielo de la proyección: ahí no calzan.
       lugar: 'El Cristo Restaurant', tipo: 'photograph', punto: { lat: 25.7657697, lng: -80.220411 }, radio: 4,
       vistas: [
-        { imagen: 'registros/el-cristo-foto-00.webp', apertura: 64,
+        // fachadas/drive/el-cristo-restaurant/El Cristo Restaurant _1590.jpeg — iPhone, 24 mm eq. (71,6°): la puerta abierta,
+        // el cartel OPEN, la taza de café y la ventana con los mapas de Cuba.
+        { imagen: 'registros/el-cristo-foto-02.webp', apertura: 71.6, rumbo: 0, cabeceo: 0, giro: 0, huella: true,
+          camara: { lat: 25.7657538, lng: -80.2203868, alt: 1.88 }, mira: { lat: 25.765791, lng: -80.2203868, alt: 1.88 } },
+        // fachadas/drive/el-cristo-restaurant/IMG_1815.HEIC — iPhone, 24 mm eq. (71,6°): la entrada entera bajo el toldo, con
+        // el cartel EL CRISTO RESTAURANT arriba.
+        { imagen: 'registros/el-cristo-foto-01.webp', apertura: 71.6, rumbo: 0, cabeceo: 0, giro: 0, huella: true,
+          camara: { lat: 25.7657247, lng: -80.2204312, alt: 2.32 }, mira: { lat: 25.765791, lng: -80.2204312, alt: 2.32 } },
+        { imagen: 'registros/el-cristo-foto-00.webp', apertura: 64, huella: true,
           camara: { lat: 25.765659, lng: -80.220371, alt: 1.6 }, mira: { lat: 25.765791, lng: -80.220371, alt: 1.6 } }
       ]
     },
@@ -341,6 +418,19 @@ window.RECORRIDO = {
       vistas: [
         { imagen: 'registros/el-pub-foto-00.webp', apertura: 71.6, rumbo: 178.5, cabeceo: 0, giro: 0,
           camara: { lat: 25.7656284, lng: -80.220378, alt: 1.24 }, mira: { lat: 25.765596, lng: -80.220377, alt: 1.24 } }
+      ]
+    },
+    {
+      // fachadas/drive/calle-8-1652/IMG_1834.DNG (26/11/2026) — un local en la vereda sur, entre la 16 y la 17 Av.; el número
+      // está en la puerta. En la herramienta de carga, 1652 es la dirección de Tumba'o (marcado en lng −80.22178, dentro de un
+      // volumen de 11 m de frente). iPhone, gran angular (14 mm eq., 102°), de noche, de frente desde la vereda: la vidriera
+      // bajo la galería, con la columna del mural a la derecha (oeste). La puerta (0,9 m) da la cámara a 4,1 m del frente,
+      // horizontal a 1,3 m (el pie de la vidriera cae en v ≈ 0,67). Rumbo perpendicular al frente del volumen.
+      // Se descubre a la vuelta, al pasar por delante (~8:20).
+      lugar: '1652 SW 8th St', tipo: 'photograph', punto: { lat: 25.7655757, lng: -80.22178 }, radio: 4,
+      vistas: [
+        { imagen: 'registros/calle-8-1652-foto-00.webp', apertura: 102, rumbo: 178.5, cabeceo: 0, giro: 0,
+          camara: { lat: 25.765592, lng: -80.22178, alt: 1.3 }, mira: { lat: 25.765555, lng: -80.221779, alt: 1.3 } }
       ]
     }
   ]
