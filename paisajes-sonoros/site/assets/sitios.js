@@ -103,11 +103,11 @@ window.SITIOS = {
 
   'domino-park': {
     numero: '04',
-    nombre: "Domino's Park",
+    nombre: "Domino Park",
     lugar: 'Máximo Gómez Park',
     texto: '',
     frases: [
-      "Máximo Gómez Park. Everyone calls it Domino's Park.",
+      "Máximo Gómez Park. Everyone calls it Domino Park.",
       'Named after the general of Cuba’s wars of independence.',
       'Calle Ocho and 15th Avenue.',
       'Tables in the shade. Dominoes and chess.',
