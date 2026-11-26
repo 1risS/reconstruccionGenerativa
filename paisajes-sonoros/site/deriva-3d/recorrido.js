@@ -54,6 +54,10 @@
 //  desdeLejos  → (opcional) true: la huella se ve desde lejos (no espera a que el caminante se acerque) y va una capa
 //                por encima de las demás imágenes (p. ej. sobre la foto del arranque mientras la cámara camina).
 //  sinHuella   → (opcional) true: el lugar no deja huella; al terminar el travelling su imagen se apaga del todo.
+//  conCaminante→ (opcional) true: la huella se ve entera desde lejos siempre que la cámara está en los ojos del caminante,
+//                aunque él esté mirando otro lugar (sin subir de capa, a diferencia de desdeLejos).
+//  contempla   → (opcional) segundos quieta en cada punto de vista del lugar (por defecto 6).
+//  traslado    → (opcional) segundos de viaje de una vista a la siguiente (por defecto 6).
 //  arranque    → (opcional, un solo lugar) la foto del punto de partida: la partida (el vuelo desde la panorámica del
 //                dron) baja a su punto de vista en vez de a los ojos del caminante; ahí la foto ocupa la pantalla y
 //                después la cámara avanza por la vereda hasta alcanzar al caminante (ver ARRANQUE en mapa.js).
@@ -288,7 +292,10 @@ window.RECORRIDO = {
       // «Guantanamera · Cubaocho» y la foto de Cubaocho salía con el nombre de Guantanamera).
       // desdeLejos (pedido de la artista, 26/11): su huella se ve desde el principio de la cuadra, sin esperar a que el
       // caminante se acerque, y queda ENCIMA de la foto del arbolito cuando la cámara echa a andar desde ella.
+      // contempla/traslado (26/11): la pausa en las dos fotos es corta (2 s en cada una y 2 s de una a otra, en vez de 6 y
+      // 6) para que la cámara vuelva a los ojos del caminante (~1:02) antes de que él pase frente a la foto de Cubaocho.
       lugar: 'Guantanamera', tipo: 'photograph', punto: { lat: 25.765808, lng: -80.2191451 }, radio: 4, desdeLejos: true,
+      contempla: 2, traslado: 2,
       vistas: [
         // La foto está tomada desde la galería: la pared del fondo (puerta con cortinas, piso en v ≈ 0,71, cielorraso en
         // v ≈ 0,17) es la que se pega en la fachada del volumen (lat 25.765818). Con la cámara horizontal a 1,5 m, el piso
@@ -307,7 +314,9 @@ window.RECORRIDO = {
       // Cubaocho (Museum & Performing Arts Center), en el mismo volumen que Guantanamera, hacia la esquina de la 15 Av.
       // Se dispara cuando el caminante (vereda norte, a la ida) pasa frente a la fachada de la foto (lng −80.2192855,
       // ~1:02). Si Guantanamera todavía está en el aire, espera a que vuelva; Ball & Chain (1:57.7) espera a Cubaocho.
-      lugar: 'Cubaocho', tipo: 'photograph', punto: { lat: 25.7658038, lng: -80.2192855 }, radio: 4,
+      // conCaminante (26/11): su huella se ve entera siempre que la cámara está en los ojos del caminante (también
+      // mientras él mira hacia Guantanamera), DEBAJO de las fotos de Guantanamera (que van una capa más arriba).
+      lugar: 'Cubaocho', tipo: 'photograph', punto: { lat: 25.7658038, lng: -80.2192855 }, radio: 4, conCaminante: true,
       vistas: [
         // fachadas/drive/cubaocho/Cuba 8 1759.jpg — Cubaocho desde la vereda de enfrente (24 mm eq., 71,6°), de noche.
         // La esquina del edificio con la 15 Av. (u ≈ 0,02) va en la esquina del volumen (lng −80.219395); la escala sale

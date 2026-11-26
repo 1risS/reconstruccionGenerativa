@@ -233,13 +233,14 @@ const LUGARES = (R.proyecciones || []).map((p, grupo) => {
 // proyección fragmentada en las fachadas. Al volver a la vereda suelta la mirada de a poco (SUELTA).
 const ANTICIPA = 20, SUELTA = 5;
 const TRASLADO = 6, POST = 3, REPOSO = 0.7;
-const CONTEMPLA = 6; // segundos quieto en cada punto de vista
+const CONTEMPLA = 6; // segundos quieto en cada punto de vista (un lugar puede pedir menos: `contempla` en recorrido.js)
 // vistas con `llega: 'fundido'` (recorrido.js): no se vuela hasta ellas. La imagen anterior se apaga en su punto de
 // vista, la cámara corta a oscuras y la nueva se enciende ya recompuesta. Para los tramos en que el vuelo sólo mostraría
 // mapa vacío (p. ej. de un diorama, a 1 km con teleobjetivo, a la foto cenital del Tower, pasando por el nadir).
 const TRASLADO_FUNDIDO = 2.4;
 const esFundido = (v) => v.llega === 'fundido';
-const traslado = (v) => (esFundido(v) ? TRASLADO_FUNDIDO : TRASLADO);
+// (`traslado` en recorrido.js: un lugar cuyas vistas están cerca puede pedir un viaje más corto entre una y otra)
+const traslado = (v, p) => (esFundido(v) ? TRASLADO_FUNDIDO : (p && p.traslado) || TRASLADO);
 const PASO_T = 0.5;
 function pasadas(L) {
   const fin = K[K.length - 1].t, res = [];
@@ -266,7 +267,7 @@ PROYS.forEach((p, i) => {
   if (prev) p.desde = Math.max(p.desde, prev.hasta + SUELTA + 2);
   const n = p.vistas.length, ult = p.vistas[n - 1];
   p.subida = viaje(p.desde, p.vistas[0]);
-  const resto = n * CONTEMPLA + p.vistas.slice(1).reduce((s, v) => s + traslado(v), 0);
+  const resto = n * (p.contempla || CONTEMPLA) + p.vistas.slice(1).reduce((s, v) => s + traslado(v, p), 0);
   p.bajada = viaje(p.desde + p.subida + resto + 6, ult);
   p.hasta = p.desde + p.subida + resto + p.bajada;
   p.inicio = p.desde;
@@ -303,7 +304,7 @@ function reprogramarArranque(t) {
   if (t > ARRANQUE.orig.hasta) return;   // se empezó más adelante (?t=…): ya no corresponde
   const p = ARRANQUE, n = p.vistas.length;
   // (la quietud en la foto es un poco más corta que CONTEMPLA: el giro ya la hace quieta y el caminante se aleja)
-  const resto = n * ARRANQUE_QUIETO + p.vistas.slice(1).reduce((s, v) => s + traslado(v), 0);
+  const resto = n * ARRANQUE_QUIETO + p.vistas.slice(1).reduce((s, v) => s + traslado(v, p), 0);
   p.desde = p.inicio = t;
   p.subida = ARRANQUE_GIRO;
   // la bajada es una caminata por la vereda hasta alcanzar al caminante: dura lo que pide la distancia que hay que
@@ -339,7 +340,7 @@ function pesosProy(p, t) {
   const n = p.vistas.length, a = p.desde + p.subida, D = Math.max(0, p.hasta - p.bajada - a);
   const pesos = [1];
   for (let k = 1; k < n; k++) {
-    const tr = traslado(p.vistas[k]);
+    const tr = traslado(p.vistas[k], p);
     const f = suave(clamp((t - (a + (k * D) / n) + tr / 2) / tr, 0, 1));
     for (let j = 0; j < k; j++) pesos[j] *= 1 - f;
     pesos[k] = f;
@@ -385,8 +386,12 @@ function intensidades(t) {
   // saltan de golpe y, como se ordenan por intensidad, las 6 ranuras quedan para los lugares más cercanos
   const e = estado(t), [cx, cy] = aLocal([e.lng, e.lat]);
   // (las `desdeLejos` no esperan a que el caminante se acerque: se ven desde el principio de la cuadra)
-  const cerca = (p) => p.desdeLejos ? 1 : suave(clamp((150 - Math.hypot(p.huella.mira[0] - cx, p.huella.mira[1] - cy)) / 80, 0, 1));
-  const apaga = (p) => (p.desdeLejos ? focoLejos : foco);
+  const cerca = (p) => p.desdeLejos || p.conCaminante ? 1 : suave(clamp((150 - Math.hypot(p.huella.mira[0] - cx, p.huella.mira[1] - cy)) / 80, 0, 1));
+  // (las `conCaminante` se ven siempre que la cámara está en los ojos del caminante, aunque él esté mirando otro lugar:
+  // sólo se apagan mientras la cámara se va a un punto de vista, o mientras se mira quieta la foto del arranque)
+  const vu = vuelo(t);
+  const fuera = vu && vu.p !== ARRANQUE ? vu.w : ARRANQUE ? 1 - caminaArranque(t) : 0;
+  const apaga = (p) => (p.conCaminante ? fuera : p.desdeLejos ? focoLejos : foco);
   const hechos = new Set();
   for (const p of PROYS) {
     if (activo(p) ? false : enCurso.has(p.grupo) || hechos.has(p.grupo)) continue;
@@ -528,8 +533,11 @@ function vuelo(t) {
       th += difAng(th, v.polar.th) * f; r += (v.polar.r - r) * f; z += (v.polar.z - z) * f;
       fov += (ev.fov - fov) * f; xp += (ev.xp - xp) * f; yp += (ev.yp - yp) * f; giro += (v.giro - giro) * f; lnIso += (v.lnIso - lnIso) * f;
       dR += (v.dR - dR) * f; dP += (v.dP - dP) * f;
-      // entre una vista y otra la cámara se aleja y sube un poco: la imagen se deshace antes de rearmarse
-      const b = Math.sin(Math.PI * f);
+      // entre una vista y otra la cámara se aleja y sube un poco: la imagen se deshace antes de rearmarse. Si los dos
+      // puntos de vista están cerca (p. ej. las dos fotos de Guantanamera, a 3 m), no: la cámara va derecho de uno
+      // al otro acompañando la ola (alejarse y subir, pegada a la pared, la hacía cabecear y abrir el campo de visión)
+      const vA = p.vistas[k - 1], dV = Math.hypot(v.pos[0] - vA.pos[0], v.pos[1] - vA.pos[1], v.pos[2] - vA.pos[2]);
+      const b = Math.sin(Math.PI * f) * suave(clamp((dV - 5) / 25, 0, 1));
       r *= 1 + 0.3 * b; z *= 1 + 0.35 * b;
     }
     // (en el arranque, la bajada es una caminata: acelera, va a paso parejo y se funde con el paso del caminante)
@@ -537,10 +545,13 @@ function vuelo(t) {
     const w = suave(clamp((t - p.inicio) / p.subida, 0, 1)) * (p.desdeFoto ? 1 - parejo(1 - xb) : suave(xb));
     // cuánto pesan los dioramas en este momento (para ocultar lo que los tapa: ciudad.setCorte)
     const kIso = pesos.reduce((a, q, i) => a + (p.vistas[i].isometrica ? q : 0), 0);
-    return { p, w, k: pesos.indexOf(Math.max(...pesos)), T: m, polarV: { th, r, z }, fov, xp, yp, dR, dP, giro, lnIso, kIso };
+    // bajada desde una foto tomada de cerca (a menos de CERCANA m de lo que mira): ver camaraCalle
+    const bajaCerca = t > p.hasta - p.bajada && p.vistas[p.vistas.length - 1].polar.r < CERCANA;
+    return { p, w, k: pesos.indexOf(Math.max(...pesos)), T: m, polarV: { th, r, z }, fov, xp, yp, dR, dP, giro, lnIso, kIso, bajaCerca };
   }
   return null;
 }
+const CERCANA = 12;
 // atención: lista de { a = 0…1 (cuánto mira el caminante hacia el lugar), T = punto mirado }, en orden de
 // tiempo. Se aplican siempre en ese orden (el lugar que viene después manda sobre el que se está soltando):
 // así, cuando dos se superponen, la mirada pasa de uno a otro sin saltos.
@@ -912,7 +923,10 @@ function esquivarEdificios(c, ojos, vu) {
   const corte = vu.w * (vu.kIso || 0) > 0.001;
   // en el arranque la cámara camina por la vereda (de la foto al caminante), pegada a las fachadas: sólo se esquiva
   // lo que quedaría adentro de un volumen, no lo que está cerca (si no, subía hasta los techos)
-  const techo = corte ? 0 : vu.p.desdeFoto ? adentro : Math.max(adentro, cerca);
+  // Lo mismo si la foto se tomó a la altura de la calle: el vuelo va por la vereda, junto a las fachadas (de vuelta de
+  // Guantanamera, pegada a un volumen de 27 m, subía hasta 11 m y volvía a bajar).
+  const aRas = vu.p.vistas.every((v) => v.pos[2] < 3);
+  const techo = corte ? 0 : vu.p.desdeFoto || aRas ? adentro : Math.max(adentro, cerca);
   const falta = techo > 0 ? Math.max(0, techo + 1.5 - c[2]) : 0;
   elevVuelo = Math.max(falta, elevVuelo * Math.exp(-dt * 2.5));
   return elevVuelo;
@@ -953,7 +967,10 @@ function camaraCalle(e, rumboCam, pitchCam, vu) {
   const g = Math.exp((vu.lnIso || 0) * suave(clamp((w - 0.45) / 0.55, 0, 1)));
   if (g > 1.0001) c = c.map((v, i) => T[i] + (v - T[i]) * g);
   c[2] += esquivarEdificios(c, [x, y], vu);
-  const L = mirarA(c, T);
+  // al volver de una foto tomada de cerca, la mira queda a pocos metros: apuntarle mientras la cámara se va hacía girar
+  // la cabeza de golpe hacia atrás. En la bajada se conserva la dirección del eje de la foto, que pasa de a poco a la
+  // mirada del caminante.
+  const L = vu.bajaCerca ? mirarA(V, T) : mirarA(c, T);
   // la pantalla que se quiere ver (ver encuadre): al llegar, la cámara mira por el eje de la foto, con el campo de
   // visión y el centro óptico que dejan la foto entera y centrada. En el viaje, todo pasa de a poco de la vereda a eso.
   const W = window.innerWidth, H = window.innerHeight;
@@ -976,11 +993,20 @@ function camaraCalle(e, rumboCam, pitchCam, vu) {
   let dibujo = mejorDibujo(quiero, W, H);
   // si ni así entra (una foto muy ancha en un celular vertical pide más de lo que MapLibre puede abrir), se acerca
   // la pantalla buscada: la foto se recorta un poco a los costados, pero nunca queda a la vista el fondo
+  // (búsqueda binaria del menor acercamiento que alcanza: una foto muy abierta y con el centro corrido, como la segunda
+  // de Guantanamera, 126°, pide rayos a más de 74° del eje y ninguna cámara de dibujo la cubre; antes se
+  // extrapolaba desde ese resultado inválido y la rectificación ampliaba el canvas miles de veces)
   const fMin = H / 2 / Math.tan((FOV_DIBUJO_MAX / 2) * RAD);
-  for (let i = 0; i < 3 && dibujo.f < fMin; i++) {
-    const k = (fMin / dibujo.f) * 1.01;
-    quiero.f *= k;
-    quiero.cx = W / 2 + (quiero.cx - W / 2) * k; quiero.cy = H / 2 + (quiero.cy - H / 2) * k;
+  if (dibujo.f < fMin) {
+    const base = { ...quiero };
+    const acercar = (k) => ({ ...base, f: base.f * k, cx: W / 2 + (base.cx - W / 2) * k, cy: H / 2 + (base.cy - H / 2) * k });
+    let lo = 1, hi = 2;
+    while (mejorDibujo(acercar(hi), W, H).f < fMin && hi < 64) hi *= 2;
+    for (let i = 0; i < 10; i++) {
+      const mid = (lo + hi) / 2;
+      if (mejorDibujo(acercar(mid), W, H).f < fMin) lo = mid; else hi = mid;
+    }
+    Object.assign(quiero, acercar(hi));
     dibujo = mejorDibujo(quiero, W, H);
   }
   const fov = Math.min(FOV_DIBUJO_MAX, (2 * Math.atan(H / 2 / dibujo.f)) / RAD);
@@ -1424,8 +1450,11 @@ function cuadro(ahora) {
       }
       for (const { a, T } of at || []) { // la cabeza se va girando hacia el lugar de su vereda que se va a revelar
         const L = mirarA([...aLocal([e.lng, e.lat]), OJO], T);
-        objR += difAng(objR, L.rumbo) * a;
-        objP += (L.pitch - objP) * a;
+        // …salvo que ya haya quedado atrás (el caminante sigue andando durante el travelling): darse vuelta a mirarlo
+        // era un giro de 140° al volver de Guantanamera. De costado (90°) cuenta entero; desde ~125°, nada.
+        const delante = suave(clamp((Math.cos(difAng(base, L.rumbo) * RAD) + 0.6) / 0.5, 0, 1));
+        objR += difAng(objR, L.rumbo) * a * delante;
+        objP += (L.pitch - objP) * a * delante;
       }
       if (performance.now() - ultimoToque > 2500) {
         mirarYaw *= Math.exp(-dt * 0.9);
