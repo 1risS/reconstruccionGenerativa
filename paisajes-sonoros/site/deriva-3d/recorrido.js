@@ -63,6 +63,15 @@
 //                después la cámara avanza por la vereda hasta alcanzar al caminante (ver ARRANQUE en mapa.js).
 //  No hay máximo de imágenes: se proyectan a la vez sólo las que se están viendo (hasta 6 simultáneas).
 //
+// SONIDOS (descriptores del audio en pantalla, como subtítulos)
+//  desde/hasta → tramo del audio en que se ve el texto. Se ven durante todo el recorrido, también en los travellings
+//                y con la interfaz oculta (tecla H); no sobre la panorámica. Si dos tramos se pisan, gana el primero.
+//  texto       → en inglés (es para el público). Lo que se supone (de dónde sale una música) va con «?» o «probably».
+//  Salen de escuchar el audio con un clasificador de AudioSet cada 5 s (pájaros, gallo, cencerro, guitarra, violín,
+//  salsa con voz, colectivos, bocinas, un avión, la moto, risas) cruzado con los lugares que marcó la artista.
+//  Ida por la vereda norte hacia el oeste y vuelta por la sur hacia el este: los locales de la vereda por donde
+//  camina quedan siempre a la DERECHA; los de enfrente, a la izquierda.
+//
 // Abrí la página con ?editar al final de la URL para marcar puntos sobre el mapa
 // mientras escuchás (clic en el mapa = punto en el momento actual del audio).
 //
@@ -115,6 +124,64 @@ window.RECORRIDO = {
   // en 14, 16 y 17 Av.); se sacaron. El formato está arriba, en MIRADAS.
   miradas: [],
 
+  // descriptores del audio en pantalla (ver SONIDOS arriba)
+  sonidos: [
+    { desde: '0:00',  hasta: '0:12',  texto: 'Birds in the tree by the curb, over the hum of traffic' },
+    { desde: '0:12',  hasta: '0:33',  texto: 'Birdsong, close by. Voices further down the sidewalk' },
+    { desde: '0:33',  hasta: '0:44',  texto: 'Music drifting in from up ahead, on the right' },
+    { desde: '0:44',  hasta: '0:50',  texto: 'A rooster, somewhere behind the buildings' },
+    { desde: '0:50',  hasta: '1:05',  texto: 'A cowbell keeps time: music and chatter spilling out of Guantanamera' },
+    { desde: '1:05',  hasta: '1:20',  texto: 'Birds again, between the voices of passers-by' },
+    { desde: '1:20',  hasta: '1:30',  texto: 'Conversations on the sidewalk, music underneath' },
+    { desde: '1:30',  hasta: '1:46',  texto: 'A guitar strumming, glasses clinking at a bar' },
+    { desde: '1:46',  hasta: '2:05',  texto: 'Live salsa from Ball & Chain, louder as we reach the door' },
+    { desde: '2:05',  hasta: '2:18',  texto: 'The salsa stays behind; people talking in the street' },
+    { desde: '2:18',  hasta: '2:35',  texto: 'Traffic on Calle Ocho, a bus idling' },
+    { desde: '2:35',  hasta: '2:45',  texto: 'A bus and a truck pass close by' },
+    { desde: '2:45',  hasta: '3:00',  texto: 'Music again from an open doorway, under the voices' },
+    { desde: '3:00',  hasta: '3:05',  texto: 'A door slides open and shut' },
+    { desde: '3:05',  hasta: '3:30',  texto: 'Cars passing on Calle Ocho; the block goes quiet' },
+    { desde: '3:30',  hasta: '3:40',  texto: 'Something metallic clinking nearby: keys, glasses?' },
+    { desde: '3:40',  hasta: '3:50',  texto: 'Voices, and music from a shop on the right' },
+    { desde: '3:50',  hasta: '4:08',  texto: 'A guitar and a violin, probably from El Cristo Restaurant' },
+    { desde: '4:08',  hasta: '4:22',  texto: 'The music stays with us while cars go by' },
+    { desde: '4:22',  hasta: '4:34',  texto: 'Salsa playing loud by the cigar shops; a car horn' },
+    { desde: '4:34',  hasta: '4:47',  texto: 'Waiting at the light on 16th Ave.; music from a car or a shop' },
+    { desde: '4:47',  hasta: '5:08',  texto: 'Crossing 16th Ave.: the music thins out, leaves rustle, distant traffic' },
+    { desde: '5:08',  hasta: '5:14',  texto: 'Wind on the microphone' },
+    { desde: '5:14',  hasta: '5:22',  texto: 'The air brakes of a bus, close by' },
+    { desde: '5:22',  hasta: '5:30',  texto: 'Traffic, and music from a passing car' },
+    { desde: '5:30',  hasta: '5:40',  texto: 'A bus goes by, engine roaring' },
+    { desde: '5:40',  hasta: '6:00',  texto: 'Radios ahead, from the cigar shops on the right' },
+    { desde: '6:00',  hasta: '6:20',  texto: 'Salsa with singing and maracas, probably Los Montaditos, further up the block' },
+    { desde: '6:20',  hasta: '6:40',  texto: 'Talk on the sidewalk; the salsa fades' },
+    { desde: '6:40',  hasta: '6:55',  texto: 'Quieter now: a few voices, a car' },
+    { desde: '6:55',  hasta: '7:03',  texto: 'A plane flies over' },
+    { desde: '7:03',  hasta: '7:19',  texto: 'Voices at the corner, music in the background' },
+    { desde: '7:19',  hasta: '7:32',  texto: "Crossing Calle Ocho at 17th Ave.: a man singing across the street, Tumba'o?" },
+    { desde: '7:32',  hasta: '7:40',  texto: 'Back along the south sidewalk, among voices' },
+    { desde: '7:40',  hasta: '7:55',  texto: "A song in Spanish, a man's voice, coming from Sala'o up ahead" },
+    { desde: '7:55',  hasta: '8:05',  texto: 'A car passes over the music' },
+    { desde: '8:05',  hasta: '8:20',  texto: 'Traffic, a horn, a door sliding' },
+    { desde: '8:20',  hasta: '8:30',  texto: 'A heavy truck rumbles by' },
+    { desde: '8:30',  hasta: '8:35',  texto: 'A sudden thud nearby' },
+    { desde: '8:35',  hasta: '8:55',  texto: 'Cars passing; someone revs an engine' },
+    { desde: '8:55',  hasta: '9:20',  texto: 'Voices, and soft music from a doorway' },
+    { desde: '9:20',  hasta: '9:35',  texto: 'Salsa from Ciao Havana, on the right' },
+    { desde: '9:35',  hasta: '9:45',  texto: 'Laughter at the tables' },
+    { desde: '9:45',  hasta: '10:00', texto: "A loud song, a man singing, probably Alfaro's, on the right" },
+    { desde: '10:00', hasta: '10:15', texto: 'A crowd talking over the music at El Pub, on the corner' },
+    { desde: '10:15', hasta: '10:25', texto: 'Crossing 16th Ave. again, quieter' },
+    { desde: '10:25', hasta: '11:00', texto: 'A woman singing from a speaker, among the voices' },
+    { desde: '11:00', hasta: '11:15', texto: 'A guitar and a violin under the conversations' },
+    { desde: '11:15', hasta: '11:30', texto: 'Voices close by, at a coffee window: La Colada Gourmet?' },
+    { desde: '11:30', hasta: '12:00', texto: 'A man talking, cars passing by' },
+    { desde: '12:00', hasta: '12:05', texto: 'Faint music somewhere' },
+    { desde: '12:05', hasta: '12:12', texto: 'A motorbike speeds past' },
+    { desde: '12:12', hasta: '12:23', texto: 'Footsteps and voices on the sidewalk' },
+    { desde: '12:23', hasta: '12:40', texto: 'A door opens, music from El Exquisito' }
+  ],
+
   proyecciones: [
     {
       // fachadas/drive/pajaritos-1/Arbolito.jpeg — iPhone 17 Pro, 24 mm eq. en vertical (3:4 → 56,8° de ancho). El punto de
@@ -125,9 +192,9 @@ window.RECORRIDO = {
       // vereda norte. La pidió la galería: la primera parte del recorrido, hasta el primer punto, se veía pobre.
       // arranque: la partida baja a este punto de vista y la foto ocupa la pantalla sobre la cuadra en 3D; después la
       // cámara entra en la escena, avanzando por la vereda hasta los ojos del caminante (ARRANQUE en mapa.js).
-      // sinHuella: después no queda pegada en las paredes; mira a lo largo de la vereda y desde el caminante se veía
-      // estirada sobre toda la fachada hasta Guantanamera.
-      lugar: "Birds' tree · start", tipo: 'photograph', arranque: true, sinHuella: true,
+      // conCaminante (pedido de la artista, 26/11): después queda siempre bañando la pared y la vereda, vista desde los
+      // ojos del caminante; Guantanamera (desdeLejos) va una capa por encima.
+      lugar: "Birds' tree · start", tipo: 'photograph', arranque: true, conCaminante: true,
       vistas: [
         { imagen: 'registros/arbolito-foto-00.webp', apertura: 56.8, rumbo: -86, cabeceo: 3.5, giro: 0,
           // la mira está lejos (150 m por el eje de la foto): al entrar en la escena la cámara avanza ~50 m por la vereda y,
@@ -316,7 +383,11 @@ window.RECORRIDO = {
       // ~1:02). Si Guantanamera todavía está en el aire, espera a que vuelva; Ball & Chain (1:57.7) espera a Cubaocho.
       // conCaminante (26/11): su huella se ve entera siempre que la cámara está en los ojos del caminante (también
       // mientras él mira hacia Guantanamera), DEBAJO de las fotos de Guantanamera (que van una capa más arriba).
+      // Desde el 26/11 son tres fotos (pedido de la artista): la frontal, el detalle de la entrada y la de la esquina, en
+      // ese orden (la última queda al oeste, cerca de por donde va el caminante: la vuelta es corta). contempla/traslado:
+      // 4,5 s en cada una y 4,5 s de una a otra, para que el travelling llene el hueco hasta Ball & Chain sin demorarlo.
       lugar: 'Cubaocho', tipo: 'photograph', punto: { lat: 25.7658038, lng: -80.2192855 }, radio: 4, conCaminante: true,
+      contempla: 4.5, traslado: 4.5,
       vistas: [
         // fachadas/drive/cubaocho/Cuba 8 1759.jpg — Cubaocho desde la vereda de enfrente (24 mm eq., 71,6°), de noche.
         // La esquina del edificio con la 15 Av. (u ≈ 0,02) va en la esquina del volumen (lng −80.219395); la escala sale
@@ -324,7 +395,23 @@ window.RECORRIDO = {
         // cámara a 1,6 m, la base de la fachada (v ≈ 0,69) pide mirar 5,9° hacia arriba. Rumbo perpendicular al volumen.
         // Los pisos de arriba están retranqueados y caen en el frente del volumen de 27 m (OSM): no hay borde que encajar.
         { imagen: 'registros/cubaocho-foto-00.webp', apertura: 71.6, rumbo: -1.67, cabeceo: -5.85, giro: 0,
-          camara: { lat: 25.765681, lng: -80.219281, alt: 1.6 }, mira: { lat: 25.7658204, lng: -80.2192855, alt: 3.18 } }
+          camara: { lat: 25.765681, lng: -80.219281, alt: 1.6 }, mira: { lat: 25.7658204, lng: -80.2192855, alt: 3.18 } },
+        // fachadas/drive/cubaocho/Cuba 8 1739.jpg (en Drive, «Cuba 8- 1465 SW 8th St .jpg») — la entrada con el neón
+        // CUBAOCHO, de frente y de cerca (24 mm eq., 71,6°). Como en El Cristo, la cámara no sale de la escena real (la
+        // puerta está bajo la galería, retirada del frente del volumen) sino de dónde deja esa puerta la foto frontal con
+        // su calibración: las cuatro esquinas del vano (1,7 × 2,4 m) caen en el frente del volumen en lng −80.219293 …
+        // −80.219276 (el umbral, en el piso, para que la alfombra quede en la vereda). Cámara a 3 m, a 1,3 m de altura,
+        // mirando apenas hacia abajo (error ~13 px).
+        { imagen: 'registros/cubaocho-foto-01.webp', apertura: 71.6, rumbo: -2.3, cabeceo: 4.65, giro: 0.59,
+          camara: { lat: 25.7657919, lng: -80.2192824, alt: 1.31 }, mira: { lat: 25.7658209, lng: -80.2192843, alt: 1.5 } },
+        // fachadas/drive/cubaocho/Esquina de cuba 8 1758.jpg — el edificio desde la esquina SO de la 15 Av., de noche
+        // (21 mm eq., ≈ 79° en 4:3): se ve la pared que da a la 15 Av. (la de la torre) y el frente sobre la Calle 8, que
+        // se aleja hacia el este. A la izquierda, el Little Havana Cigar Factory; a la derecha, el arco del Domino Park.
+        // Cámara estimada (sin calibrar): el punto de fuga de la Calle 8 (cordón y línea de la ciclovía, u ≈ 0,76,
+        // v ≈ 0,55) da el rumbo y el cabeceo; la esquina del volumen (u ≈ 0,41) y la altura de su base (v ≈ 0,59), la
+        // posición: sobre el cordón sur, frente al Tower, ~10 m al oeste de la 15 Av. ⚠ Pasarla por calibrar.html.
+        { imagen: 'registros/cubaocho-esquina-00.webp', apertura: 79.1, rumbo: 67.3, cabeceo: -3.4, giro: 0,
+          camara: { lat: 25.765661, lng: -80.219684, alt: 1.5 }, mira: { lat: 25.765779, lng: -80.219371, alt: 3.5 } }
       ]
     },
     {
@@ -417,16 +504,16 @@ window.RECORRIDO = {
     },
     {
       // fachadas/drive/el-pub-restaurant/Restaurant Pub 1537.jpeg — la ventanita de El Pub (1548), en la esquina de la
-      // 16 Av. (24 mm eq., 71,6°). Escala por la mujer y la altura del mostrador (1,1 m) → cámara a 3,6 m, horizontal a
-      // 1,24 m (base de los azulejos en v ≈ 0,81, con el zócalo horizontal: la fachada de Calle 8 está de frente).
-      // La foto dobla la esquina: el final de los azulejos (u ≈ 0,784) es la arista entre la fachada y la ochava del
-      // volumen, y lo que sigue a la derecha (barril, menú, puerta) cae sobre la ochava. Para eso el proyector está
-      // 1,5 m al este de esa arista (2,1 m al oeste de donde estaba), con la lente sin desplazar (centro 0) y sin estirar:
-      // sólo desde ahí la foto se pliega sola sobre las dos paredes. Marcada a las 10:02.7.
+      // 16 Av. (24 mm eq., 71,6°). La pared de la ventanita ES LA OCHAVA (confirmado por la artista): la foto está tomada
+      // de frente a ella, mirando al sureste (136°), con el zócalo horizontal. La arista de la derecha (u ≈ 0,79, detrás del
+      // barril) es la esquina suroeste de la ochava, donde dobla hacia la 16 Av.; el centro de la foto cae sobre la ochava.
+      // En el volumen la ochava mide 5,3 m (algo más que la real): para que la arista y el pie de la pared coincidan con
+      // él, la cámara queda a 4,6 m de la ochava, a 1,5 m de altura (el pie de la pared en v ≈ 0,80). Lente sin desplazar.
+      // Marcada a las 10:02.7.
       lugar: 'El Pub Restaurant', tipo: 'photograph', punto: { lat: 25.7656115, lng: -80.2205937 }, radio: 4,
       vistas: [
-        { imagen: 'registros/el-pub-foto-00.webp', apertura: 71.6, rumbo: 178.5, cabeceo: 0, giro: 0,
-          camara: { lat: 25.7656284, lng: -80.220378, alt: 1.24 }, mira: { lat: 25.765596, lng: -80.220377, alt: 1.24 } }
+        { imagen: 'registros/el-pub-foto-00.webp', apertura: 71.6, rumbo: 136.2, cabeceo: 0, giro: 0,
+          camara: { lat: 25.7656044, lng: -80.2204475, alt: 1.5 }, mira: { lat: 25.7655743, lng: -80.2204158, alt: 1.5 } }
       ]
     },
     {

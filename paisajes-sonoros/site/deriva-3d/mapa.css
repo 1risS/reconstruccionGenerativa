@@ -54,7 +54,33 @@ body.pano-lista .pano-foto, body.pano-fuera .pano-foto { opacity: 0; }
   background: var(--accent); color: var(--sobre-acento);
   font-family: var(--display); font-weight: 500; font-size: 1.35rem; letter-spacing: 0.01em; cursor: pointer;
 }
-.comenzar:disabled { background: transparent; color: var(--muted); border-color: var(--line); cursor: wait; }
+/* el cargador y el botón ocupan el mismo lugar: al terminar la carga, uno se va y el otro aparece */
+.arranque { margin-top: auto; align-self: center; display: grid; place-items: center; }
+.arranque > * { grid-area: 1 / 1; }
+.comenzar:disabled { opacity: 0; visibility: hidden; transform: translateY(0.4rem); }
+.comenzar { transition: opacity 0.9s ease 0.35s, transform 0.9s ease 0.35s, visibility 0s; }
+/* sobre la foto: un halo de papel detrás de los textos chicos para que se lean */
+.carga { width: min(15rem, 70vw); display: flex; flex-direction: column; gap: 0.45rem;
+  text-shadow: 0 0 3px var(--bg), 0 0 8px var(--bg), 0 0 14px var(--bg); transition: opacity 0.5s ease, visibility 0s 0.5s; }
+.inicio.cargado .carga { opacity: 0; visibility: hidden; }
+.carga-linea { position: relative; height: 2px; background: rgba(234, 234, 234, 0.85); margin: 0.6rem 0 0;
+  box-shadow: 0 0 0 1px rgba(17, 17, 17, 0.12); }
+.carga-hecho { position: absolute; left: 0; top: 0; height: 2px; width: 0; background: var(--accent); }
+/* el caminante (como en el mapa) camina por la línea */
+.carga-punto {
+  position: absolute; top: 0; left: 0; width: 11px; height: 11px; margin: -4.5px 0 0 -5.5px; border-radius: 50%;
+  background: var(--fg); box-shadow: 0 0 0 2px var(--accent), 0 0 12px var(--accent);
+}
+.carga-punto::after {
+  content: ""; position: absolute; inset: 0; border-radius: 50%; border: 1.5px solid var(--accent); opacity: 0;
+  animation: onda 2.2s ease-out infinite;
+}
+.carga-calles { display: flex; justify-content: space-between; font-family: var(--display); font-weight: 600;
+  font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--texto); }
+.carga-texto { display: flex; justify-content: space-between; gap: 1rem; font-family: var(--display);
+  font-size: 1.05rem; color: var(--texto); }
+.carga-pct { font-weight: 600; color: var(--texto); font-variant-numeric: tabular-nums; }
+@media (prefers-reduced-motion: reduce) { .carga-punto::after { animation: none; } }
 
 /* ── marcador del caminante ───────────────────────── */
 .caminante { width: 18px; height: 18px; position: relative; }
@@ -172,6 +198,22 @@ body.modo-calle .vineta { opacity: 1; }
 .pie span { font-size: 0.85rem; color: var(--muted); }
 .pie #pie-n:empty { display: none; }
 
+/* ── descriptores del audio (recorrido.js → sonidos) ──
+   Subtítulos de lo que se oye. No son parte de la interfaz: se quedan cuando la tecla H la oculta (ahí bajan al pie
+   de la pantalla). Con la interfaz a la vista van por encima del pie del registro. */
+.sonido {
+  position: fixed; z-index: 4; left: 50%; transform: translate(-50%, 6px);
+  bottom: calc(var(--alto-panel, 0px) + 5.2rem);
+  width: max-content; max-width: min(34rem, calc(100% - 2rem)); margin: 0;
+  font-family: var(--display); font-weight: 400; font-style: italic; font-size: 1.05rem; line-height: 1.25;
+  text-align: center; color: var(--fg); text-wrap: balance;
+  background: var(--panel); padding: 0.3rem 0.8rem; border-radius: 4px;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.6s, transform 0.6s, bottom 0.8s;
+}
+.sonido.visible { opacity: 1; transform: translate(-50%, 0); }
+body:not(.ui-visible) .sonido { bottom: max(1.5rem, calc(env(safe-area-inset-bottom) + 0.8rem)); }
+
 .fin {
   position: fixed; z-index: 4; left: 0; right: 0; top: 38%; text-align: center; pointer-events: none;
   font-family: var(--display); font-weight: 300; font-style: italic; font-size: 1.8rem; color: var(--fg);
@@ -194,7 +236,7 @@ body.pano-final .fin {
   background: linear-gradient(rgba(234,234,234,0.88), rgba(234,234,234,0.6) 65%, rgba(234,234,234,0));
 }
 
-/* ── interfaz: sólo durante el recorrido (mapa.js pone body.ui-visible; la tecla H la oculta y la vuelve a mostrar).
+/* ── interfaz: sólo durante el recorrido, y oculta hasta que se aprieta H (mapa.js pone body.ui-visible; la H la muestra y la oculta).
    En la panorámica, la partida, la vuelta y el final no se ve: al final quedan sólo «fin del recorrido» y el botón.
    Se oculta con opacidad y no con `hidden`: el panel sigue ocupando su lugar y el encuadre de las fotos no salta. */
 .panel, .estado, .seguir, .paletas, .maplibregl-ctrl-bottom-left { transition: opacity 0.8s; }

@@ -369,23 +369,24 @@ window.CALIBRACION = {
     },
     "registros/el-pub-foto-00.webp": {
       "camara": {
-        "lat": 25.7656284,
-        "lng": -80.220357,
+        "lat": 25.7658981,
+        "lng": -80.2203648,
         "alt": 1.21
       },
       "mira": {
-        "lat": 25.7656118,
-        "lng": -80.2203878,
-        "alt": 1.56
+        "lat": 25.7655304,
+        "lng": -80.2210365,
+        "alt": 15.53
       },
       "rumbo": 178.5,
       "cabeceo": 0,
-      "giro": 0,
-      "apertura": 98.7446,
+      "giro": -5.432,
+      "apertura": 98.745,
       "centro": [
         -1.5213,
-        -0.22784
-      ]
+        -0.2278
+      ],
+      "pares": []
     },
     "registros/el-cuban-diner-foto-00.webp": {
       "camara": {
@@ -454,18 +455,19 @@ window.CALIBRACION = {
         "alt": 1.6
       },
       "mira": {
-        "lat": 25.7658206,
-        "lng": -80.2192854,
-        "alt": 2.94
+        "lat": 25.7663972,
+        "lng": -80.2192994,
+        "alt": 8.92
       },
       "rumbo": -1.67,
-      "cabeceo": -3.1,
+      "cabeceo": -5.404,
       "giro": 0.8,
       "apertura": 71.6,
       "centro": [
-        0,
-        -0.05937
-      ]
+        -0.0084,
+        0.0049
+      ],
+      "pares": []
     },
     "registros/guantanamera-foto-01.webp": {
       "camara": {
@@ -474,17 +476,129 @@ window.CALIBRACION = {
         "alt": 1.5
       },
       "mira": {
-        "lat": 25.7658133,
-        "lng": -80.2191438,
-        "alt": 4.49
+        "lat": 25.7663369,
+        "lng": -80.2191455,
+        "alt": 53.27
       },
       "rumbo": -1.67,
-      "cabeceo": -1,
-      "giro": 0,
-      "apertura": 126.3107,
+      "cabeceo": 9.018,
+      "giro": 1.444,
+      "apertura": 126.311,
       "centro": [
         0,
-        -0.70442
+        -0.7861
+      ],
+      "pares": []
+    },
+    "registros/arbolito-foto-00.webp": {
+      "camara": {
+        "lat": 25.765762,
+        "lng": -80.2177431,
+        "alt": 5.27
+      },
+      "mira": {
+        "lat": 25.7657642,
+        "lng": -80.2185414,
+        "alt": 2.09
+      },
+      "rumbo": -91.571,
+      "cabeceo": 13.62,
+      "giro": -0.191,
+      "apertura": 41.8,
+      "centro": [
+        -0.083,
+        -0.3937
+      ],
+      "pares": []
+    },
+    "registros/calle-8-1652-foto-00.webp": {
+      "camara": {
+        "lat": 25.7655891,
+        "lng": -80.2219543,
+        "alt": 3.07
+      },
+      "mira": {
+        "lat": 25.7648708,
+        "lng": -80.2219348,
+        "alt": 7.26
+      },
+      "rumbo": 178.5,
+      "cabeceo": 0,
+      "giro": 1.902,
+      "apertura": 108.416,
+      "centro": [
+        0,
+        -0.0504
+      ],
+      "pares": []
+    },
+    "registros/top-cigars-foto-00.webp": {
+      "camara": {
+        "lat": 25.7656167,
+        "lng": -80.2205988,
+        "alt": 1.89
+      },
+      "mira": {
+        "lat": 25.7663313,
+        "lng": -80.2205996,
+        "alt": 11.14
+      },
+      "rumbo": 0,
+      "cabeceo": -12.646,
+      "giro": -0.709,
+      "apertura": 43,
+      "centro": [
+        0.0057,
+        0.3562
+      ],
+      "pares": []
+    },
+    "registros/top-cigars-foto-01.webp": {
+      "camara": {
+        "lat": 25.7657397,
+        "lng": -80.2206255,
+        "alt": 1.54
+      },
+      "mira": {
+        "lat": 25.7664565,
+        "lng": -80.2206427,
+        "alt": 0
+      },
+      "rumbo": -1.27,
+      "cabeceo": 0,
+      "giro": -0.4,
+      "apertura": 102,
+      "centro": [
+        0,
+        0.0908
+      ],
+      "pares": []
+    },
+    "registros/cubaocho-esquina-00.webp": {
+      "camara": {
+        "lat": 25.7655753,
+        "lng": -80.2197867,
+        "alt": 4.13
+      },
+      "mira": {
+        "lat": 25.765883,
+        "lng": -80.2190653,
+        "alt": 7.51
+      },
+      "rumbo": 60.28,
+      "cabeceo": 2.391,
+      "giro": 0,
+      "apertura": 79.1,
+      "centro": [
+        -0.0929,
+        -0.1363
+      ],
+      "pares": [
+        {
+          "lat": 25.7655985,
+          "lng": -80.2198475,
+          "alt": 0
+        }
       ]
     }
   },

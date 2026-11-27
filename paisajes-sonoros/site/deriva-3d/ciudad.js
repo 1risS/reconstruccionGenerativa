@@ -19,7 +19,7 @@ uniform sampler2D uSolProf; uniform mat4 uSolVP; uniform vec3 uSolDir; uniform v
 uniform sampler2D uSolProfC; uniform mat4 uSolVPC; uniform vec2 uSolTexelC; uniform float uSolBiasC; uniform float uSolCerca;
 uniform mat4 uProyVP[${MAX_PROY}]; uniform vec3 uProyPos[${MAX_PROY}]; uniform vec2 uProyNF[${MAX_PROY}];
 uniform float uProyInt[${MAX_PROY}]; uniform sampler2D uProyTex[${MAX_PROY}]; uniform sampler2D uProyProf[${MAX_PROY}];
-uniform float uProyLado[${MAX_PROY}]; uniform float uProyTol[${MAX_PROY}]; uniform vec4 uOla; uniform float uOlaLuz;
+uniform float uProyLado[${MAX_PROY}]; uniform float uProyTol[${MAX_PROY}]; uniform vec4 uOla; uniform float uOlaLuz; uniform float uOlaFin;
 // capa de cada ranura: las imágenes se componen de la capa 0 hacia arriba (huellas superpuestas de un lugar: la que va
 // antes en recorrido.js queda encima; ver componer). Las de la misma capa, en el orden de las ranuras.
 uniform float uProyCapa[${MAX_PROY}];
@@ -103,13 +103,24 @@ vec4 proy(vec3 p, vec3 n, mat4 vp, vec3 pos, vec2 nf, float inten, sampler2D tex
   vec2 uv = q.xy * 0.5 + 0.5;
   vec4 c2 = vp * vec4(p + n * 0.12, 1.0);
   float visto = lineal(texture2D(prof, uv).r, nf);
-  if (!relleno && lineal(c2.z / c2.w * 0.5 + 0.5, nf) > visto + 0.35 + tol * visto) return vec4(0.0);
+  // Parada en el punto de vista, la cámara sólo ve lo que ve el proyector: no hace falta la prueba (con ella, en los
+  // bordes de los volúmenes el mapa de profundidad mezcla lo de adelante y lo de atrás y quedaban rayas sin imagen)
+  // Al alejarse del punto de vista la prueba vuelve de a poco (lo que no pasa se apaga en los primeros metros, no de
+  // golpe: si no, al salir de la foto aparecían de pronto manchas y rayas negras)
+  float tapado = 0.0;
+  if (!relleno && lineal(c2.z / c2.w * 0.5 + 0.5, nf) > visto + 0.35 + tol * visto) tapado = smoothstep(0.5, 8.0, distance(uCamara, pos));
+  if (tapado > 0.999) return vec4(0.0);
   vec4 col = textureGrad(tex, uv, gx, gy);
   // las superficies que reciben la imagen muy de costado se atenúan (vistas desde otro lugar son estiramientos).
   // Desde el punto de vista del proyector no hay estiramiento: ahí la imagen va entera, aunque caiga rasante
   // (p. ej. la vereda en las fotos tomadas a la altura de los ojos, que si no quedaba grisada).
   float rasante = relleno ? bordeRelleno(vp, p, pos, -1.0) : mix(smoothstep(0.01, 0.12, fr), 1.0, smoothstep(12.0, 2.0, distance(uCamara, pos)));
-  return vec4(col.rgb, col.a * inten * rasante);
+  // contorno del cuadro con antialias: el último píxel se funde según cuánto de él cae dentro de la foto. Cortado en
+  // seco, el borde quedaba en escalones que la rectificación del canvas (homografía) agrandaba: dientes de sierra que
+  // titilaban a los costados de la foto (Ball & Chain, la de la esquina)
+  vec2 px = 1.5 * max(abs(gx) + abs(gy), vec2(1e-6));   // (1,5 píxeles de fundido)
+  vec2 dentro = clamp((0.5 - abs(uv - 0.5)) / px + 0.5, 0.0, 1.0);
+  return vec4(col.rgb, col.a * inten * rasante * (1.0 - tapado) * dentro.x * dentro.y);
 }
 // líneas paralelas con antialias que se funden en un gris al alejarse (evita el moiré)
 float rayado(float x, float grosor) {
@@ -138,6 +149,9 @@ vec2 ola(vec3 p) {
   vec3 q = floor(p * 2.5) + 0.5;
   float w = length(fwidth(p * 2.5));
   float s = mix(step(azar(q), e), e, smoothstep(0.5, 1.5, w));   // granos de 40 cm; de lejos, fundido (sin moiré)
+  // al final (uOlaFin → 1) lo que el frente no alcanzó (el cielo de una foto, a 350 m; el piso lejano) pasa con un
+  // fundido: si no, aparecía de golpe en el cuadro en que termina la ola (un tirón de la imagen al llegar a la vista)
+  s *= 1.0 - uOlaFin;
   return vec2(s, exp(-abs(d + 1.0) / 1.4) * uOlaLuz);
 }
 float mascara(float lado, float s) { return lado > 0.5 ? 1.0 - s : (lado < -0.5 ? s : 1.0); }
@@ -798,7 +812,7 @@ export async function crearCiudad(THREE, { url, local, sol, vistas, alturas = []
     uProyInt: { value: new Array(MAX_PROY).fill(0) },
     uProyTex: { value: new Array(MAX_PROY).fill(vacia) },
     uProyProf: { value: new Array(MAX_PROY).fill(vacia) },
-    uProyLado: { value: new Array(MAX_PROY).fill(0) }, uProyCapa: { value: new Array(MAX_PROY).fill(0) }, uProyTol: { value: new Array(MAX_PROY).fill(0.004) }, uOla: { value: new THREE.Vector4(0, 0, 0, -1) }, uOlaLuz: { value: 0 },
+    uProyLado: { value: new Array(MAX_PROY).fill(0) }, uProyCapa: { value: new Array(MAX_PROY).fill(0) }, uProyTol: { value: new Array(MAX_PROY).fill(0.004) }, uOla: { value: new THREE.Vector4(0, 0, 0, -1) }, uOlaLuz: { value: 0 }, uOlaFin: { value: 0 },
     uCaminante: { value: new THREE.Vector3() }, uLinterna: { value: 0 },
     uFoco: { value: new THREE.Vector2(cx, cy) }, uRadio: { value: new THREE.Vector2(...R_FOCO) },
     uNiebla: { value: new THREE.Color(0.42, 0.30, 0.33) },
@@ -1030,6 +1044,7 @@ export async function crearCiudad(THREE, { url, local, sol, vistas, alturas = []
       if (ola) uniforms.uOla.value.set(ola.centro[0], ola.centro[1], ola.centro[2], ola.radio);
       else uniforms.uOla.value.w = -1;
       uniforms.uOlaLuz.value = ola ? ola.luz : 0;
+      uniforms.uOlaFin.value = ola ? ola.fin || 0 : 0;
       actualizarCielos();
     },
     setCaminante(x, y, linterna) {

@@ -29,7 +29,15 @@
       <h2 class="nombre">Calle Ocho Walk</h2>
       <p class="lugar">From 13th to 17th Avenue along one sidewalk, back along the other to 15th</p>
     </div>
-    <button class="comenzar" id="comenzar" disabled>Loading map…</button>
+    <!-- mientras carga, la línea del recorrido con el caminante avanzando; cuando está todo listo (y fluido), Start -->
+    <div class="arranque">
+      <div class="carga" id="carga" role="progressbar" aria-label="Loading the walk" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <div class="carga-linea"><span class="carga-hecho" id="carga-hecho"></span><span class="carga-punto" id="carga-punto"></span></div>
+        <div class="carga-calles" aria-hidden="true"><span>13th Ave</span><span>17th Ave</span></div>
+        <p class="carga-texto"><span id="carga-etapa">Loading the map</span><span class="carga-pct" id="carga-pct">0%</span></p>
+      </div>
+      <button class="comenzar" id="comenzar" disabled tabindex="-1">Start</button>
+    </div>
     <p class="aviso">Headphones recommended.</p>
   </section>
 
@@ -37,6 +45,9 @@
   <div class="estado" id="estado" aria-live="polite">
     <span class="nota" id="nota"></span>
   </div>
+
+  <!-- descriptores del audio (recorrido.js → sonidos): como subtítulos, siguen a la vista aunque se oculte la interfaz -->
+  <p class="sonido" id="sonido" aria-live="polite"></p>
 
   <!-- pie del registro que se está mirando -->
   <div class="pie" id="pie" aria-live="polite">

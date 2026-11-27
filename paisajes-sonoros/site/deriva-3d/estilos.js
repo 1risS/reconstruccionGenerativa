@@ -93,6 +93,13 @@ const VACIO = (() => {
   return { ...FANTASMA, id: 'vacio', piso: hex(f), niebla: hex(f),
     base: Object.fromEntries(Object.keys(FANTASMA.base).map((k) => [k, f])), cielo: cieloOscuro(f, f, f) };
 })();
+// entre Fantasma (v = 0) y Vacío (v = 1): en los travellings hacia los dioramas el mapa base se apaga mientras la cámara
+// se aleja (si no, las manzanas y calles oscuras cambiaban de nivel de detalle a la vista y se achicaban de a saltos)
+function fantasmaVacio(v) {
+  const base = Object.fromEntries(Object.keys(FANTASMA.base).map((k) => [k, hexDe(mix(FANTASMA.base[k], VACIO.base[k], v))]));
+  return { ...FANTASMA, id: 'fantasma-vacio', piso: mix(FANTASMA.piso, VACIO.piso, v), niebla: mix(FANTASMA.niebla, VACIO.niebla, v),
+    base, cielo: mezclarCielo(FANTASMA.cielo, VACIO.cielo, v) };
+}
 
 // PALETAS de la maqueta (menú desplegable arriba a la derecha, sólo durante el recorrido). Misma estructura que la
 // original (tres fachadas: rosa, crema y blanco; techo gris; papel) en tonos cada vez más oscuros. `papel` es el fondo,
@@ -128,6 +135,13 @@ function maquetaCon(p) {
     paleta: { fachadas: p.fachadas.map(hex), techo: hex(p.techo), sombra: p.sombra, pisoSombra: p.pisoSombra } };
 }
 const CLAVE_PALETA = 'deriva-paleta-maqueta';
+// color de la viñeta (las mismas de mapa.css → --vineta) de un tono a otro
+const VINETA = { claro: [234, 234, 234, 0.8], oscuro: [10, 8, 8, 0.75] };
+function vinetaEntre(a, b, t) {
+  const A = VINETA[a] || VINETA.oscuro, B = VINETA[b] || VINETA.oscuro;
+  const c = A.map((x, i) => x + (B[i] - x) * t);
+  return `rgba(${Math.round(c[0])}, ${Math.round(c[1])}, ${Math.round(c[2])}, ${c[3].toFixed(3)})`;
+}
 
 // mezcla de colores: '#rrggbb' o [r, g, b] en 0…1
 const aRGB = (c) => (Array.isArray(c) ? c : hex(c));
@@ -179,32 +193,39 @@ export function iniciarEstilos(map, ciudad, { fijo = null } = {}) {
   if (!idPaleta) try { idPaleta = localStorage.getItem(CLAVE_PALETA); } catch (e) {}
   let maq = maquetaCon(PALETAS.find((p) => p.id === idPaleta) || PALETAS[0]);
 
-  const ctl = { actual: fijo ? null : FANTASMA, t: -1, vacio: false, mezclar };
-  function aplicar(est, { cielo = est.cielo, paleta = () => base(est.base), tono = est.tono } = {}) {
+  const ctl = { actual: fijo ? null : FANTASMA, t: -1, vacio: 0, mezclar };
+  // vineta: (sólo en los fundidos) el color de la viñeta, mezclado entre los dos estilos. Si no, la de mapa.css según
+  // el tono, que cambia de golpe a mitad del fundido: los bordes de la pantalla saltaban de oscuros a claros en un cuadro.
+  function aplicar(est, { cielo = est.cielo, paleta = () => base(est.base), tono = est.tono, vineta = null } = {}) {
     ctl.actual = est;
     if (ciudad) ciudad.setEstilo(est);
     paleta();
     try { map.setSky(cielo); } catch (e) {}
     document.body.dataset.tono = tono || 'oscuro';
+    if (vineta) document.body.style.setProperty('--vineta', vineta);
+    else document.body.style.removeProperty('--vineta');
     // detrás del canvas: a la altura del horizonte MapLibre deja una franja sin dibujar (transparente) y se veía el
     // fondo claro de la página como una raya blanca en los estilos oscuros. Se pinta con el color de la niebla.
     map.getContainer().style.background = css(est.niebla);
     map.triggerRepaint();
   }
-  // t = 0 Fantasma … 1 Maqueta. vacio: en vez de Fantasma, Vacío (sin mapa base ni horizonte; ver VACIO)
-  function mezclar(t, vacio = false) {
+  // t = 0 Fantasma … 1 Maqueta. vacio: en vez de Fantasma, Vacío (sin mapa base ni horizonte; ver VACIO). También
+  // puede ser un número de 0 a 1: el mapa base de Fantasma se funde hacia Vacío (va desapareciendo)
+  function mezclar(t, vacio = 0) {
     t = Math.max(0, Math.min(1, t));
+    vacio = Math.round(Math.max(0, Math.min(1, +vacio)) * 50) / 50;
     if (vacio !== ctl.vacio) ctl.t = -1;
     if (t === ctl.t || (t > 0 && t < 1 && Math.abs(t - ctl.t) < 0.004)) return;
     ctl.t = t; ctl.vacio = vacio;
-    const F = vacio ? VACIO : FANTASMA;
+    const F = vacio >= 1 ? VACIO : vacio > 0 ? fantasmaVacio(vacio) : FANTASMA;
     if (t === 0) return aplicar(F);
     if (t === 1) return aplicar(maq);
     const est = { ...maq, id: 'fundido', fantasma: 1 - t, transparente: true, ocluye: true,
       niebla: mix(F.niebla, maq.niebla, t), tinta: mix(F.tinta, maq.tinta, t),
       piso: mix(F.piso, maq.piso, t) };
     aplicar(est, { cielo: mezclarCielo(F.cielo, maq.cielo, t), paleta: () => base(F.base, maq.base, t),
-      tono: t >= 0.5 ? maq.tono : F.tono });
+      tono: t >= 0.5 ? maq.tono : F.tono || 'oscuro',   // (Fantasma no tiene tono: sin el || quedaba el de la maqueta)
+      vineta: vinetaEntre(F.tono || 'oscuro', maq.tono, t) });
   }
 
   if (fijo) aplicar(fijo === 'maqueta' ? maquetaCon(PALETAS[0]) : ESTILOS.find((e) => e.id === fijo) || MAQUETA);

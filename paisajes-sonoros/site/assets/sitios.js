@@ -89,6 +89,19 @@ window.SITIOS = {
     texto:
       'A shop where cigars are rolled and sold. ' +
       '[Placeholder: replace with the curatorial text.]',
+    frases: [
+      '1743 SW 8th Street. Cigars rolled by hand.',
+      'In the early sixties, Cuba nationalized its tobacco industry.',
+      'Master rollers and factory families fled to Miami.',
+      'They rebuilt their workshops along this street.',
+      'Every cigar is still rolled entirely by hand.',
+      'The chaveta, the roller’s curved blade, trims the leaf.',
+      'A craft passed down from generation to generation.',
+      'At first, cigars for an exile community that missed home.',
+      'Now locals and tourists watch the rolling as it happens.',
+      'To roll a cigar here is to keep “the Cuba of yesterday.”',
+      'Memory, and pride in where you come from.'
+    ],
     color: '#8a6a1c',
     loop: true,
     // Recortado a 2:23 con fundidos (el original completo está en ../audios/descartados/)
