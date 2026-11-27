@@ -24,8 +24,10 @@ window.MUESTRA = {
 window.SITIOS = {
   'tower-hotel': {
     numero: '01',
-    nombre: 'Tower Hotel',
-    lugar: 'Hotel',
+    // La página incluye también a Aluna Art Foundation, al lado del hotel (aparece en todas las fotos).
+    // El slug sigue siendo tower-hotel porque el QR ya está impreso.
+    nombre: 'Tower Hotel & Aluna',
+    lugar: 'Hotel · Aluna Art Foundation, next door',
     texto: '',
     frases: [
       '1450 SW 7th Street. Built in 1920.',
@@ -38,6 +40,9 @@ window.SITIOS = {
       'From the 1960s on, the heart of Cuban exile in Miami.',
       'In 1980, the Mariel boatlift brought a new wave of arrivals.',
       'In 2018, Miami Motel Stories turned its rooms into a stage.',
+      'Next door: Aluna Art Foundation.',
+      'Its exhibitions have also filled the hotel’s first floor.',
+      'Its Miami Photographic Observatory reads the city through photographs.',
       'A century of people passing through.'
     ],
     color: '#9a5a4a',
@@ -86,9 +91,7 @@ window.SITIOS = {
     numero: '03',
     nombre: 'Casa Habano',
     lugar: 'Cigar shop',
-    texto:
-      'A shop where cigars are rolled and sold. ' +
-      '[Placeholder: replace with the curatorial text.]',
+    texto: '',
     frases: [
       '1743 SW 8th Street. Cigars rolled by hand.',
       'In the early sixties, Cuba nationalized its tobacco industry.',

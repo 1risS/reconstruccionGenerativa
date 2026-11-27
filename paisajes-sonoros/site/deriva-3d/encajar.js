@@ -48,6 +48,9 @@ const aLngLat = (x, y) => {
 const ARCHIVO = window.CALIBRACION || { vistas: {}, alturas: [] };
 let ALTURAS = clonar(ARCHIVO.alturas || []);
 const ALTURAS_GUARDADAS = JSON.stringify(ALTURAS);
+// de qué calibración parte esta página: al guardar, el servidor aplica sólo lo que cambió respecto de ella (ver
+// guardarCalibracion en servidor-local.mjs). Así una página abierta desde antes no pisa lo que se guardó después.
+const BASE = clonar(ARCHIVO.vistas || {}), BASE_ALTURAS = clonar(ARCHIVO.alturas || []);
 const ITEMS = [];
 for (const p of R.proyecciones || []) {
   for (const def of p.vistas) {
@@ -460,7 +463,8 @@ function todo() {
 $('#guardar').addEventListener('click', async () => {
   const c = todo();
   try {
-    const r = await fetch('guardar-calibracion', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(c) });
+    const r = await fetch('guardar-calibracion', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...c, base: BASE, baseAlturas: BASE_ALTURAS }) });
     if (!r.ok) throw new Error(r.status);
     ARCHIVO.vistas = c.vistas; ARCHIVO.alturas = clonar(c.alturas);
     for (const it of ITEMS) if (tocada(it)) { it.cal = c.vistas[it.def.imagen]; it.guardada = clonar(it.v); }
@@ -476,7 +480,7 @@ $('#guardar').addEventListener('click', async () => {
   }
 });
 $('#probar').addEventListener('click', () => {
-  try { localStorage.setItem(CLAVE_PRUEBA, JSON.stringify(todo())); } catch (e) {}
+  try { localStorage.setItem(CLAVE_PRUEBA, JSON.stringify({ ...todo(), base: BASE, baseAlturas: BASE_ALTURAS })); } catch (e) {}
   window.open(`./?prueba&lugar=${encodeURIComponent(T.lugar || '')}`, '_blank');
 });
 let saliendo = false;

@@ -10,6 +10,7 @@ const MAX_PROY = 6;   // proyecciones SIMULTÁNEAS: cada una usa 2 texturas (ima
 const R_FOCO = [260, 520];
 const RADIO_CIELO = 350;     // m: el telón de cielo de cada foto, más allá de lo que tiene que recibir la imagen
 const CIELO_LLEGA = 14;      // m del punto de vista a los que el cielo empieza a aparecer (entero a 1,5 m)
+const CIELO_TENUE = 0.4;     // opacidad del cielo visto desde lejos (la vereda): tenue, sobre los techos, con el borde fundido
 const RAD_ = Math.PI / 180;   // radio (m) alrededor del caminante a partir del cual la ciudad se disuelve
 
 // ESTILOS (uEstilo, ver estilos.js): 0 atardecer · 1 aristas · 2 fantasma · 3 cercanía · 4 cianotipo · 5 sonar · 6 nube de puntos
@@ -538,6 +539,7 @@ const FRAG_CIELO = /* glsl */ `
 ${COMUN}
 varying vec3 vN;
 uniform float uRanura[${MAX_PROY}]; uniform float uOp;
+uniform float uLejos;   // 0 en el punto de vista … 1 lejos (desde la vereda): el borde del cuadro se funde
 void main() {
   vec3 n = normalize(vN);
   vec2 ol = ola(vPos);
@@ -546,7 +548,10 @@ void main() {
   for ( int i = 0; i < ${MAX_PROY}; i ++ ) {
     if (uRanura[ i ] > 0.5) {
       pr = proy(vPos, n, uProyVP[ i ], uProyPos[ i ], uProyNF[ i ], uProyInt[ i ], uProyTex[ i ], uProyProf[ i ], abs(uProyTol[ i ]));
-      sobre(Q, B, pr.rgb, pr.a * mascara(uProyLado[ i ], ol.x));
+      vec4 cb = uProyVP[ i ] * vec4(vPos, 1.0);
+      vec2 qb = abs(cb.xy / max(cb.w, 1e-6));
+      float borde = (1.0 - smoothstep(0.45, 1.0, qb.x)) * (1.0 - smoothstep(0.3, 1.0, qb.y));
+      sobre(Q, B, pr.rgb, pr.a * mascara(uProyLado[ i ], ol.x) * mix(1.0, borde, uLejos));
     }
   }
   #pragma unroll_loop_end
@@ -749,13 +754,13 @@ export async function crearCiudad(THREE, { url, local, sol, vistas, alturas = []
     // y los postes que no están en edificios.json) no choca con ningún volumen y se perdía. Cae sobre un arco de
     // cilindro alrededor del proyector, a RADIO_CIELO metros, que abarca la imagen. Como recibe sólo los rayos que
     // no encontraron nada antes, techos, paredes y calles siguen recibiendo lo suyo. Se enciende al llegar al punto
-    // de vista (ver setCamara): visto desde lejos sería un panel suelto en el aire.
+    // de vista (ver setCamara); desde lejos queda tenue (CIELO_TENUE), detrás de los techos y con el borde fundido.
     // Con `telon` (la panorámica del dron) no va: el telón lejano ya recibe el cielo, y este arco, a 350 m, recibía
     // casi toda la foto (el mapa de profundidad no tiene el piso) por delante de la ciudad. Desde el dron calzaba,
     // pero apenas la cámara se movía se corría con mucha paralaje mientras se apagaba: una doble imagen.
     if (!v.isometrica && !telon) {
       p.cielo = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.ShaderMaterial({
-        uniforms: { uRanura: { value: new Array(MAX_PROY).fill(0) }, uOp: { value: 0 } },   // + los compartidos, más abajo (uniforms todavía no existe)
+        uniforms: { uRanura: { value: new Array(MAX_PROY).fill(0) }, uOp: { value: 0 }, uLejos: { value: 1 } },   // + los compartidos, más abajo (uniforms todavía no existe)
         vertexShader: VERT_TELON, fragmentShader: FRAG_CIELO, side: THREE.DoubleSide,
         transparent: true, depthWrite: false,
         blending: THREE.CustomBlending, blendSrc: THREE.OneFactor, blendDst: THREE.OneMinusSrcAlphaFactor,
@@ -889,6 +894,7 @@ export async function crearCiudad(THREE, { url, local, sol, vistas, alturas = []
   for (const p of proys) grupo.add(p.fondo);
   for (const p of proys) if (p.cielo) { Object.assign(p.cielo.material.uniforms, { ...uniforms, ...p.cielo.material.uniforms }); grupo.add(p.cielo); }
   // cielos: la ranura de su proyector (si la tiene, y ya con su mapa de profundidad) y la opacidad según la cámara
+  let olaF = 0;   // avance de la ola en curso (setIntensidades)
   function actualizarCielos() {
     const cam = uniforms.uCamara.value;
     for (const p of proys) {
@@ -896,10 +902,17 @@ export async function crearCiudad(THREE, { url, local, sol, vistas, alturas = []
       const i = ranuras.findIndex((r) => r.p === p && !r.sucio);
       const d = Math.hypot(cam.x - p.v.pos[0], cam.y - p.v.pos[1], cam.z - p.v.pos[2]);
       const llega = p.v.cieloLlega || CIELO_LLEGA;   // (la foto del arranque lo trae desde más lejos: ver mapa.js)
-      const t = Math.min(1, Math.max(0, (llega - d) / (llega - 1.5)));
-      const k = i >= 0 ? p.int * t * t * (3 - 2 * t) : 0;
+      const t = Math.min(1, Math.max(0, (llega - d) / (llega - 1.5))), st = t * t * (3 - 2 * t);
+      // desde lejos (la vereda) queda tenue, detrás de los techos (los volúmenes lo tapan), con el borde fundido;
+      // entero sólo al llegar al punto de vista
+      let k = i >= 0 ? p.int * Math.max(CIELO_TENUE, st) : 0;
+      // en una ola, el cielo de la imagen que se va se apaga apenas empieza (antes de que la cámara se aleje un metro
+      // hacia la vista siguiente): a 350 m el telón se queda quieto en la pantalla mientras la fachada se achica, y se
+      // veía la parte alta de la foto repetida encima de ella (Top Cigars: de la foto de cerca a la de enfrente)
+      if (i >= 0 && uniforms.uProyLado.value[i] < 0) { const q = Math.min(1, olaF / 0.05); k *= 1 - q * q * (3 - 2 * q); }
       p.cielo.material.uniforms.uRanura.value.forEach((_, j, a) => (a[j] = j === i ? 1 : 0));
       p.cielo.material.uniforms.uOp.value = k;
+      p.cielo.material.uniforms.uLejos.value = 1 - st;
       p.cielo.visible = k > 0.003;
     }
   }
@@ -1049,6 +1062,7 @@ export async function crearCiudad(THREE, { url, local, sol, vistas, alturas = []
       else uniforms.uOla.value.w = -1;
       uniforms.uOlaLuz.value = ola ? ola.luz : 0;
       uniforms.uOlaFin.value = ola ? ola.fin || 0 : 0;
+      olaF = ola ? ola.f || 0 : 0;
       actualizarCielos();
     },
     setCaminante(x, y, linterna) {

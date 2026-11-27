@@ -51,6 +51,8 @@
 //                zoom: se aleja mientras cierra el campo de visión y la ciudad se aplana hasta volverse maqueta.
 //    corte     → (opcional) true: oculta los volúmenes que quedan entre la cámara y el lugar (como en los dioramas),
 //                para fotos cuya cámara queda dentro o detrás de edificios de la maqueta.
+//    profundidad → (opcional) metros del punto de vista a lo que muestra la foto, sobre su eje: ahí va la mira (para el
+//                vuelo y para la ola). Para fotos calibradas sin pares, a las que calibrar.html les deja la mira a 80 m.
 //    llega     → (opcional) 'fundido': no se vuela desde la vista anterior. Ésta se apaga, la cámara corta a oscuras
 //                y la nueva se enciende ya recompuesta (2,4 s en vez de 6). Para cuando el vuelo sólo muestra mapa vacío.
 //  desdeLejos  → (opcional) true: la huella se ve desde lejos (no espera a que el caminante se acerque) y va una capa
@@ -58,6 +60,8 @@
 //  fondo       → (opcional, en una vista) true: mientras la cámara está con el caminante, esa imagen queda como textura
 //                en las paredes, DEBAJO de las demás vistas del lugar (la huella va encima). Cuando la cámara sale hacia
 //                un punto de vista se apaga: ahí se ve sólo la foto que se está por mirar (Ball & Chain: la esquina).
+//  sobre       → (opcional, en una vista) posición de otra vista del lugar (desde 0) que queda encendida DEBAJO mientras
+//                se mira ésta, como su contexto (Cubaocho: el detalle de la entrada dentro de la foto frontal).
 //  sinHuella   → (opcional) true: el lugar no deja huella; al terminar el travelling su imagen se apaga del todo.
 //  conCaminante→ (opcional) true: la huella se ve entera desde lejos siempre que la cámara está en los ojos del caminante,
 //                aunque él esté mirando otro lugar (sin subir de capa, a diferencia de desdeLejos).
@@ -315,7 +319,7 @@ window.RECORRIDO = {
       // Por las personas: ≈ 15,6 m de ancho en la pared y las cabezas bien debajo del centro → cámara
       // a 1,6 m inclinada ~8° hacia arriba (el centro de la foto cae a ~4,3 m en la pared).
       // La artista marcó que se oye a las 4:29.5, a la ida (vereda norte, frente a la puerta): se dispara ahí.
-      lugar: 'Top Cigars · Skinny Louie', tipo: 'photograph', punto: { lat: 25.7657638, lng: -80.220608 }, radio: 4,
+      lugar: 'Top Cigars · Skinny Louie', tipo: 'photograph', punto: { lat: 25.7657638, lng: -80.220608 }, radio: 2,
       // Desde el 26/11/2026 son dos fotos: primero la de cerca (de día, desde el cordón) y después la de noche desde
       // enfrente. Las dos quedan como huella, superpuestas, la de cerca encima (como El Cristo).
       vistas: [
@@ -323,7 +327,7 @@ window.RECORRIDO = {
         // vereda norte: Kung Fu Chicken, Top Cigars (1551, al centro) y Skinny Louie. Cámara horizontal ajustada a dónde
         // deja la foto de noche los bordes del frente de Top Cigars (5,3 m), el 1551 y el pie de la puerta (así las dos
         // huellas calzan): a 5,7 m del frente y a 1,54 m, ~50 px de error.
-        { imagen: 'registros/top-cigars-foto-01.webp', apertura: 102, rumbo: 0, cabeceo: 0, giro: 0, huella: true,
+        { imagen: 'registros/top-cigars-foto-01.webp', apertura: 102, rumbo: 0, cabeceo: 0, giro: 0, huella: true, profundidad: 4.7,
           camara: { lat: 25.7657309, lng: -80.2206255, alt: 1.54 }, mira: { lat: 25.765782, lng: -80.2206255, alt: 1.54 } },
         // El borde derecho de Skinny Louie (u ≈ 0,81; a la derecha empieza el edificio blanco de dos pisos) cae en el
         // final del volumen (lng −80.220553): con ≈ 14,6 m de pared en la foto, el centro queda 1 m al este del pin.
@@ -331,7 +335,7 @@ window.RECORRIDO = {
         // pasaje de 2,7 m: cae en la pared oeste de ese volumen con ~20 px de diferencia. El borde de arriba de la
         // fachada (y ≈ 492 de 1200 px) queda a 5,3 m en la pared: esa es la altura del volumen en calibracion.js →
         // alturas (con más, el cielo de la foto caía sobre la pared).
-        { imagen: 'registros/top-cigars-foto-00.webp', apertura: 43, huella: true,
+        { imagen: 'registros/top-cigars-foto-00.webp', apertura: 43, huella: true, profundidad: 18.3,
           camara: { lat: 25.765605, lng: -80.220598, alt: 1.6 }, mira: { lat: 25.765782, lng: -80.220598, alt: 4.3 } }
       ]
     },
@@ -391,9 +395,10 @@ window.RECORRIDO = {
       // mientras él mira hacia Guantanamera), DEBAJO de las fotos de Guantanamera (que van una capa más arriba).
       // Desde el 26/11 son tres fotos (pedido de la artista): la frontal, el detalle de la entrada y la de la esquina, en
       // ese orden (la última queda al oeste, cerca de por donde va el caminante: la vuelta es corta). contempla/traslado:
-      // 4,5 s en cada una y 4,5 s de una a otra, para que el travelling llene el hueco hasta Ball & Chain sin demorarlo.
+      // 4 s en cada una y 4,5 s de una a otra, para que el travelling llene el hueco hasta Ball & Chain sin demorarlo
+      // (la vuelta dura ~8 s: la esquina mira al ENE y el caminante va al oeste, ver GIRO_VUELTA en mapa.js).
       lugar: 'Cubaocho', tipo: 'photograph', punto: { lat: 25.7658038, lng: -80.2192855 }, radio: 4, conCaminante: true,
-      contempla: 4.5, traslado: 4.5,
+      contempla: 4, traslado: 4.5,
       vistas: [
         // fachadas/drive/cubaocho/Cuba 8 1759.jpg — Cubaocho desde la vereda de enfrente (24 mm eq., 71,6°), de noche.
         // La esquina del edificio con la 15 Av. (u ≈ 0,02) va en la esquina del volumen (lng −80.219395); la escala sale
@@ -408,18 +413,22 @@ window.RECORRIDO = {
         // su calibración: las cuatro esquinas del vano (1,7 × 2,4 m) caen en el frente del volumen en lng −80.219293 …
         // −80.219276 (el umbral, en el piso, para que la alfombra quede en la vereda). Cámara a 3 m, a 1,3 m de altura,
         // mirando apenas hacia abajo (error ~13 px).
-        { imagen: 'registros/cubaocho-foto-01.webp', apertura: 71.6, rumbo: -2.3, cabeceo: 4.65, giro: 0.59,
+        // sobre: 0 → mientras se mira el detalle, la foto frontal queda encendida debajo, como su contexto (si no, el
+        // detalle se veía como una foto plana sobre negro).
+        { imagen: 'registros/cubaocho-foto-01.webp', sobre: 0, apertura: 71.6, rumbo: -2.3, cabeceo: 4.65, giro: 0.59,
           camara: { lat: 25.7657919, lng: -80.2192824, alt: 1.31 }, mira: { lat: 25.7658209, lng: -80.2192843, alt: 1.5 } },
         // fachadas/drive/cubaocho/Esquina de cuba 8 1758.jpg — el edificio desde la esquina SO de la 15 Av., de noche
         // (21 mm eq., ≈ 79° en 4:3): se ve la pared que da a la 15 Av. (la de la torre) y el frente sobre la Calle 8, que
         // se aleja hacia el este. A la izquierda, el Little Havana Cigar Factory; a la derecha, el arco del Domino Park.
-        // Cámara estimada (sin calibrar): el punto de fuga de la Calle 8 (cordón y línea de la ciclovía, u ≈ 0,76,
-        // v ≈ 0,55) da el rumbo y el cabeceo; la esquina del volumen (u ≈ 0,41) y la altura de su base (v ≈ 0,59), la
-        // posición: sobre el cordón sur, frente al Tower, ~10 m al oeste de la 15 Av. ⚠ Pasarla por calibrar.html.
-        // corte: la cámara calibrada (4,1 m) queda dentro de un volumen de 5 m de la vereda sur y la mirada atraviesa otros
-        // dos: se ocultan, como en los dioramas (si no, al ir a esta vista la pantalla se llenaba de negro).
-        { imagen: 'registros/cubaocho-esquina-00.webp', apertura: 79.1, rumbo: 67.3, cabeceo: -3.4, giro: 0, corte: true,
-          camara: { lat: 25.765661, lng: -80.219684, alt: 1.5 }, mira: { lat: 25.765779, lng: -80.219371, alt: 3.5 } }
+        // Cámara ajustada (27/11, también en calibracion.js) al punto de fuga de la Calle 8 (cordón y línea de la
+        // ciclovía, u ≈ 0,76, v ≈ 0,55), a la base de la esquina del volumen (u ≈ 0,41) y al final de la pared de la 15 Av.
+        // (u ≈ 0,13), CON LA CÁMARA EN LA CALLE: a 1,5 m, junto al cordón sur, ~20 m al oeste de la 15 Av. (la esquina del
+        // Tower cae a la derecha, en la vereda con el poste). La calibración anterior la había llevado a 4,1 m de altura
+        // adentro del volumen vecino del Tower: sus paredes tapaban la foto y el vuelo entraba en la caja (todo negro); por
+        // eso tenía `corte`, que ya no hace falta. La foto no puede ser de ahí (se ven la rampa y las baldosas a los pies).
+        // Lo que no calza (~40 px en la esquina y en el final de la pared) es error de los volúmenes de OSM.
+        { imagen: 'registros/cubaocho-esquina-00.webp', apertura: 79.1, rumbo: 68.72, cabeceo: -3.99, giro: 0,
+          camara: { lat: 25.7656396, lng: -80.2197839, alt: 1.5 }, mira: { lat: 25.7657534, lng: -80.2194594, alt: 3.94 } }
       ]
     },
     {
@@ -440,7 +449,7 @@ window.RECORRIDO = {
       // los dos carteles OPEN y la puerta (jamba y pie) caen en el frente del volumen; la entrada se ajustó a esos puntos
       // y el detalle, a los de la entrada (OPEN, taza, jamba, mapa). Errores de ~20 y ~30 px. Los carteles de arriba
       // (RESTAURANT) en la foto del edificio caen detrás del volumen, en el cielo de la proyección: ahí no calzan.
-      lugar: 'El Cristo Restaurant', tipo: 'photograph', punto: { lat: 25.7657697, lng: -80.220411 }, radio: 4,
+      lugar: 'El Cristo Restaurant', tipo: 'photograph', punto: { lat: 25.7657697, lng: -80.220411 }, radio: 16,
       vistas: [
         // fachadas/drive/el-cristo-restaurant/El Cristo Restaurant _1590.jpeg — iPhone, 24 mm eq. (71,6°): la puerta abierta,
         // el cartel OPEN, la taza de café y la ventana con los mapas de Cuba.

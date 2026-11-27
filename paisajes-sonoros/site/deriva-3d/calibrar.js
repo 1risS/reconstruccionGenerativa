@@ -27,6 +27,10 @@ const ARCHIVO = window.CALIBRACION || { vistas: {}, alturas: [] };
 let borrador = null;
 try { borrador = JSON.parse(localStorage.getItem(CLAVE) || 'null'); } catch (e) {}
 let ALTURAS = (borrador && borrador.alturas) || [...(ARCHIVO.alturas || [])];
+// de qué calibración parte esta página (o el borrador): al guardar, el servidor aplica sólo lo que cambió respecto de
+// ella (ver guardarCalibracion en servidor-local.mjs). Un borrador viejo, sin base, no cuenta como cambio.
+let BASE = JSON.parse(JSON.stringify((borrador && (borrador.base || borrador.vistas)) || ARCHIVO.vistas || {}));
+let BASE_ALTURAS = JSON.parse(JSON.stringify((borrador && (borrador.baseAlturas || borrador.alturas)) || ARCHIVO.alturas || []));
 
 const LISTA = [];
 (R.proyecciones || []).forEach((p) => p.vistas.forEach((v, k) => LISTA.push({ p, k, def: v })));
@@ -661,7 +665,7 @@ function todo() {
 const ESTADO_ARCHIVO = JSON.stringify({ vistas: ARCHIVO.vistas || {}, alturas: ARCHIVO.alturas || [] });
 function guardarBorrador() {
   const c = todo();
-  try { localStorage.setItem(CLAVE, JSON.stringify(c)); } catch (e) {}
+  try { localStorage.setItem(CLAVE, JSON.stringify({ ...c, base: BASE, baseAlturas: BASE_ALTURAS })); } catch (e) {}
   const sucio = JSON.stringify(c) !== ESTADO_ARCHIVO;
   $('#estado').textContent = sucio ? 'cambios sin guardar en calibracion.js' : 'guardado';
   $('#estado').classList.toggle('sucio', sucio);
@@ -669,9 +673,11 @@ function guardarBorrador() {
 $('#guardar').addEventListener('click', async () => {
   const c = todo();
   try {
-    const r = await fetch('guardar-calibracion', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(c) });
+    const r = await fetch('guardar-calibracion', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...c, base: BASE, baseAlturas: BASE_ALTURAS }) });
     if (!r.ok) throw new Error(r.status);
     ARCHIVO.vistas = c.vistas; ARCHIVO.alturas = c.alturas;
+    BASE = clonar(c.vistas); BASE_ALTURAS = clonar(c.alturas);
     try { localStorage.removeItem(CLAVE); } catch (e) {}
     borrador = null;
     $('#estado').textContent = 'guardado en calibracion.js';

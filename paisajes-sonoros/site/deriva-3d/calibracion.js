@@ -513,18 +513,18 @@ window.CALIBRACION = {
     },
     "registros/calle-8-1652-foto-00.webp": {
       "camara": {
-        "lat": 25.7655891,
-        "lng": -80.2219543,
+        "lat": 25.7656359,
+        "lng": -80.2219557,
         "alt": 3.07
       },
       "mira": {
-        "lat": 25.7648708,
-        "lng": -80.2219348,
+        "lat": 25.7649176,
+        "lng": -80.2219734,
         "alt": 7.26
       },
-      "rumbo": 178.5,
+      "rumbo": 181.209,
       "cabeceo": 0,
-      "giro": 1.902,
+      "giro": 1.14,
       "apertura": 108.416,
       "centro": [
         0,
@@ -576,22 +576,22 @@ window.CALIBRACION = {
     },
     "registros/cubaocho-esquina-00.webp": {
       "camara": {
-        "lat": 25.7655753,
-        "lng": -80.2197867,
-        "alt": 4.13
+        "lat": 25.7656396,
+        "lng": -80.2197839,
+        "alt": 1.5
       },
       "mira": {
-        "lat": 25.765883,
-        "lng": -80.2190653,
-        "alt": 7.51
+        "lat": 25.7657534,
+        "lng": -80.2194594,
+        "alt": 3.94
       },
-      "rumbo": 60.28,
-      "cabeceo": 2.391,
+      "rumbo": 68.72,
+      "cabeceo": -3.99,
       "giro": 0,
       "apertura": 79.1,
       "centro": [
-        -0.0929,
-        -0.1363
+        0,
+        0
       ],
       "pares": [
         {
@@ -619,6 +619,27 @@ window.CALIBRACION = {
       "centro": [
         0.0948,
         0.0588
+      ],
+      "pares": []
+    },
+    "registros/cubaocho-foto-01.webp": {
+      "camara": {
+        "lat": 25.7657919,
+        "lng": -80.2192824,
+        "alt": 1.31
+      },
+      "mira": {
+        "lat": 25.7665086,
+        "lng": -80.2193144,
+        "alt": 0
+      },
+      "rumbo": -2.3,
+      "cabeceo": 4.65,
+      "giro": -0.506,
+      "apertura": 71.6,
+      "centro": [
+        0,
+        -0.0064
       ],
       "pares": []
     }

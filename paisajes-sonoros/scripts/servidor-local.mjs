@@ -1,7 +1,7 @@
 // Servidor estático para probar en la red local (con soporte Range para audio en iOS).
 // Genera QR de prueba en qrs/prueba-local/ apuntando a la IP de esta computadora.
 import http from "node:http";
-import { createReadStream, statSync, writeFileSync } from "node:fs";
+import { createReadStream, statSync, writeFileSync, readFileSync } from "node:fs";
 import { networkInterfaces } from "node:os";
 import { join, extname, normalize } from "node:path";
 import { execFileSync } from "node:child_process";
@@ -22,6 +22,25 @@ function guardarCalibracion(req, res) {
     try {
       const c = JSON.parse(cuerpo);
       if (typeof c !== "object" || !c.vistas || !Array.isArray(c.alturas)) throw new Error("formato");
+      // FUSIÓN: la página manda también la calibración de la que partió (`base`). Sólo se aplica lo que cambió respecto de
+      // esa base; lo demás queda como está en el archivo. Si no, una página abierta desde antes (o un borrador viejo en
+      // localStorage) devolvía las otras vistas a lo que eran cuando se abrió (la esquina de Cubaocho, 27/11).
+      if (c.base && typeof c.base === "object") {
+        const archivo = join(ROOT, "deriva-3d/calibracion.js");
+        let actual = { vistas: {}, alturas: [] };
+        try {
+          const txt = readFileSync(archivo, "utf8");
+          actual = JSON.parse(txt.slice(txt.indexOf("{"), txt.lastIndexOf("}") + 1));
+        } catch {}
+        const igual = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+        const vistas = { ...(actual.vistas || {}) };
+        for (const k of new Set([...Object.keys(c.vistas), ...Object.keys(c.base)])) {
+          if (igual(c.vistas[k], c.base[k])) continue;          // no lo tocó esta página
+          if (c.vistas[k] === undefined) delete vistas[k]; else vistas[k] = c.vistas[k];
+        }
+        const alturas = c.baseAlturas && igual(c.alturas, c.baseAlturas) ? actual.alturas || [] : c.alturas;
+        c.vistas = vistas; c.alturas = alturas;
+      }
       const js = "// Cámaras calibradas con calibrar.html (se genera solo al tocar \"Guardar\"; no hace falta editarlo).\n" +
         "// Tienen prioridad sobre camara / mira / apertura de recorrido.js.\n" +
         `window.CALIBRACION = ${JSON.stringify({ vistas: c.vistas, alturas: c.alturas }, null, 2)};\n`;
