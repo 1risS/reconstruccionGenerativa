@@ -1005,7 +1005,7 @@ export async function crearCiudad(THREE, { url, local, sol, vistas, alturas = []
         if (!r.p) return;
         if (!r.rt) r.rt = objetivo(2048);
         const v = r.p.v;
-        corteProf.uK.value = v.isometrica ? 1 : 0;
+        corteProf.uK.value = v.isometrica || v.corte ? 1 : 0;   // (corte: fotos tomadas desde detrás de volúmenes)
         corteProf.uDesde.value.set(...v.pos); corteProf.uHasta.value.set(...v.mira);
         renderer.setRenderTarget(r.rt); renderer.clear(); renderer.render(escenaProf, r.p.cam);
         uniforms.uProyProf.value[i] = r.rt.depthTexture;
@@ -1023,15 +1023,19 @@ export async function crearCiudad(THREE, { url, local, sol, vistas, alturas = []
     // arr[k] = intensidad de vistas[k]. Reparte las ranuras: la vista que ya tiene una la conserva mientras se vea;
     // si hay más vistas encendidas que ranuras, quedan afuera las más tenues.
     // ola (opcional): { lados: { [k]: +1 entra | −1 sale }, centro: [x, y, z], radio, luz } → ver ola() en los shaders
-    setIntensidades(arr, ola = null) {
+    // prio (opcional): prioridad de cada vista para repartir las ranuras (por defecto, su intensidad). mapa.js le suma
+    // la cercanía al caminante: si no, todas las huellas en reposo empatan y las de los lugares que ya quedaron atrás
+    // no dejan entrar a las del lugar al que se llega (El Cristo: tres huellas superpuestas).
+    setIntensidades(arr, ola = null, prio = null) {
       const w = (p) => (p && p.listo ? arr[p.idx] || 0 : 0);
+      const pr = (p) => (w(p) ? (prio ? prio[p.idx] : arr[p.idx]) || 0 : 0);
       for (const r of ranuras) if (r.p && w(r.p) < 0.002) r.p = null;
-      const faltan = proys.filter((p) => w(p) >= 0.002 && !ranuras.some((r) => r.p === p)).sort((a, b) => w(b) - w(a));
+      const faltan = proys.filter((p) => w(p) >= 0.002 && !ranuras.some((r) => r.p === p)).sort((a, b) => pr(b) - pr(a));
       for (const p of faltan) {
         let r = ranuras.find((q) => !q.p);
         if (!r) {
-          r = ranuras.reduce((a, b) => (w(b.p) < w(a.p) ? b : a));
-          if (w(r.p) + 0.05 >= w(p)) continue;
+          r = ranuras.reduce((a, b) => (pr(b.p) < pr(a.p) ? b : a));
+          if (pr(r.p) + 0.05 >= pr(p)) continue;
         }
         r.p = p; r.sucio = true; // el mapa de profundidad y las texturas se cambian en prepasar, antes de dibujar
       }

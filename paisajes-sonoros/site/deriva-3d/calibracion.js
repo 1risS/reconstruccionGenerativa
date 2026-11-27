@@ -600,6 +600,27 @@ window.CALIBRACION = {
           "alt": 0
         }
       ]
+    },
+    "registros/ball-and-chain-esquina-00.webp": {
+      "camara": {
+        "lat": 25.7656379,
+        "lng": -80.2194116,
+        "alt": 1.6
+      },
+      "mira": {
+        "lat": 25.7661024,
+        "lng": -80.2200214,
+        "alt": 3.5
+      },
+      "rumbo": -47.054,
+      "cabeceo": -2.531,
+      "giro": 1.676,
+      "apertura": 52.6,
+      "centro": [
+        0.0948,
+        0.0588
+      ],
+      "pares": []
     }
   },
   "alturas": [

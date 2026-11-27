@@ -49,10 +49,15 @@
 //                por el mismo eje con un teleobjetivo (camara/mira/apertura se dan como si fuera una cámara cercana;
 //                lo calibrado en calibrar.html ya queda lejos). Al ir a ese punto de vista, la cámara hace un dolly
 //                zoom: se aleja mientras cierra el campo de visión y la ciudad se aplana hasta volverse maqueta.
+//    corte     → (opcional) true: oculta los volúmenes que quedan entre la cámara y el lugar (como en los dioramas),
+//                para fotos cuya cámara queda dentro o detrás de edificios de la maqueta.
 //    llega     → (opcional) 'fundido': no se vuela desde la vista anterior. Ésta se apaga, la cámara corta a oscuras
 //                y la nueva se enciende ya recompuesta (2,4 s en vez de 6). Para cuando el vuelo sólo muestra mapa vacío.
 //  desdeLejos  → (opcional) true: la huella se ve desde lejos (no espera a que el caminante se acerque) y va una capa
 //                por encima de las demás imágenes (p. ej. sobre la foto del arranque mientras la cámara camina).
+//  fondo       → (opcional, en una vista) true: mientras la cámara está con el caminante, esa imagen queda como textura
+//                en las paredes, DEBAJO de las demás vistas del lugar (la huella va encima). Cuando la cámara sale hacia
+//                un punto de vista se apaga: ahí se ve sólo la foto que se está por mirar (Ball & Chain: la esquina).
 //  sinHuella   → (opcional) true: el lugar no deja huella; al terminar el travelling su imagen se apaga del todo.
 //  conCaminante→ (opcional) true: la huella se ve entera desde lejos siempre que la cámara está en los ojos del caminante,
 //                aunque él esté mirando otro lugar (sin subir de capa, a diferencia de desdeLejos).
@@ -63,10 +68,11 @@
 //                después la cámara avanza por la vereda hasta alcanzar al caminante (ver ARRANQUE en mapa.js).
 //  No hay máximo de imágenes: se proyectan a la vez sólo las que se están viendo (hasta 6 simultáneas).
 //
-// SONIDOS (descriptores del audio en pantalla, como subtítulos)
-//  desde/hasta → tramo del audio en que se ve el texto. Se ven durante todo el recorrido, también en los travellings
-//                y con la interfaz oculta (tecla H); no sobre la panorámica. Si dos tramos se pisan, gana el primero.
-//  texto       → en inglés (es para el público). Lo que se supone (de dónde sale una música) va con «?» o «probably».
+// SONIDOS (descriptores del audio, en la nota de arriba)
+//  desde/hasta → tramo del audio en que se ve el texto. Van en el mismo lugar que la `nota` de los puntos, que tiene
+//                prioridad (7 s alrededor de cada punto). Se ven también con la interfaz oculta (tecla H); no sobre la
+//                panorámica ni mientras se miran las fotos (travellings). Si dos tramos se pisan, gana el primero.
+//  texto       → en inglés (es para el público), lo más corto posible. Lo supuesto (de dónde sale una música) va con «?».
 //  Salen de escuchar el audio con un clasificador de AudioSet cada 5 s (pájaros, gallo, cencerro, guitarra, violín,
 //  salsa con voz, colectivos, bocinas, un avión, la moto, risas) cruzado con los lugares que marcó la artista.
 //  Ida por la vereda norte hacia el oeste y vuelta por la sur hacia el este: los locales de la vereda por donde
@@ -124,62 +130,62 @@ window.RECORRIDO = {
   // en 14, 16 y 17 Av.); se sacaron. El formato está arriba, en MIRADAS.
   miradas: [],
 
-  // descriptores del audio en pantalla (ver SONIDOS arriba)
+  // descriptores del audio, en la nota de arriba (ver SONIDOS)
   sonidos: [
-    { desde: '0:00',  hasta: '0:12',  texto: 'Birds in the tree by the curb, over the hum of traffic' },
-    { desde: '0:12',  hasta: '0:33',  texto: 'Birdsong, close by. Voices further down the sidewalk' },
-    { desde: '0:33',  hasta: '0:44',  texto: 'Music drifting in from up ahead, on the right' },
-    { desde: '0:44',  hasta: '0:50',  texto: 'A rooster, somewhere behind the buildings' },
-    { desde: '0:50',  hasta: '1:05',  texto: 'A cowbell keeps time: music and chatter spilling out of Guantanamera' },
-    { desde: '1:05',  hasta: '1:20',  texto: 'Birds again, between the voices of passers-by' },
-    { desde: '1:20',  hasta: '1:30',  texto: 'Conversations on the sidewalk, music underneath' },
-    { desde: '1:30',  hasta: '1:46',  texto: 'A guitar strumming, glasses clinking at a bar' },
-    { desde: '1:46',  hasta: '2:05',  texto: 'Live salsa from Ball & Chain, louder as we reach the door' },
-    { desde: '2:05',  hasta: '2:18',  texto: 'The salsa stays behind; people talking in the street' },
-    { desde: '2:18',  hasta: '2:35',  texto: 'Traffic on Calle Ocho, a bus idling' },
-    { desde: '2:35',  hasta: '2:45',  texto: 'A bus and a truck pass close by' },
-    { desde: '2:45',  hasta: '3:00',  texto: 'Music again from an open doorway, under the voices' },
-    { desde: '3:00',  hasta: '3:05',  texto: 'A door slides open and shut' },
-    { desde: '3:05',  hasta: '3:30',  texto: 'Cars passing on Calle Ocho; the block goes quiet' },
-    { desde: '3:30',  hasta: '3:40',  texto: 'Something metallic clinking nearby: keys, glasses?' },
-    { desde: '3:40',  hasta: '3:50',  texto: 'Voices, and music from a shop on the right' },
-    { desde: '3:50',  hasta: '4:08',  texto: 'A guitar and a violin, probably from El Cristo Restaurant' },
-    { desde: '4:08',  hasta: '4:22',  texto: 'The music stays with us while cars go by' },
-    { desde: '4:22',  hasta: '4:34',  texto: 'Salsa playing loud by the cigar shops; a car horn' },
-    { desde: '4:34',  hasta: '4:47',  texto: 'Waiting at the light on 16th Ave.; music from a car or a shop' },
-    { desde: '4:47',  hasta: '5:08',  texto: 'Crossing 16th Ave.: the music thins out, leaves rustle, distant traffic' },
-    { desde: '5:08',  hasta: '5:14',  texto: 'Wind on the microphone' },
-    { desde: '5:14',  hasta: '5:22',  texto: 'The air brakes of a bus, close by' },
-    { desde: '5:22',  hasta: '5:30',  texto: 'Traffic, and music from a passing car' },
-    { desde: '5:30',  hasta: '5:40',  texto: 'A bus goes by, engine roaring' },
-    { desde: '5:40',  hasta: '6:00',  texto: 'Radios ahead, from the cigar shops on the right' },
-    { desde: '6:00',  hasta: '6:20',  texto: 'Salsa with singing and maracas, probably Los Montaditos, further up the block' },
-    { desde: '6:20',  hasta: '6:40',  texto: 'Talk on the sidewalk; the salsa fades' },
-    { desde: '6:40',  hasta: '6:55',  texto: 'Quieter now: a few voices, a car' },
-    { desde: '6:55',  hasta: '7:03',  texto: 'A plane flies over' },
-    { desde: '7:03',  hasta: '7:19',  texto: 'Voices at the corner, music in the background' },
-    { desde: '7:19',  hasta: '7:32',  texto: "Crossing Calle Ocho at 17th Ave.: a man singing across the street, Tumba'o?" },
-    { desde: '7:32',  hasta: '7:40',  texto: 'Back along the south sidewalk, among voices' },
-    { desde: '7:40',  hasta: '7:55',  texto: "A song in Spanish, a man's voice, coming from Sala'o up ahead" },
-    { desde: '7:55',  hasta: '8:05',  texto: 'A car passes over the music' },
-    { desde: '8:05',  hasta: '8:20',  texto: 'Traffic, a horn, a door sliding' },
-    { desde: '8:20',  hasta: '8:30',  texto: 'A heavy truck rumbles by' },
-    { desde: '8:30',  hasta: '8:35',  texto: 'A sudden thud nearby' },
-    { desde: '8:35',  hasta: '8:55',  texto: 'Cars passing; someone revs an engine' },
-    { desde: '8:55',  hasta: '9:20',  texto: 'Voices, and soft music from a doorway' },
-    { desde: '9:20',  hasta: '9:35',  texto: 'Salsa from Ciao Havana, on the right' },
+    { desde: '0:00',  hasta: '0:12',  texto: 'Birds in the tree, traffic' },
+    { desde: '0:12',  hasta: '0:33',  texto: 'Birdsong, distant voices' },
+    { desde: '0:33',  hasta: '0:44',  texto: 'Music ahead, on the right' },
+    { desde: '0:44',  hasta: '0:50',  texto: 'A rooster' },
+    { desde: '0:50',  hasta: '1:05',  texto: 'Cowbell and music from Guantanamera' },
+    { desde: '1:05',  hasta: '1:20',  texto: 'Birds, passers-by' },
+    { desde: '1:20',  hasta: '1:30',  texto: 'Chatter over music' },
+    { desde: '1:30',  hasta: '1:46',  texto: 'Guitar, clinking glasses' },
+    { desde: '1:46',  hasta: '2:05',  texto: 'Live salsa, Ball & Chain' },
+    { desde: '2:05',  hasta: '2:18',  texto: 'Salsa fading, street talk' },
+    { desde: '2:18',  hasta: '2:35',  texto: 'Traffic, an idling bus' },
+    { desde: '2:35',  hasta: '2:45',  texto: 'A bus and a truck' },
+    { desde: '2:45',  hasta: '3:00',  texto: 'Music from a doorway' },
+    { desde: '3:00',  hasta: '3:05',  texto: 'A sliding door' },
+    { desde: '3:05',  hasta: '3:30',  texto: 'Passing cars' },
+    { desde: '3:30',  hasta: '3:40',  texto: 'Clinking: keys, glasses?' },
+    { desde: '3:40',  hasta: '3:50',  texto: 'Voices, music from a shop' },
+    { desde: '3:50',  hasta: '4:08',  texto: 'Guitar and violin, El Cristo?' },
+    { desde: '4:08',  hasta: '4:22',  texto: 'Music, passing cars' },
+    { desde: '4:22',  hasta: '4:34',  texto: 'Loud salsa, a car horn' },
+    { desde: '4:34',  hasta: '4:47',  texto: 'Music from a car?' },
+    { desde: '4:47',  hasta: '5:08',  texto: 'Music thins, leaves rustle' },
+    { desde: '5:08',  hasta: '5:14',  texto: 'Wind on the mic' },
+    { desde: '5:14',  hasta: '5:22',  texto: 'Bus air brakes' },
+    { desde: '5:22',  hasta: '5:30',  texto: 'Music from a passing car' },
+    { desde: '5:30',  hasta: '5:40',  texto: 'A bus engine' },
+    { desde: '5:40',  hasta: '6:00',  texto: 'Radios from the cigar shops' },
+    { desde: '6:00',  hasta: '6:20',  texto: 'Salsa and maracas, Los Montaditos?' },
+    { desde: '6:20',  hasta: '6:40',  texto: 'Talk, salsa fading' },
+    { desde: '6:40',  hasta: '6:55',  texto: 'A few voices, a car' },
+    { desde: '6:55',  hasta: '7:03',  texto: 'A plane overhead' },
+    { desde: '7:03',  hasta: '7:19',  texto: 'Voices at the corner' },
+    { desde: '7:19',  hasta: '7:32',  texto: "A man singing across, Tumba'o?" },
+    { desde: '7:32',  hasta: '7:40',  texto: 'Voices on the south sidewalk' },
+    { desde: '7:40',  hasta: '7:55',  texto: "A song in Spanish, Sala'o?" },
+    { desde: '7:55',  hasta: '8:05',  texto: 'A car over the music' },
+    { desde: '8:05',  hasta: '8:20',  texto: 'Traffic, a horn, a door' },
+    { desde: '8:20',  hasta: '8:30',  texto: 'A heavy truck' },
+    { desde: '8:30',  hasta: '8:35',  texto: 'A thud' },
+    { desde: '8:35',  hasta: '8:55',  texto: 'Cars, a revving engine' },
+    { desde: '8:55',  hasta: '9:20',  texto: 'Voices, soft music' },
+    { desde: '9:20',  hasta: '9:35',  texto: 'Salsa, Ciao Havana' },
     { desde: '9:35',  hasta: '9:45',  texto: 'Laughter at the tables' },
-    { desde: '9:45',  hasta: '10:00', texto: "A loud song, a man singing, probably Alfaro's, on the right" },
-    { desde: '10:00', hasta: '10:15', texto: 'A crowd talking over the music at El Pub, on the corner' },
-    { desde: '10:15', hasta: '10:25', texto: 'Crossing 16th Ave. again, quieter' },
-    { desde: '10:25', hasta: '11:00', texto: 'A woman singing from a speaker, among the voices' },
-    { desde: '11:00', hasta: '11:15', texto: 'A guitar and a violin under the conversations' },
-    { desde: '11:15', hasta: '11:30', texto: 'Voices close by, at a coffee window: La Colada Gourmet?' },
-    { desde: '11:30', hasta: '12:00', texto: 'A man talking, cars passing by' },
-    { desde: '12:00', hasta: '12:05', texto: 'Faint music somewhere' },
-    { desde: '12:05', hasta: '12:12', texto: 'A motorbike speeds past' },
-    { desde: '12:12', hasta: '12:23', texto: 'Footsteps and voices on the sidewalk' },
-    { desde: '12:23', hasta: '12:40', texto: 'A door opens, music from El Exquisito' }
+    { desde: '9:45',  hasta: '10:00', texto: "A loud song, Alfaro's?" },
+    { desde: '10:00', hasta: '10:15', texto: 'A crowd over music, El Pub' },
+    { desde: '10:15', hasta: '10:25', texto: 'Quieter, crossing 16th Ave.' },
+    { desde: '10:25', hasta: '11:00', texto: 'A woman singing on a speaker' },
+    { desde: '11:00', hasta: '11:15', texto: 'Guitar and violin, voices' },
+    { desde: '11:15', hasta: '11:30', texto: 'Voices at a coffee window' },
+    { desde: '11:30', hasta: '12:00', texto: 'A man talking, cars' },
+    { desde: '12:00', hasta: '12:05', texto: 'Faint music' },
+    { desde: '12:05', hasta: '12:12', texto: 'A motorbike' },
+    { desde: '12:12', hasta: '12:23', texto: 'Footsteps, voices' },
+    { desde: '12:23', hasta: '12:40', texto: 'A door, music from El Exquisito' }
   ],
 
   proyecciones: [
@@ -285,7 +291,7 @@ window.RECORRIDO = {
         // volumen de 60 m). Cámara ajustada con la esquina de la tabaquería (pie y techo) y el cartel verde de Ball & Chain
         // (lng −80.21976, 4,1 m): ~36 px de error. El primer piso de la tabaquería es más alto que el volumen (6 m, que
         // manda Ball & Chain): esa parte cae en el cielo de la proyección.
-        { imagen: 'registros/ball-and-chain-esquina-00.webp', tipo: 'photograph', apertura: 52.6, rumbo: -49.16, cabeceo: 0.05, giro: 0,
+        { imagen: 'registros/ball-and-chain-esquina-00.webp', tipo: 'photograph', apertura: 52.6, fondo: true, rumbo: -49.16, cabeceo: 0.05, giro: 0,
           camara: { lat: 25.7657013, lng: -80.2194593, alt: 1.5 }, mira: { lat: 25.7658188, lng: -80.2196101, alt: 1.48 } },
         // Los dioramas se encajan para que el FRENTE DE BALL & CHAIN coincida con el de la foto (pedido de la artista):
         // base de la fachada en el piso, borde del toldo a 2,34 m y cartel «BALL & CHAIN» a 3,76–4,43 m, como en la foto,
@@ -410,7 +416,9 @@ window.RECORRIDO = {
         // Cámara estimada (sin calibrar): el punto de fuga de la Calle 8 (cordón y línea de la ciclovía, u ≈ 0,76,
         // v ≈ 0,55) da el rumbo y el cabeceo; la esquina del volumen (u ≈ 0,41) y la altura de su base (v ≈ 0,59), la
         // posición: sobre el cordón sur, frente al Tower, ~10 m al oeste de la 15 Av. ⚠ Pasarla por calibrar.html.
-        { imagen: 'registros/cubaocho-esquina-00.webp', apertura: 79.1, rumbo: 67.3, cabeceo: -3.4, giro: 0,
+        // corte: la cámara calibrada (4,1 m) queda dentro de un volumen de 5 m de la vereda sur y la mirada atraviesa otros
+        // dos: se ocultan, como en los dioramas (si no, al ir a esta vista la pantalla se llenaba de negro).
+        { imagen: 'registros/cubaocho-esquina-00.webp', apertura: 79.1, rumbo: 67.3, cabeceo: -3.4, giro: 0, corte: true,
           camara: { lat: 25.765661, lng: -80.219684, alt: 1.5 }, mira: { lat: 25.765779, lng: -80.219371, alt: 3.5 } }
       ]
     },
@@ -424,8 +432,8 @@ window.RECORRIDO = {
       // volúmenes se corrigieron en calibracion.js → alturas (el local, 4,2 m: el borde del cartel; el vecino, 6,8 m: medido en esta foto y en la de Top Cigars).
       // Marcada a las 3:58.2.
       // Desde el 26/11/2026 son tres fotos, de la más chica a la más grande (pedido de la artista): el detalle de la
-      // entrada, la entrada con el cartel y el edificio entero con el cielo. Las tres quedan como huella, superpuestas,
-      // la más chica encima. Se recomponen en ese orden, con la ola entre una y otra.
+      // entrada, la entrada con el cartel y el edificio entero con el cielo. Se recomponen en ese orden, con la ola entre
+      // una y otra. Quedan como huella la primera y la tercera, superpuestas: el edificio entero y el detalle encima.
       // Las dos nuevas son de noche y de cerca, frontales y horizontales. Para que las tres huellas calcen entre sí, sus
       // cámaras no salen de la escena real (el patio y las vidrieras están bajo el toldo, retirados del frente del
       // volumen) sino de dónde deja cada detalle la foto del edificio con su calibración (calibracion.js, encajar.html):
@@ -440,7 +448,8 @@ window.RECORRIDO = {
           camara: { lat: 25.7657538, lng: -80.2203868, alt: 1.88 }, mira: { lat: 25.765791, lng: -80.2203868, alt: 1.88 } },
         // fachadas/drive/el-cristo-restaurant/IMG_1815.HEIC — iPhone, 24 mm eq. (71,6°): la entrada entera bajo el toldo, con
         // el cartel EL CRISTO RESTAURANT arriba.
-        { imagen: 'registros/el-cristo-foto-01.webp', apertura: 71.6, rumbo: 0, cabeceo: 0, giro: 0, huella: true,
+        // (sin huella desde el 27/11: tapaba casi toda la foto del edificio; se ve sólo en el travelling)
+        { imagen: 'registros/el-cristo-foto-01.webp', apertura: 71.6, rumbo: 0, cabeceo: 0, giro: 0,
           camara: { lat: 25.7657247, lng: -80.2204312, alt: 2.32 }, mira: { lat: 25.765791, lng: -80.2204312, alt: 2.32 } },
         { imagen: 'registros/el-cristo-foto-00.webp', apertura: 64, huella: true,
           camara: { lat: 25.765659, lng: -80.220371, alt: 1.6 }, mira: { lat: 25.765791, lng: -80.220371, alt: 1.6 } }

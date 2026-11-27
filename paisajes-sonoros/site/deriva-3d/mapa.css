@@ -198,22 +198,6 @@ body.modo-calle .vineta { opacity: 1; }
 .pie span { font-size: 0.85rem; color: var(--muted); }
 .pie #pie-n:empty { display: none; }
 
-/* ── descriptores del audio (recorrido.js → sonidos) ──
-   Subtítulos de lo que se oye. No son parte de la interfaz: se quedan cuando la tecla H la oculta (ahí bajan al pie
-   de la pantalla). Con la interfaz a la vista van por encima del pie del registro. */
-.sonido {
-  position: fixed; z-index: 4; left: 50%; transform: translate(-50%, 6px);
-  bottom: calc(var(--alto-panel, 0px) + 5.2rem);
-  width: max-content; max-width: min(34rem, calc(100% - 2rem)); margin: 0;
-  font-family: var(--display); font-weight: 400; font-style: italic; font-size: 1.05rem; line-height: 1.25;
-  text-align: center; color: var(--fg); text-wrap: balance;
-  background: var(--panel); padding: 0.3rem 0.8rem; border-radius: 4px;
-  opacity: 0; pointer-events: none;
-  transition: opacity 0.6s, transform 0.6s, bottom 0.8s;
-}
-.sonido.visible { opacity: 1; transform: translate(-50%, 0); }
-body:not(.ui-visible) .sonido { bottom: max(1.5rem, calc(env(safe-area-inset-bottom) + 0.8rem)); }
-
 .fin {
   position: fixed; z-index: 4; left: 0; right: 0; top: 38%; text-align: center; pointer-events: none;
   font-family: var(--display); font-weight: 300; font-style: italic; font-size: 1.8rem; color: var(--fg);
@@ -238,10 +222,11 @@ body.pano-final .fin {
 
 /* ── interfaz: sólo durante el recorrido, y oculta hasta que se aprieta H (mapa.js pone body.ui-visible; la H la muestra y la oculta).
    En la panorámica, la partida, la vuelta y el final no se ve: al final quedan sólo «fin del recorrido» y el botón.
+   La nota de esquina (.estado) no es parte de la interfaz: sigue con la H (mapa.js → sonido decide cuándo se ve).
    Se oculta con opacidad y no con `hidden`: el panel sigue ocupando su lugar y el encuadre de las fotos no salta. */
-.panel, .estado, .seguir, .paletas, .maplibregl-ctrl-bottom-left { transition: opacity 0.8s; }
+.panel, .seguir, .paletas, .maplibregl-ctrl-bottom-left { transition: opacity 0.8s; }
 .maplibregl-ctrl-bottom-right { transition: bottom 0.3s, opacity 0.8s; }
-body:not(.ui-visible) :is(.panel, .estado, .pie, .seguir, .paletas, .maplibregl-ctrl-bottom-right, .maplibregl-ctrl-bottom-left) {
+body:not(.ui-visible) :is(.panel, .pie, .seguir, .paletas, .maplibregl-ctrl-bottom-right, .maplibregl-ctrl-bottom-left) {
   opacity: 0 !important; pointer-events: none !important;
 }
 body:not(.ui-visible) :is(.panel, .paletas) * { visibility: hidden; transition: visibility 0s 0.8s; }   /* sin foco de teclado */
