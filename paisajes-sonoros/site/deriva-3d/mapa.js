@@ -1422,10 +1422,24 @@ const btnSeguir = $('#seguir');
 const SONIDOS = (R.sonidos || []).map((s) => ({ desde: aSeg(s.desde), hasta: aSeg(s.hasta), texto: s.texto }))
   .sort((a, b) => a.desde - b.desde);
 let sonidoTexto = '', sonidoDesde = 0;
+// ANUNCIO DEL LUGAR: antes de cada travelling (salvo el arranque) la nota dice el nombre del lugar (`anuncio` en
+// recorrido.js o, si no, `lugar`): desde ANUNCIO_ANTES s antes de que la cámara deje al caminante (mientras la cabeza
+// ya gira hacia el lugar, ver ANTICIPA) hasta que entra la vista de la foto. Desde ANUNCIO_LIMPIO s antes del nombre y hasta que el travelling vuelve al caminante no hay
+// ningún otro texto (ni notas de los puntos ni descriptores).
+const ANUNCIO_ANTES = 6, ANUNCIO_LIMPIO = 2;
+function anuncio(t) {
+  for (const p of PROYS) {
+    if (p.arranque) continue;
+    const a = p.inicio - ANUNCIO_ANTES;
+    if (t >= a - ANUNCIO_LIMPIO && t < p.hasta) return t >= a && t < p.inicio + p.subida ? p.anuncio || p.lugar : '';
+  }
+  return null;   // fuera de los travellings
+}
 function sonido(t, ahora, enFotos, nota) {
   const ver = !enFotos && iniciado && !terminado && !(pano && !pano.apagando);
-  const s = ver && !nota && SONIDOS.find((x) => t >= x.desde && t < x.hasta);
-  const txt = !ver ? '' : nota || (s ? s.texto : '');
+  const an = anuncio(t);
+  const s = ver && an == null && !nota && SONIDOS.find((x) => t >= x.desde && t < x.hasta);
+  const txt = !ver ? '' : an != null ? an : nota || (s ? s.texto : '');
   if (txt !== sonidoTexto) {
     sonidoTexto = txt;
     elNota.classList.remove('visible');

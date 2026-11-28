@@ -31,6 +31,7 @@
 //  duran 5–8 s cada una; cada vista, 6 s quieta + 6 s de viaje a la siguiente. Si dos lugares se pisan,
 //  el segundo espera. Para ver los tramos calculados: abrir la página con ?tramos (tabla en la consola).
 //  radio       → (opcional) metros alrededor del punto que disparan el travelling (por defecto 15)
+//  anuncio     → (opcional) nombre que anuncia la nota de arriba antes del travelling, si no es `lugar` (ver SONIDOS)
 //  punto       → (opcional) { lat, lng } que dispara el travelling; por defecto, la cámara de la vista huella
 //  repite      → (opcional) se dispara también en las pasadas siguientes, sólo con esas vistas: [0, 2]
 //                (posiciones en la lista de vistas del lugar, desde 0). Sin repite, una sola vez.
@@ -99,6 +100,9 @@
 //                prioridad (7 s alrededor de cada punto). Se ven también con la interfaz oculta (tecla H); no sobre la
 //                panorámica ni mientras se miran las fotos (travellings). Si dos tramos se pisan, gana el primero.
 //  texto       → en inglés (es para el público), lo más corto posible. Lo supuesto (de dónde sale una música) va con «?».
+//  Son un refuerzo de la imagen sonora para cuando no hay nada interesante que mirar (cruces de calle, tramos sin fotos):
+//  no van cerca de las fotos. Antes de cada travelling la nota anuncia el lugar (`anuncio` o `lugar` de la proyección,
+//  mapa.js → anuncio) y desde 2 s antes del nombre hasta que la cámara vuelve al caminante no se ve ningún otro texto.
 //  Salen de escuchar el audio con un clasificador de AudioSet cada 5 s (pájaros, gallo, cencerro, guitarra, violín,
 //  salsa con voz, colectivos, bocinas, un avión, la moto, risas) cruzado con los lugares que marcó la artista.
 //  Ida por la vereda norte hacia el oeste y vuelta por la sur hacia el este: los locales de la vereda por donde
@@ -169,58 +173,17 @@ window.RECORRIDO = {
   sonidos: [
     { desde: '0:00',  hasta: '0:12',  texto: 'Birds in the tree, traffic' },
     { desde: '0:12',  hasta: '0:33',  texto: 'Birdsong, distant voices' },
-    { desde: '0:33',  hasta: '0:44',  texto: 'Music ahead, on the right' },
-    { desde: '0:44',  hasta: '0:50',  texto: 'A rooster' },
-    { desde: '0:50',  hasta: '1:05',  texto: 'Cowbell and music from Guantanamera' },
-    { desde: '1:05',  hasta: '1:20',  texto: 'Birds, passers-by' },
-    { desde: '1:20',  hasta: '1:30',  texto: 'Chatter over music' },
-    { desde: '1:30',  hasta: '1:46',  texto: 'Guitar, clinking glasses' },
-    { desde: '1:46',  hasta: '2:05',  texto: 'Live salsa, Ball & Chain' },
-    { desde: '2:05',  hasta: '2:18',  texto: 'Salsa fading, street talk' },
-    { desde: '2:18',  hasta: '2:35',  texto: 'Traffic, an idling bus' },
-    { desde: '2:35',  hasta: '2:45',  texto: 'A bus and a truck' },
-    { desde: '2:45',  hasta: '3:00',  texto: 'Music from a doorway' },
-    { desde: '3:00',  hasta: '3:05',  texto: 'A sliding door' },
-    { desde: '3:05',  hasta: '3:30',  texto: 'Passing cars' },
-    { desde: '3:30',  hasta: '3:40',  texto: 'Clinking: keys, glasses?' },
-    { desde: '3:40',  hasta: '3:50',  texto: 'Voices, music from a shop' },
-    { desde: '3:50',  hasta: '4:08',  texto: 'Guitar and violin, El Cristo?' },
-    { desde: '4:08',  hasta: '4:22',  texto: 'Music, passing cars' },
-    { desde: '4:22',  hasta: '4:34',  texto: 'Loud salsa, a car horn' },
-    { desde: '4:34',  hasta: '4:47',  texto: 'Music from a car?' },
+    // (de acá hasta El Cristo, las fotos de Guantanamera, Cubaocho y Ball & Chain ya dan qué mirar)
+    { desde: '3:01',  hasta: '3:30',  texto: 'Passing cars' },
     { desde: '4:47',  hasta: '5:08',  texto: 'Music thins, leaves rustle' },
     { desde: '5:08',  hasta: '5:14',  texto: 'Wind on the mic' },
     { desde: '5:14',  hasta: '5:22',  texto: 'Bus air brakes' },
-    { desde: '5:22',  hasta: '5:30',  texto: 'Music from a passing car' },
-    { desde: '5:30',  hasta: '5:40',  texto: 'A bus engine' },
-    { desde: '5:40',  hasta: '6:00',  texto: 'Radios from the cigar shops' },
-    { desde: '6:00',  hasta: '6:20',  texto: 'Salsa and maracas, Los Montaditos?' },
-    { desde: '6:20',  hasta: '6:40',  texto: 'Talk, salsa fading' },
-    { desde: '6:40',  hasta: '6:55',  texto: 'A few voices, a car' },
-    { desde: '6:55',  hasta: '7:03',  texto: 'A plane overhead' },
-    { desde: '7:03',  hasta: '7:19',  texto: 'Voices at the corner' },
-    { desde: '7:19',  hasta: '7:32',  texto: "A man singing across, Tumba'o?" },
-    { desde: '7:32',  hasta: '7:40',  texto: 'Voices on the south sidewalk' },
-    { desde: '7:40',  hasta: '7:55',  texto: "A song in Spanish, Sala'o?" },
-    { desde: '7:55',  hasta: '8:05',  texto: 'A car over the music' },
-    { desde: '8:05',  hasta: '8:20',  texto: 'Traffic, a horn, a door' },
-    { desde: '8:20',  hasta: '8:30',  texto: 'A heavy truck' },
+    { desde: '5:22',  hasta: '5:31',  texto: 'Music from a passing car' },
+    { desde: '6:16',  hasta: '6:40',  texto: 'Talk, salsa fading' },
+    { desde: '7:39',  hasta: '8:05',  texto: "A song in Spanish, Sala'o?" },
     { desde: '8:30',  hasta: '8:35',  texto: 'A thud' },
-    { desde: '8:35',  hasta: '8:55',  texto: 'Cars, a revving engine' },
-    { desde: '8:55',  hasta: '9:20',  texto: 'Voices, soft music' },
-    { desde: '9:20',  hasta: '9:35',  texto: 'Salsa, Ciao Havana' },
-    { desde: '9:35',  hasta: '9:45',  texto: 'Laughter at the tables' },
-    { desde: '9:45',  hasta: '10:00', texto: "A loud song, Alfaro's?" },
-    { desde: '10:00', hasta: '10:15', texto: 'A crowd over music, El Pub' },
-    { desde: '10:15', hasta: '10:25', texto: 'Quieter, crossing 16th Ave.' },
-    { desde: '10:25', hasta: '11:00', texto: 'A woman singing on a speaker' },
-    { desde: '11:00', hasta: '11:15', texto: 'Guitar and violin, voices' },
-    { desde: '11:15', hasta: '11:30', texto: 'Voices at a coffee window' },
-    { desde: '11:30', hasta: '12:00', texto: 'A man talking, cars' },
-    { desde: '12:00', hasta: '12:05', texto: 'Faint music' },
-    { desde: '12:05', hasta: '12:12', texto: 'A motorbike' },
-    { desde: '12:12', hasta: '12:23', texto: 'Footsteps, voices' },
-    { desde: '12:23', hasta: '12:40', texto: 'A door, music from El Exquisito' }
+    { desde: '9:37',  hasta: '9:45',  texto: 'Laughter at the tables' },
+    { desde: '10:14', hasta: '10:30', texto: 'Quieter, crossing 16th Ave.' }
   ],
 
   proyecciones: [
@@ -603,7 +566,7 @@ window.RECORRIDO = {
       // 1,5 m. El pie de las columnas (v ≈ 0,9) da la cámara a ~3,4 m de su frente; las columnas, centradas, la ponen
       // sobre el eje del alero. Con eso el cielorraso llega al bar en v ≈ 0,38 y el techo del bar queda en v ≈ 0,34,
       // como en la foto. ⚠ Sin pasar por calibrar.html. Se descubre a la ida, al pasar por delante (~6:50; se oye desde las 6:09).
-      lugar: 'Los Montaditos', tipo: 'photograph', punto: { lat: 25.765721, lng: -80.222025 }, radio: 4,
+      lugar: 'Los Montaditos', anuncio: '100 Montaditos', tipo: 'photograph', punto: { lat: 25.765721, lng: -80.222025 }, radio: 4,
       vistas: [
         { imagen: 'registros/los-montaditos-foto-00.webp', apertura: 71.6, rumbo: 0, cabeceo: 0, giro: 0,
           camara: { lat: 25.765729, lng: -80.222025, alt: 1.5 }, mira: { lat: 25.765762, lng: -80.222025, alt: 1.5 } }
