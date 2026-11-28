@@ -76,6 +76,8 @@
 //                Antes del travelling no se ve (ni la huella); al empezar, entra con la ola (pixelada, desde el centro hacia
 //                afuera), y si después la huella se apaga mientras se mira otro lugar, vuelve también con la ola.
 //                Con huellas superpuestas (Top Cigars), al empezar entra sólo la primera vista; las demás vuelven al final.
+//  encima      → (opcional) true: las imágenes del lugar van en la capa más alta, sobre las de cualquier otro lugar que
+//                caiga en las mismas paredes, y no pierden su ranura mientras se ven (El Pub: la foto del arbolito la tapaba).
 //  sinFantasma → (opcional) true: en el travelling la ciudad no pasa a Fantasma: queda en Maqueta y se vuelve transparente
 //                a medida que la cámara llega al punto de vista (y opaca al volver al caminante). Va bien con entraConOla.
 //  conCaminante→ (opcional) true: la huella se ve entera desde lejos siempre que la cámara está en los ojos del caminante,
@@ -533,7 +535,7 @@ window.RECORRIDO = {
       // desplazar: coinciden a 1 px, y la altura de la pared que sale del ajuste (4,97 m) es la del volumen (5 m). La ochava
       // del volumen es algo más grande que la real, por eso la cámara queda a 2,4 m de altura. Mira 3,2° hacia abajo.
       // Marcada a las 10:02.7.
-      lugar: 'El Pub Restaurant', tipo: 'photograph', entraConOla: true, sinFantasma: true, punto: { lat: 25.7656115, lng: -80.2205937 }, radio: 4,
+      lugar: 'El Pub Restaurant', tipo: 'photograph', entraConOla: true, sinFantasma: true, encima: true, punto: { lat: 25.7656115, lng: -80.2205937 }, radio: 4,
       vistas: [
         { imagen: 'registros/el-pub-foto-00.webp', apertura: 71.6, rumbo: 135.33, cabeceo: 3.25, giro: 0.48,
           camara: { lat: 25.7656149, lng: -80.220454, alt: 2.39 }, mira: { lat: 25.7655827, lng: -80.220419, alt: 2.1 } }

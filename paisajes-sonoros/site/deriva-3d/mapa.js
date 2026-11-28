@@ -379,6 +379,10 @@ const LUGARES = (R.proyecciones || []).map((p, grupo) => {
     v.sobre = d;
     v.capa = Math.max(v.capa || 0, (d.capa || 0) + 1);
   });
+  // encima (recorrido.js): las imágenes del lugar van en la capa más alta (3), sobre todas las demás. El Pub: la foto del
+  // arbolito (conCaminante, mira calle abajo desde 260 m) y la huella del dron del Tower caen sobre su ochava y la
+  // tapaban apenas entraba con la ola (pedido de la artista, 28/11).
+  if (p.encima) vistas.forEach((v) => (v.capa = 3));
   // punto que dispara el travelling: donde se tomó la foto que queda como huella (o `punto` en recorrido.js)
   const ref = p.punto || (CAL.vistas[huella.imagen] || {}).camara || p.vistas[iHuella].camara;
   // mano del lugar: de qué lado de la calle está la fachada que muestra la huella
@@ -614,6 +618,7 @@ PROYS.forEach((p) => {
   p.radioOla = clamp(d * 1.5 + 60, 120, 320);
 });
 const OLA_VUELVE = 90;   // m: alcance de la ola con que vuelven las `conCaminante` (desde el caminante; ver intensidades)
+const ESPERA_OLA_MAX = 3;    // s que una huella espera la ola para entrar (ENTRAN CON LA OLA)
 const SIN_RANURA_MIN = 0.3;   // s sin ranura a partir de los cuales una imagen que la consigue entra con la ola (ENTRAN CON LA OLA)
 const PRIO_ADELANTE = 25;   // s: ver prio en intensidades()
 const LEJOS_SIEMPRE = 180;   // m: ver prio en intensidades()
@@ -708,14 +713,22 @@ function intensidades(t) {
         // entraConOla con huellas superpuestas (Top Cigars): antes del giro no hay ninguna (aparecían con el fundido de
         // la cercanía, y la segunda de golpe, sobre la vereda, al conseguir ranura); con el giro entra sólo la primera
         // vista, entera, con la ola desde su centro. Las demás vuelven con la ola de vuelta, al terminar el travelling.
+        // La ola de entrada no espera al giro: arranca apenas termina el travelling anterior (si el giro empieza antes, con
+        // él) y dura OLA_HUELLA s. Si esperaba al giro, la pared quedaba lisa, sin textura, los segundos entre la vuelta de
+        // El Cristo y el giro (~4:14), y la ola, atada al avance lento del giro, tardaba otros 2-3 s en verse.
         for (const v of H) arr[v.idx] = 0;
-        if (t >= p.inicio - p.anticipa) {
-          const f = suave((t - p.inicio + p.anticipa) / p.anticipa);
-          if (!ola || ola.cede) {
+        const libre = Math.max(-1e9, ...PROYS.filter((q) => q.grupo !== p.grupo && q.inicio <= t).map((q) => q.hasta + POST));
+        const t0 = Math.min(Math.max(libre, p.inicio - p.anticipa - OLA_HUELLA), p.inicio - p.anticipa);
+        if (t >= t0 && apaga(p) < 0.001 || t >= p.inicio - p.anticipa) {
+          const fG = t >= p.inicio - p.anticipa ? suave((t - p.inicio + p.anticipa) / p.anticipa) : 0;
+          const fE = clamp((t - t0) / OLA_HUELLA, 0, 1);
+          if (fE >= 1) arr[v0] = REPOSO + (1 - REPOSO) * fG;
+          else if (!ola || ola.cede || ola.p === p) {
             soltarCede();
-            arr[v0] = 1;
-            ola = olaEntre(p, [], vPri, f);
-          } else arr[v0] = f;   // (la ola la usa otro lugar: queda el fundido)
+            arr[v0] = REPOSO + (1 - REPOSO) * fG;
+            if (!ola || ola.cede) ola = olaEntre(p, [], [], fE, vPri.mira);
+            ola.radio = p.radioOla * Math.pow(fE, 1.6); ola.fin = suave(clamp((fE - 0.8) / 0.2, 0, 1)); ola.lados[v0] = 1;
+          } else arr[v0] = (REPOSO + (1 - REPOSO) * fG) * fE;   // (la ola la usa otro lugar: queda el fundido)
         }
       } else if (t >= p.inicio - p.anticipa && t < p.inicio) {
         const f = suave((t - p.inicio + p.anticipa) / p.anticipa), salen = H.filter((v) => v !== vPri);
@@ -880,28 +893,42 @@ function intensidades(t) {
       if (olaGira && !vu && !activo(p) && p.grupo !== gira.grupo) { arr[v.idx] = REPOSO * cerca(p) * resto(fGira); ola.lados[v.idx] = -1; }
     }
   }
-  // ENTRAN CON LA OLA: una imagen encendida que no tenía ranura en el shader (las 6 estaban tomadas) y la consigue se
-  // dibujaba entera de golpe (la foto nocturna de la esquina de la 17 Av. camino al Tower, ~11:14: la recuperaba cuando
-  // el dron y Guantanamera se iban con la ola del giro; pedido de la artista, 28/11). Ahora entra con una ola que sale
-  // del caminante, como la vuelta de las `conCaminante`, en OLA_HUELLA s. Si la ola la está usando otro lugar, espera
-  // invisible (con la ranura reservada) hasta que se libere. (Sin ranura por menos de SIN_RANURA_MIN s no cuenta: una
-  // ranura recién asignada no se dibuja en su primer cuadro.)
-  const entranOla = [];   // (ver prio: no pierden la ranura mientras entran o esperan)
+  // ENTRAN CON LA OLA: una de las huellas que acompañan al caminante (conCaminante, desdeLejos…) que perdió su ranura del
+  // shader por haber quedado lejos (a más de LEJOS_SIEMPRE m: ver prio) y la recupera porque otras la sueltan, se
+  // dibujaba entera de golpe (la foto nocturna de la esquina de la 17 Av. camino al Tower, ~11:14, cuando el dron y
+  // Guantanamera se iban con la ola del giro; pedido de la artista, 28/11). Ahora entra con una ola que sale del
+  // caminante, como la vuelta de las `conCaminante`, en OLA_HUELLA s. SÓLO ésas: aplicado a todas las imágenes cambiaba
+  // el reparto de ranuras de todo el recorrido (la vuelta de El Cristo, después de Top Cigars…). (Sin ranura por menos
+  // de SIN_RANURA_MIN s no cuenta: una ranura recién asignada no se dibuja en su primer cuadro. Si ya está en la ola de
+  // otro lugar, ésa la trae.)
+  // Si la ola la está usando otro lugar, queda PENDIENTE y apagada del todo, sin ranura (con una intensidad mínima y la
+  // ranura reservada, las que esperaban les quitaban la ranura a las que se estaban viendo). Cuando la ola se libera,
+  // entra con ella desde 0; si no se libera en ESPERA_OLA_MAX s, entra como antes: esperando más, una huella quedaba
+  // oculta mucho tiempo (Cubaocho, 12 s antes de Ciao Havana).
+  const suaves = [];   // (huellas lejanas que acompañan al caminante: si pierden la ranura se apagan de a poco, ver RELEVO en ciudad.js)
   if (ciudad) {
     for (let k = 0; k < arr.length; k++) {
-      const V = VISTAS[k], en = ciudad.enRanura(k), quiere = arr[k] >= 0.002;
-      if (quiere && !en) { if (V.sinRanura == null) V.sinRanura = t; }
-      else {
-        if (quiere && en && V.sinRanura != null && t - V.sinRanura > SIN_RANURA_MIN) V.entraOla = t;
-        V.sinRanura = null;
+      const V = VISTAS[k], quiere = arr[k] >= 0.002, en = ciudad.enRanura(k);
+      const acompana = V.siempre || t >= V.siempreDesde, lejosAhora = Math.hypot(V.mira[0] - cx, V.mira[1] - cy) > LEJOS_SIEMPRE;
+      if (acompana && lejosAhora) suaves[k] = true;
+      const enOtra = ola && !ola.entraRanura && ola.lados[k] != null;   // (otra ola ya la trae o se la lleva)
+      if (!quiere || enOtra) { V.sinRanura = null; V.pendiente = false; V.entraOla = null; continue; }
+      if (!en && V.entraOla == null && !V.pendiente) { if (V.sinRanura == null) V.sinRanura = t; continue; }
+      if (en && V.sinRanura != null && t - V.sinRanura > SIN_RANURA_MIN && acompana && lejosAhora) { V.pendiente = true; V.pendienteDesde = t; }
+      V.sinRanura = null;
+      if (V.pendiente) {
+        if (ola && !ola.entraRanura) {
+          if (t - V.pendienteDesde < ESPERA_OLA_MAX && t >= V.pendienteDesde) { arr[k] = 0; continue; }   // espera, sin ranura
+          V.pendiente = false; continue;   // (la ola no se libera: entra como antes)
+        }
+        V.pendiente = false; V.entraOla = t;
       }
       if (V.entraOla == null) continue;
-      if (!quiere || t < V.entraOla || t - V.entraOla >= OLA_HUELLA) { V.entraOla = null; continue; }
-      if (ola && !ola.entraRanura) { V.entraOla = t; arr[k] = Math.min(arr[k], 0.0025); entranOla.push(k); continue; }   // espera
       const c = (t - V.entraOla) / OLA_HUELLA;
+      if (c < 0 || c >= 1) { V.entraOla = null; continue; }
+      if (ola && !ola.entraRanura) { V.entraOla = null; continue; }   // (otra ola la tomó a mitad de camino: sigue entera)
       if (!ola) { ola = olaEntre({ radioOla: OLA_VUELVE }, [], V, c, [cx, cy, OJO]); ola.radio = OLA_VUELVE * Math.pow(c, 1.6); ola.entraRanura = true; }
       ola.lados[k] = 1;
-      entranOla.push(k);
     }
   }
   // prioridad para las 6 ranuras del shader (ver setIntensidades en ciudad.js): la intensidad más la cercanía de la
@@ -913,7 +940,15 @@ function intensidades(t) {
   // (las que acompañan al caminante no ceden su ranura, salvo que hayan quedado lejos, a más de LEJOS_SIEMPRE m de él
   // ahora y dentro de PRIO_ADELANTE s: ahí ya no se ven y la dejan a otra que también lo acompaña. Si no, con las 6
   // ranuras tomadas por ésas, la de Cuban Cigars entraba recién encima de su pared, de golpe, ~11:10)
-  const lejos = (k) => Math.min(Math.hypot(VISTAS[k].mira[0] - ax, VISTAS[k].mira[1] - ay), Math.hypot(VISTAS[k].mira[0] - cx, VISTAS[k].mira[1] - cy)) > LEJOS_SIEMPRE;
+  // (salvo que el proyector apunte hacia donde camina y el caminante esté delante de él: el arbolito mira calle abajo y
+  // su foto cubre las fachadas lejanas que él tiene enfrente, aunque la mira haya quedado atrás; al volver de El Cristo
+  // se apagaba, ~4:14. De vuelta hacia el este sí la cede.)
+  const rumboE = e.rumbo * RAD, adelX = Math.sin(rumboE), adelY = Math.cos(rumboE);
+  const miraAdelante = (V) => {
+    const ex = V.mira[0] - V.pos[0], ey = V.mira[1] - V.pos[1], n = Math.hypot(ex, ey) || 1;
+    return (ex * adelX + ey * adelY) / n > 0.7 && (cx - V.pos[0]) * ex + (cy - V.pos[1]) * ey > 0;
+  };
+  const lejos = (k) => !miraAdelante(VISTAS[k]) && Math.min(Math.hypot(VISTAS[k].mira[0] - ax, VISTAS[k].mira[1] - ay), Math.hypot(VISTAS[k].mira[0] - cx, VISTAS[k].mira[1] - cy)) > LEJOS_SIEMPRE;
   const prio = arr.map((a, k) => (a > 0 ? a + 0.6 * ((VISTAS[k].siempre || t >= VISTAS[k].siempreDesde) && !lejos(k) ? 1 : clamp(1 - Math.hypot(VISTAS[k].mira[0] - ax, VISTAS[k].mira[1] - ay) / 200, 0, 1)) : 0));
   // una vista `fondo` va con la huella de su lugar (la foto 1 de Ball & Chain encima de la esquina): con 13 imágenes
   // encendidas quedaba séptima y perdía la ranura justo cuando aparecía la foto 1. Vale lo mismo que la huella.
@@ -924,8 +959,8 @@ function intensidades(t) {
   // (y la imagen del lugar hacia el que se gira tiene ranura desde que empieza el giro: si no, la conseguía a mitad de
   // camino, cuando subía lo suficiente, y aparecía de golpe)
   if (gira) prio[gira.vistas[0].idx] += 2;
-  // (y las que están entrando con su ola, o esperándola: si perdían la ranura volvían a empezar)
-  for (const k of entranOla) if (prio[k] > 0) prio[k] += 1;
+  // (y las de un lugar `encima`, mientras se ven: una vez que entran con la ola no pierden la ranura hasta que se van)
+  for (const p of PROYS) if (p.encima) for (const v of p.vistas) if (prio[v.idx] > 0) prio[v.idx] += 3;
   // (y la vista `fondo` de ese lugar, que se va con esa ola: si perdía la ranura, desaparecía antes de que pasara)
   if (gira) for (const v of gira.vistas) if (v.fondo && prio[v.idx] > 0) prio[v.idx] += 2;
   // (lo mismo, un poco menos, la del próximo lugar al que se va a mirar: si no, la huella de un lugar que ya quedó atrás
@@ -936,7 +971,21 @@ function intensidades(t) {
   for (const p of PASOS) if (prio[p.huella.idx] > 0 && barridoAlPasar(p, t) > 0) prio[p.huella.idx] += 2;
   if (olaGira) for (const s of salen) if (prio[s.idx] > 0 && !VISTAS[s.idx].siempre)
     prio[s.idx] = arr[s.idx] + 0.6 * clamp(1 - Math.hypot(VISTAS[s.idx].mira[0] - cx, VISTAS[s.idx].mira[1] - cy) / 200, 0, 1);
-  return { arr, ola, prio };
+  // las huellas que quedaron ATRÁS del caminante no se ven desde la vereda: su mira está a más de 20 m a sus espaldas
+  // (según hacia dónde camina) y el proyector no apunta hacia adelante (una foto de fachada). Ceden su ranura antes que
+  // las demás, aunque lo acompañen o se estén yendo con la ola de un giro (van al final, después de esos ajustes: si
+  // no, a las 5:30 las de Top Cigars recuperaban la ranura para irse con la ola y le quitaban la suya a la de 1652). Si no, al volver de El Cristo (~4:14) la de Guantanamera, ya pasada, le quitaba la
+  // ranura al arbolito, cuya foto mira calle abajo, y los árboles del fondo desaparecían.
+  {
+    const dx = adelX, dy = adelY;
+    for (let k = 0; k < prio.length; k++) {
+      const V = VISTAS[k];
+      if (!(prio[k] > 0) || arr[k] > REPOSO + 0.01) continue;
+      const ex = V.mira[0] - V.pos[0], ey = V.mira[1] - V.pos[1], n = Math.hypot(ex, ey) || 1;
+      if ((V.mira[0] - cx) * dx + (V.mira[1] - cy) * dy < -20 && (ex * dx + ey * dy) / n < 0.5) prio[k] -= 1;
+    }
+  }
+  return { arr, ola, prio, suaves };
 }
 const polar = (c, m) => ({ th: Math.atan2(c[0] - m[0], c[1] - m[1]) / RAD, r: Math.hypot(c[0] - m[0], c[1] - m[1]), z: c[2] });
 const desdePolar = (m, th, r, z) => [m[0] + r * Math.sin(th * RAD), m[1] + r * Math.cos(th * RAD), z];
@@ -2260,8 +2309,8 @@ function cuadro(ahora) {
       }
       // piso propio y opaco en la vereda (tapa las calles de MapLibre, que a ras del piso titilan al cambiar de tiles)
       ciudad.setSuelo(modo === 'calle' && iniciado ? 1 : 0, dt);
-      const { arr, ola, prio } = intensidades(t);
-      ciudad.setIntensidades(arr, ola, prio);
+      const { arr, ola, prio, suaves } = intensidades(t);
+      ciudad.setIntensidades(arr, ola, prio, suaves);
     }
     if (modo === 'calle') {
       // (pedido: el punto del caminante no sale nunca en cámara en la vereda; queda sólo para las vistas Aérea y Mapa)

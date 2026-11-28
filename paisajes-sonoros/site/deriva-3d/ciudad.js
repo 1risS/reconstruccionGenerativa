@@ -730,6 +730,8 @@ export async function crearCiudad(THREE, { url, local, sol, vistas, alturas = []
   // que están a la vista en ese momento (intensidad > 0) ocupan una RANURA, con su mapa de profundidad.
   // Como las vistas de un mismo lugar se muestran de a una, alcanza con 6 ranuras aunque haya muchas imágenes.
   const ranuras = Array.from({ length: MAX_PROY }, () => ({ p: null, rt: null, sucio: false }));
+  const T_RELEVO = 2;   // s en que una huella lejana se apaga al dejarle su ranura a otra (ver setIntensidades)
+  let relevoT = 0;
   const proys = vistas.map((v, idx) => {
     // alcance del proyector: 900 m, o más si la cámara está lejos (vistas isométricas, panorámica)
     const dist = Math.hypot(v.pos[0] - v.mira[0], v.pos[1] - v.mira[1], v.pos[2] - v.mira[2]);
@@ -1047,22 +1049,39 @@ export async function crearCiudad(THREE, { url, local, sol, vistas, alturas = []
     // prio (opcional): prioridad de cada vista para repartir las ranuras (por defecto, su intensidad). mapa.js le suma
     // la cercanía al caminante: si no, todas las huellas en reposo empatan y las de los lugares que ya quedaron atrás
     // no dejan entrar a las del lugar al que se llega (El Cristo: tres huellas superpuestas).
-    setIntensidades(arr, ola = null, prio = null) {
+    // RELEVO (`suaves`, de mapa.js: las huellas lejanas que acompañan al caminante): si una de ésas, visible, tiene que
+    // dejarle su ranura a otra imagen, no desaparece de golpe: se apaga en T_RELEVO s y recién entonces entra la otra
+    // (el arbolito al volver de El Cristo y después de Top Cigars; pedido de la artista, 28/11). Las demás, como siempre.
+    setIntensidades(arr, ola = null, prio = null, suaves = null) {
       const w = (p) => (p && p.listo ? arr[p.idx] || 0 : 0);
       const pr = (p) => (w(p) ? (prio ? prio[p.idx] : arr[p.idx]) || 0 : 0);
-      for (const r of ranuras) if (r.p && w(r.p) < 0.002) r.p = null;
-      const faltan = proys.filter((p) => w(p) >= 0.002 && !ranuras.some((r) => r.p === p)).sort((a, b) => pr(b) - pr(a));
+      const ahora = performance.now(), dt = relevoT ? Math.min(0.1, Math.max(0, (ahora - relevoT) / 1000)) : 0;
+      relevoT = ahora;
+      const asignar = (r, p) => { r.p = p; r.sucio = true; r.k = 1; }; // el mapa de profundidad y las texturas se cambian en prepasar, antes de dibujar
+      for (const r of ranuras) {
+        if (r.k == null) r.k = 1;
+        if (r.p && w(r.p) < 0.002) { r.p = null; r.k = 1; if (r.sale) { const p = r.sale; r.sale = null; if (w(p) >= 0.002 && !ranuras.some((q) => q.p === p)) asignar(r, p); } }
+        if (!r.sale) continue;
+        r.k -= dt / T_RELEVO;   // (se apaga para dejarle la ranura a otra)
+        if (r.k > 0 && suaves) continue;
+        const p = r.sale; r.sale = null;
+        if (w(p) >= 0.002 && !ranuras.some((q) => q.p === p)) asignar(r, p); else r.k = 1;
+      }
+      const faltan = proys.filter((p) => w(p) >= 0.002 && !ranuras.some((r) => r.p === p || r.sale === p)).sort((a, b) => pr(b) - pr(a));
       for (const p of faltan) {
         let r = ranuras.find((q) => !q.p);
         if (!r) {
-          r = ranuras.reduce((a, b) => (pr(b.p) < pr(a.p) ? b : a));
+          const cand = ranuras.filter((q) => !q.sale);
+          if (!cand.length) continue;
+          r = cand.reduce((a, b) => (pr(b.p) < pr(a.p) ? b : a));
           if (pr(r.p) + 0.05 >= pr(p)) continue;
+          if (suaves && suaves[r.p.idx] && !r.sucio && w(r.p) > 0.02) { r.sale = p; continue; }   // se apaga de a poco
         }
-        r.p = p; r.sucio = true; // el mapa de profundidad y las texturas se cambian en prepasar, antes de dibujar
+        asignar(r, p);
       }
       for (const p of proys) p.int = w(p);
       ranuras.forEach((r, i) => {
-        uniforms.uProyInt.value[i] = r.p && !r.sucio ? w(r.p) : 0;
+        uniforms.uProyInt.value[i] = r.p && !r.sucio ? w(r.p) * (r.k ?? 1) : 0;
         uniforms.uProyLado.value[i] = (ola && r.p && ola.lados[r.p.idx]) || 0;
         uniforms.uProyCapa.value[i] = r.p ? Math.min(3, r.p.v.capa || 0) : 0;
       });
