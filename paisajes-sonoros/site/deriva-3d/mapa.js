@@ -1695,6 +1695,11 @@ function camaraPartida(ahora) {
   let Tf = [E[0] + dv[0] * dT, E[1] + dv[1] * dT, OJO - dT * Math.tan((90 - PITCH_CALLE) * RAD)];
   let fovFin = fovCalle();
   if (pA) {
+    // el encuadre centra la foto en la zona libre, que descuenta el alto del pie (el mayor que se vio: zonaLibre). Al
+    // empezar, el pie todavía no tuvo texto: la partida encuadraba con un pie vacío y, al aparecer el pie de la foto
+    // («Bird's tree · start») un momento después de llegar, la foto subía de golpe. Se carga su texto desde ya (el
+    // pie sigue invisible: sin .visible).
+    pieDeVista(ARRANQUE, 0);
     // llega con el encuadre de la foto (encuadre: el campo de visión que la llena): mirando al rayo que cae en el
     // centro de la pantalla (el eje de la foto, corrido por su centro óptico). Así el giro que sigue (ARRANQUE_GIRO)
     // casi no tiene nada que acomodar y no queda a la vista lo que está fuera de la foto
@@ -1776,6 +1781,16 @@ function panoCuadro(ahora) {
   }
 }
 
+// textos del pie para la vista k del lugar p (no lo muestra: eso lo decide el bucle)
+function pieDeVista(p, k) {
+  const vk = p.vistas[k] || {};   // la vista dominante
+  $('#pie-lugar').textContent = vk.lugar || p.lugar || '';
+  $('#pie-tipo').textContent = vk.tipo || p.tipo || '';
+  // la numeración cuenta sólo las vistas con el mismo nombre (el Domino Park dentro del Tower no suma al Tower)
+  const mismas = p.vistas.filter((v) => (v.lugar || p.lugar) === (vk.lugar || p.lugar)), n = mismas.length;
+  $('#pie-n').textContent = n > 1 ? `viewpoint ${mismas.indexOf(vk) + 1} / ${n}` : '';
+}
+
 // ── bucle de animación ─────────────────────────────
 function cuadro(ahora) {
   const dt = Math.min(0.1, (ahora - ultimoCuadro) / 1000);
@@ -1799,12 +1814,7 @@ function cuadro(ahora) {
 
     // pie del registro
     if (vu && (modo !== 'calle' || vu.w > 0.4)) {
-      const vk = vu.p.vistas[vu.k] || {};   // la vista dominante
-      $('#pie-lugar').textContent = vk.lugar || vu.p.lugar || '';
-      $('#pie-tipo').textContent = vk.tipo || vu.p.tipo || '';
-      // la numeración cuenta sólo las vistas con el mismo nombre (el Domino Park dentro del Tower no suma al Tower)
-      const mismas = vu.p.vistas.filter((v) => (v.lugar || vu.p.lugar) === (vk.lugar || vu.p.lugar)), n = mismas.length;
-      $('#pie-n').textContent = n > 1 ? `viewpoint ${mismas.indexOf(vk) + 1} / ${n}` : '';
+      pieDeVista(vu.p, vu.k);
       elPie.classList.add('visible');
     } else if (mir && mir.i > 0.5 && iniciado) {
       const m = mir.m;
