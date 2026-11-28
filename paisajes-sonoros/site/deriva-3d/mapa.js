@@ -1460,14 +1460,25 @@ function homografiaVista(dibujo, quiero) {
 let rectActual = '';
 // (No se cambia la resolución del canvas durante el vuelo: cada map.setPixelRatio vuelve a crear el buffer y se
 // veía un cuadro en blanco. Con la cámara de dibujo apuntada al centro, la ampliación es mínima.)
+// La homografía se aplica recién cuando MapLibre dibuja (evento render), no al calcularla: jumpTo pide el cuadro para
+// el próximo requestAnimationFrame, y si el canvas se transformaba enseguida, durante un cuadro la homografía nueva
+// quedaba sobre el dibujo viejo. En los vuelos casi no se nota (cambian poco de un cuadro a otro), pero al tocar Start
+// la partida pasa de golpe de sin rectificación a rectificada y la panorámica daba un salto de un cuadro.
+let rectPendiente = null;
 function rectificar(css) {
   css = css || '';
-  if (css === rectActual) return;
-  rectActual = css;
+  if (css === (rectPendiente ?? rectActual)) return;
+  rectPendiente = css;
+  map.triggerRepaint();
+}
+map.on('render', () => {
+  if (rectPendiente === null) return;
+  rectActual = rectPendiente;
+  rectPendiente = null;
   const cv = map.getCanvas();
   cv.style.transformOrigin = '0 0';
-  cv.style.transform = css;
-}
+  cv.style.transform = rectActual;
+});
 
 let etiquetasVisibles = true;
 function etiquetas(ver) {
