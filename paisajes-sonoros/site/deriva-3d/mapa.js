@@ -11,6 +11,16 @@ const M = window.MUESTRA;
 const R = window.RECORRIDO;
 const PARAMS = new URLSearchParams(location.search);
 const EDITAR = PARAMS.has('editar');
+// CICLO: en una computadora (la página dentro de /marco/, o con ?ciclo) la experiencia se comienza una vez con Start y
+// después queda en loop: no hay «start again». Al terminar, la cámara vuelve a la panorámica, se la mira OBSERVA_SEG
+// segundos y vuelve a empezar, sin fin (para detenerla, se cierra la pestaña). Los textos de la pantalla de inicio van
+// al costado, en el marco. (Si igual el navegador no dejara sonar el audio, sigue en silencio hasta un clic o tecla.)
+const CICLO = !EDITAR && (PARAMS.has('ciclo') || (() => {
+  // (el marco reescribe su URL con la de la página: se lo reconoce por el iframe que la contiene)
+  try { return window.top !== window.self && !!window.frameElement && window.frameElement.id === 'pantalla'; } catch (e) { return false; }
+})());
+const OBSERVA_SEG = 8;
+if (CICLO) document.body.classList.add('ciclo');
 // vista de la experiencia: siempre a pie (la cámara se mueve sola); ?vista=aerea o ?vista=general sólo para revisar
 const VISTA = ['calle', 'aerea', 'general'].includes(PARAMS.get('vista')) ? PARAMS.get('vista') : 'calle';
 // calibración guardada en calibracion.js; con ?prueba, además lo que está sin guardar en calibrar.html
@@ -2554,8 +2564,34 @@ $('#pausa').addEventListener('click', alternarPausa);
 audio.addEventListener('pause', marcarPausa);
 audio.addEventListener('play', marcarPausa);
 function play() {
-  audio.play().catch((e) => console.warn(e));
+  audio.play().catch((e) => {
+    // en el ciclo, si al volver a empezar solo el navegador no dejara sonar, sigue en silencio hasta un clic o tecla
+    if (CICLO && e && e.name === 'NotAllowedError' && !audio.muted) { audio.muted = true; esperarGesto(); audio.play().catch((e2) => console.warn(e2)); }
+    else console.warn(e);
+  });
   mantenerPantalla();
+}
+function esperarGesto() {
+  const docs = [document];
+  try { if (window.parent !== window && window.parent.document) docs.push(window.parent.document); } catch (e) {}
+  const sonar = () => {
+    audio.muted = false;
+    if (audio.paused && iniciado && !terminado) audio.play().catch(() => {});
+    for (const d of docs) for (const ev of ['pointerdown', 'keydown']) d.removeEventListener(ev, sonar, true);
+  };
+  for (const d of docs) for (const ev of ['pointerdown', 'keydown']) d.addEventListener(ev, sonar, true);
+}
+// CICLO: al final, después de mirar la panorámica, vuelve a empezar solo (la primera vez se comienza con Start)
+if (CICLO) {
+  let finDesde = 0;
+  setInterval(() => {
+    if (!iniciado || !terminado || epilogo) { finDesde = 0; return; }
+    const ahora = performance.now();
+    if (!finDesde) finDesde = ahora;
+    const mirada = pano && pano.listo && ahora - pano.listo > (OBSERVA_SEG + FUNDIDO_FOTO) * 1000;
+    // (si la panorámica 3D no llega a verse, igual vuelve a empezar)
+    if (!INICIO_PANO || mirada || (pano && pano.fallo) || ahora - finDesde > (VUELTA_SEG + OBSERVA_SEG + 12) * 1000) $('#reiniciar').click();
+  }, 250);
 }
 function ir(t) {
   epilogo = null;

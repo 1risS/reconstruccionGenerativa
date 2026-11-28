@@ -28,11 +28,25 @@
     .nota h1 { font-family: var(--display); font-weight: 400; font-size: 2.2rem; line-height: 1; }
     .nota h1 span { display: block; margin-top: 0.3rem; font-weight: 300; font-size: 1.55rem; line-height: 1.1; }
     .nota p { font-size: 1.15rem; line-height: 1.45; color: var(--texto); }
+    .nota .m-sede { font-size: 1rem; line-height: 1.35; color: var(--texto); }
+    /* la página que se ve en la pantalla (en la deriva: Calle Ocho Walk), como en su pantalla de inicio */
+    .nota .en-pantalla { display: flex; flex-direction: column; gap: 0.35rem; padding-top: 1.1rem; border-top: 1px solid var(--line); }
+    .nota .en-pantalla[hidden] { display: none; }
+    .nota .en-pantalla h2 { font-family: var(--display); font-weight: 400; font-size: 1.7rem; line-height: 1; margin: 0; }
+    .nota .en-pantalla p { font-size: 1rem; line-height: 1.4; }
+    .nota .creditos { font-size: 0.95rem; line-height: 1.4; color: var(--texto); padding-top: 1.1rem; border-top: 1px solid var(--line); }
+    .nota .creditos b { font-weight: 500; color: var(--fg); }
     .qr { display: flex; align-items: center; gap: 1rem; padding-top: 1.1rem; border-top: 1px solid var(--line); }
     .qr[hidden] { display: none; }
     .qr div { flex: none; width: 8.5rem; height: 8.5rem; background: #fff; padding: 0.4rem; border-radius: 6px; }
     .qr svg { display: block; width: 100%; height: 100%; }
     .qr p { font-size: 1.05rem; line-height: 1.4; color: var(--texto); }
+    /* ventana baja: la columna se aprieta para que entre entera */
+    @media (max-height: 780px) {
+      .nota { gap: 0.75rem; }
+      .nota .en-pantalla, .nota .creditos, .qr { padding-top: 0.75rem; }
+      .qr div { width: 6.5rem; height: 6.5rem; }
+    }
     /* ventana casi cuadrada: sólo la pantalla */
     @media (max-aspect-ratio: 1 / 1) { .nota { display: none; } }
   </style>
@@ -44,8 +58,14 @@
   <aside class="nota">
     <span class="m-artista">Viviana Zargón</span>
     <h1>Little Havana:<br><span>Between the Map and the Territory</span></h1>
+    <p class="m-sede">Miami Photographic Observatory · Aluna Art Foundation</p>
+    <div class="en-pantalla" id="pagina" hidden>
+      <h2 id="pagina-nombre"></h2>
+      <p id="pagina-lugar"></p>
+    </div>
     <p>This work is made for vertical screens. On a computer it shows the same framing the audience will see on a vertical, full-screen display.</p>
     <p>Headphones recommended.</p>
+    <p class="creditos">Web &amp; 3D development: <b>Iris Saladino</b></p>
     <div class="qr" id="qr" hidden>
       <div id="qr-img"></div>
       <p>To view it on your phone, point your camera at this code.</p>
@@ -70,6 +90,13 @@
         if (l.origin !== location.origin) return;
         history.replaceState(null, '', l.pathname + l.search + l.hash);
         document.title = frame.contentDocument.title || document.title;
+        // nombre y recorrido de la página (los mismos de su pantalla de inicio, que en la computadora no se ve)
+        const d = frame.contentDocument, nombre = d.querySelector('.sitio .nombre'), lugar = d.querySelector('.sitio .lugar');
+        const ver = (n) => (n && n.textContent.trim()) || '';
+        document.getElementById('pagina-nombre').textContent = ver(nombre);
+        document.getElementById('pagina-lugar').textContent = ver(lugar);
+        // (sólo en la deriva, que en el marco no muestra su pantalla de inicio: las demás páginas ya lo muestran)
+        document.getElementById('pagina').hidden = !ver(nombre) || !d.body.classList.contains('ciclo');
         dibujarQR(location.href);
       } catch (e) {}
     }

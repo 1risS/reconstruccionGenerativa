@@ -32,6 +32,10 @@ button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent
 .inicio .nombre { font-size: clamp(1.7rem, 7.5vw, 2.3rem); line-height: 1; }
 .inicio .lugar { max-width: 22rem; line-height: 1.4; font-size: 0.95rem; }
 .inicio.oculto { opacity: 0; pointer-events: none; }
+/* ciclo (computadora, ver CICLO en mapa.js): los textos van en el marco; quedan la línea de carga y Start, y no hay
+   «start again» (vuelve a empezar solo) */
+body.ciclo .inicio { background: none; justify-content: flex-end; }
+body.ciclo .inicio .muestra, body.ciclo .inicio .sitio, body.ciclo .inicio .aviso, body.ciclo .reiniciar { display: none; }
 /* con la panorámica detrás: el velo de papel queda arriba (título, sobre el cielo) y abajo (botón), y en el medio
    se ve la ciudad. En una pantalla apaisada y baja el texto ocupa casi todo: el velo se mantiene más parejo. */
 body.con-pano .inicio {
