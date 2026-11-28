@@ -20,7 +20,7 @@ site/                 ← lo que se publica (sitio estático, sin build)
   audio/*.m4a         ← generados desde ../audios/*.WAV
   <punto>/index.html  ← una página por QR
 scripts/
-  convertir-audios.sh ← WAV → AAC 160k (.m4a)
+  convertir-audios.sh ← WAV → AAC 160k (.m4a), con fundido de entrada (3 s) y de salida (5 s)
   generar-qrs.mjs     ← QR en SVG (imprenta) + PNG + hoja.html imprimible
   servidor-local.mjs  ← prueba en la wifi local
 qrs/                  ← QR definitivos
