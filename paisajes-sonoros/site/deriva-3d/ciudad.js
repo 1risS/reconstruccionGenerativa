@@ -654,6 +654,11 @@ export async function crearCiudad(THREE, { url, local, sol, vistas, alturas = []
     const todos = contorno.concat(...huecos);
     for (const tri of THREE.ShapeUtils.triangulateShape(contorno, huecos))
       for (const k of tri) vert(todos[k].x, todos[k].y, h, [0, 0, 1], [0, 0, h, mh], [tono, 1, 0, 0]);
+    // cielorraso: un volumen que no arranca del piso (un alero, como el de Los Montaditos) se ve también desde abajo,
+    // y ahí recibe la foto (el techo del patio)
+    if (mh > 0.01)
+      for (const tri of THREE.ShapeUtils.triangulateShape(contorno, huecos))
+        for (const k of [tri[0], tri[2], tri[1]]) vert(todos[k].x, todos[k].y, mh, [0, 0, -1], [0, 0, h, mh], [tono, 1, 0, 0]);
   }
 
   const geo = new THREE.BufferGeometry();

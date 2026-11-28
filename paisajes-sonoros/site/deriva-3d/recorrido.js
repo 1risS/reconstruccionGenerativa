@@ -59,13 +59,14 @@
 //                donde se tomó). Para grandes angulares que desde su punto de vista no entran con márgenes en un celular
 //                vertical. Lo que está a la distancia de la mira (la pared) se ve igual, más chico; el piso, un poco
 //                más corto.
-//    llega     → (opcional) 'fundido': no se vuela desde la vista anterior. Ésta se apaga, la cámara corta a oscuras
-//                y la nueva se enciende ya recompuesta (2,4 s en vez de 6). Para cuando el vuelo sólo muestra mapa vacío.
+//    traslado  → (opcional) segundos del vuelo desde la vista anterior hasta ésta (por defecto, el del lugar o 6).
+//                Siempre se llega volando al punto de vista: nunca con un fundido entre las dos imágenes.
 //  desdeLejos  → (opcional) true: la huella se ve desde lejos (no espera a que el caminante se acerque) y va una capa
 //                por encima de las demás imágenes (p. ej. sobre la foto del arranque mientras la cámara camina).
 //  fondo       → (opcional, en una vista) true: mientras la cámara está con el caminante, esa imagen queda como textura
 //                en las paredes, DEBAJO de las demás vistas del lugar (la huella va encima). Cuando la cámara sale hacia
 //                un punto de vista se apaga: ahí se ve sólo la foto que se está por mirar (Ball & Chain: la esquina).
+//                Va encima de las huellas de los demás lugares, y al girar la cabeza hacia su lugar se va con la ola.
 //  sobre       → (opcional, en una vista) posición de otra vista del lugar (desde 0) que queda encendida DEBAJO mientras
 //                se mira ésta, como su contexto. Hoy no lo usa ningún lugar (en Cubaocho se probó con el detalle de la
 //                entrada y se descartó: todas las observaciones muestran sólo la foto que se está mirando).
@@ -73,12 +74,19 @@
 //  entraConOla → (opcional) true, en un lugar cuya huella es la primera vista: la foto nunca aparece con un fundido.
 //                Antes del travelling no se ve (ni la huella); al empezar, entra con la ola (pixelada, desde el centro hacia
 //                afuera), y si después la huella se apaga mientras se mira otro lugar, vuelve también con la ola.
+//                Con huellas superpuestas (Top Cigars), al empezar entra sólo la primera vista; las demás vuelven al final.
 //  sinFantasma → (opcional) true: en el travelling la ciudad no pasa a Fantasma: queda en Maqueta y se vuelve transparente
 //                a medida que la cámara llega al punto de vista (y opaca al volver al caminante). Va bien con entraConOla.
 //  conCaminante→ (opcional) true: la huella se ve entera desde lejos siempre que la cámara está en los ojos del caminante,
 //                aunque él esté mirando otro lugar (sin subir de capa, a diferencia de desdeLejos).
 //  conCaminanteDesde → (opcional) nombre (`lugar`) de otro lugar: la huella se comporta como conCaminante recién desde
 //                que la cámara vuelve a los ojos del caminante después del travelling de ese lugar (el Tower desde El Pub).
+//  soloTextura → (opcional) true: el lugar no tiene travelling ni pie; su imagen (la huella) queda sólo como textura de
+//                las fachadas, vista desde los ojos del caminante: aparece al acercarse (150–70 m de la mira) y se apaga
+//                mientras la cámara se va a otro punto de vista (la esquina de la 17 Av. mirando al oeste, 17y8.jpeg).
+//  recorre     → (opcional) true: mientras el caminante se acerca, en vez de mirar casi al frente gira la cabeza hacia
+//                la foto pegada en las paredes de su vereda y la recorre con la mirada al caminar (Ciao Havana). Con
+//                soloTextura, sin travelling: la recorre al pasar por delante y en ese tramo sale el pie (1652 SW 8 St).
 //  contempla   → (opcional) segundos quieta en cada punto de vista del lugar (por defecto 6).
 //  traslado    → (opcional) segundos de viaje de una vista a la siguiente (por defecto 6).
 //  arranque    → (opcional, un solo lugar) la foto del punto de partida: la partida (el vuelo desde la panorámica del
@@ -136,7 +144,14 @@ window.RECORRIDO = {
     { t: '7:21.0',                    lat: 25.7656965, lng: -80.2224,    nota: "Tumba'o can be heard" },
     // ── vuelta, vereda sur (hacia el este) ──
     { t: '7:32.7',                    lat: 25.7655569, lng: -80.2224,    nota: 'PNC Bank · corner of 17th Ave.' },
-    { t: '7:58.0',                    lat: 25.765567,  lng: -80.2220658, nota: "Sala'o can be heard" },
+    // (frente a 1652 SW 8 St la línea se aparta 2,5 m hacia el cordón y el paso baja a 1 m/s, para recorrer la foto con
+    // la mirada desde más lejos de la vidriera; a 2,5 m de la pared sólo se veía el vidrio esmerilado. Después sigue a
+    // 1,46 m/s hasta Ciao Havana. La línea original pasaba por lat 25.765567 en Sala'o)
+    { t: '7:46.9',                    lat: 25.7655625, lng: -80.2222134 },
+    { t: '7:52.9',                    lat: 25.7655874, lng: -80.2221336 },
+    { t: '7:58.0',                    lat: 25.7655895, lng: -80.2220658, nota: "Sala'o can be heard" },
+    { t: '8:21.2',                    lat: 25.7655965, lng: -80.2218344 },
+    { t: '8:27.4',                    lat: 25.7655764, lng: -80.2217547 },
     { t: '9:27.2',                    lat: 25.7656026, lng: -80.2208879, nota: 'Ciao Havana' },
     { t: '9:51.2',                    lat: 25.7656092, lng: -80.2206715, nota: "Alfaro's" },
     { t: '10:02.7',                   lat: 25.7656115, lng: -80.2205937, nota: 'El Pub · Calle 8 & 16th Ave.' },
@@ -238,14 +253,14 @@ window.RECORRIDO = {
       // dan casi ortográficas (apertura ≈ 3,4°), con ~22 px de error por las proporciones inventadas por la IA.
       // El teatro está en la vereda sur, en la esquina de la 15 Av. La artista no marcó cuándo se oye. Cierra el
       // recorrido, en la vuelta: el caminante pasa primero frente a Cuban Cigars (más al oeste) y después sigue hacia
-      // la esquina con el teatro adelante. `punto` está pasando Cuban Cigars (~11:51): si Cuban todavía está en el
-      // aire, espera a que vuelva. Sus 5 vistas terminan después del audio: la cámara sigue hasta recomponer la última
-      // y recién entonces sube a la vista general (ver EPÍLOGO en mapa.js). A la ida (cruce de 15 Av., ~1:00) no se
+      // la esquina con el teatro adelante. `punto` (28/11) es la posición del caminante hacia las 11:16, frente a Cuban
+      // Cigars (que ya no tiene travelling): el travelling arranca ~11:08 para que la foto del dron quede recompuesta
+      // justo cuando termina el audio, y de ahí la cámara sube directo a la panorámica (ver EPÍLOGO en mapa.js). A la ida (cruce de 15 Av., ~1:00) no se
       // dispara: ahí se superponía con Guantanamera y Ball & Chain, que ella sí marcó, y los corría 15 s.
       // conCaminanteDesde (pedido 27/11): pasando El Pub, cuando la cámara vuelve a los ojos del caminante, la huella (la
       // foto del dron) ya se ve a la distancia bañando las paredes de la cuadra hasta la 15 Av., entera y no según la
       // cercanía, y queda ahí salvo mientras se mira cada foto desde su punto de vista.
-      lugar: 'Tower Theater', punto: { lat: 25.7656298, lng: -80.21999 }, radio: 4, conCaminanteDesde: 'El Pub Restaurant',
+      lugar: 'Tower Theater', punto: { lat: 25.7656252, lng: -80.2201232 }, radio: 4, conCaminanteDesde: 'El Pub Restaurant',
       vistas: [
         // fachadas/drive/tower-theater/00-_DSC1208.jpg — foto nocturna de la artista desde la 15 Av., apenas al norte de
         // Calle 8, mirando al suroeste: la pared este del teatro (la plaza, el árbol de Navidad) y la marquesina. Sin EXIF:
@@ -259,12 +274,12 @@ window.RECORRIDO = {
         // cenital/tower_hotel_00.jpf — dron a 54,9 m justo encima del teatro, cámara a −90° (datos del XMP de DJI).
         // Rumbo −97,8° = el borde de arriba de la foto mira al oeste (Calle 8 queda a la derecha). Cabeceo 89 y no 90
         // (a 90 el rumbo queda indefinido); la mira está 1 m al oeste del nadir, en la dirección del eje óptico.
-        // Del diorama a la cenital y de la cenital al diorama de noche no se vuela (llega: 'fundido'): el vuelo sólo
-        // mostraba mapa vacío y un giro brusco al pasar por el nadir.
-        { imagen: 'registros/tower-theatre-cenital-00.webp', tipo: 'overhead aerial photograph', apertura: 73.7, llega: 'fundido',
+        // Del diorama a la cenital y de la cenital al diorama de noche se vuela en 2,4 s (los tiempos que tenían cuando
+        // eran fundidos, que la artista descartó el 28/11: siempre se llega moviendo la cámara al punto anamórfico).
+        { imagen: 'registros/tower-theatre-cenital-00.webp', tipo: 'overhead aerial photograph', apertura: 73.7, traslado: 2.4,
           rumbo: -97.8, cabeceo: 89, giro: 0,
           camara: { lat: 25.7654547, lng: -80.2197256, alt: 54.9 }, mira: { lat: 25.7654535, lng: -80.2197355, alt: 0 } },
-        { imagen: 'registros/tower-theater-diorama-02.webp', tipo: 'AI-generated diorama', isometrica: true, apertura: 40, llega: 'fundido',
+        { imagen: 'registros/tower-theater-diorama-02.webp', tipo: 'AI-generated diorama', isometrica: true, apertura: 40, traslado: 2.4,
           camara: { lat: 25.76546, lng: -80.218962, alt: 72 }, mira: { lat: 25.76546, lng: -80.21966, alt: 4 } },
         // DOMINO PARK (26/11/2026): el parque (Máximo Gómez Park) está enfrente del teatro, cruzando la 15 Av. (esquina SE de
         // Calle 8). El recorrido no pasa por ahí, así que va dentro del cierre del Tower, antes del dron (que sigue siendo la
@@ -338,7 +353,7 @@ window.RECORRIDO = {
       // Por las personas: ≈ 15,6 m de ancho en la pared y las cabezas bien debajo del centro → cámara
       // a 1,6 m inclinada ~8° hacia arriba (el centro de la foto cae a ~4,3 m en la pared).
       // La artista marcó que se oye a las 4:29.5, a la ida (vereda norte, frente a la puerta): se dispara ahí.
-      lugar: 'Top Cigars · Skinny Louie', tipo: 'photograph', punto: { lat: 25.7657638, lng: -80.220608 }, radio: 2,
+      lugar: 'Top Cigars · Skinny Louie', tipo: 'photograph', entraConOla: true, punto: { lat: 25.7657638, lng: -80.220608 }, radio: 2,
       // Desde el 26/11/2026 son dos fotos: primero la de cerca (de día, desde el cordón) y después la de noche desde
       // enfrente. Las dos quedan como huella, superpuestas, la de cerca encima (como El Cristo).
       vistas: [
@@ -367,7 +382,11 @@ window.RECORRIDO = {
       // La artista no marcó cuándo se oye. Se descubre a la VUELTA, por la misma vereda sur: el caminante pasa
       // a ~3 m del punto de la foto hacia las 11:28 (radio 10 para que no se dispare a la ida, desde la
       // vereda norte, que queda a ~14 m). Va antes que el Tower Theater, que está más adelante, en la esquina.
-      lugar: 'Cuban Cigars Corp', tipo: 'photograph', radio: 10,
+      // soloTextura (pedido 28/11): sin travelling. Su travelling (11:29) hacía esperar al del Tower, que terminaba 45 s
+      // después del audio; ahora la foto sólo baña su fachada cuando el caminante pasa y el Tower empieza antes.
+      // conCaminante (pedido 28/11): siempre proyectada en su pared. Antes no conseguía ranura hasta estar encima (las 6
+      // las tenían las huellas que acompañan al caminante) y aparecía de golpe, entera, a ~11:10.
+      lugar: 'Cuban Cigars Corp', tipo: 'photograph', radio: 10, soloTextura: true, conCaminante: true,
       vistas: [
         { imagen: 'registros/cuban-cigars-foto-00.webp', apertura: 62,
           camara: { lat: 25.765658, lng: -80.220001, alt: 1.6 }, mira: { lat: 25.765604, lng: -80.220001, alt: 2 } }
@@ -402,9 +421,10 @@ window.RECORRIDO = {
         // fachadas/drive/guantanamera/Guantanamera.jpg — la misma galería de noche (17/11), con el gran angular (14 mm eq.,
         // 102°). Mismo criterio: la pared del fondo (puertas con las banderas, piso en v ≈ 0,70) en la fachada del volumen;
         // con la cámara horizontal a 1,5 m eso la pone a 4 m de la pared (las puertas dobles dan 1,3 m de ancho).
-        // retroceso: desde su punto de vista, a 4 m de la pared, el gran angular no entraba con márgenes (pedido de la
-        // artista, 27/11): se la mira desde 2 m más atrás.
-        { imagen: 'registros/guantanamera-foto-01.webp', apertura: 102, rumbo: -1.67, cabeceo: 0, giro: 0, retroceso: 2,
+        // retroceso: desde su punto de vista, a 4 m de la pared, el gran angular (126° calibrado) no entraba con márgenes
+        // (pedido de la artista, 27/11): se la mira desde 0,7 m más atrás por su eje, lo justo para que entre. Más atrás,
+        // el piso y los costados (que no están en la pared) la deformaban en un trapecio.
+        { imagen: 'registros/guantanamera-foto-01.webp', apertura: 102, rumbo: -1.67, cabeceo: 0, giro: 0, retroceso: 0.7,
           camara: { lat: 25.7657884, lng: -80.219143, alt: 1.5 }, mira: { lat: 25.765825, lng: -80.2191442, alt: 1.5 } }
       ]
     },
@@ -533,8 +553,9 @@ window.RECORRIDO = {
       // ella lo marcó (lng −80.22095); la escala sale de los autos estacionados → cámara a ~19 m del frente, a 1,6 m,
       // mirando 3,3° hacia arriba (base en v ≈ 0,64). El parapeto de Ciao queda a 5,5 m: es la altura del volumen en
       // calibracion.js → alturas (OSM tenía 15 m); el frontón del Diner sobresale y cae en el cielo.
-      // Se descubre a la vuelta, en la vereda sur, al pasar frente al Diner (~9:11).
-      lugar: 'Ciao Havana · El Cuban Diner', tipo: 'photograph', punto: { lat: 25.7655992, lng: -80.221 }, radio: 4,
+      // Se descubre a la vuelta, en la vereda sur, al pasar frente a Ciao (~9:16). Mientras se acerca, recorre la foto
+      // con la mirada (desde ~9:00, cuando entra a la pared del Diner).
+      lugar: 'Ciao Havana · El Cuban Diner', tipo: 'photograph', recorre: true, punto: { lat: 25.7655992, lng: -80.221 }, radio: 4,
       vistas: [
         { imagen: 'registros/el-cuban-diner-foto-00.webp', apertura: 71.6, rumbo: 180, cabeceo: -3.3, giro: 0,
           camara: { lat: 25.7657528, lng: -80.2210047, alt: 1.6 }, mira: { lat: 25.7655813, lng: -80.2210047, alt: 2.69 } }
@@ -561,22 +582,27 @@ window.RECORRIDO = {
       // volumen de 11 m de frente). iPhone, gran angular (14 mm eq., 102°), de noche, de frente desde la vereda: la vidriera
       // bajo la galería, con la columna del mural a la derecha (oeste). La puerta (0,9 m) da la cámara a 4,1 m del frente,
       // horizontal a 1,3 m (el pie de la vidriera cae en v ≈ 0,67). Rumbo perpendicular al frente del volumen.
-      // Se descubre a la vuelta, al pasar por delante (~8:20).
-      lugar: '1652 SW 8th St', tipo: 'photograph', punto: { lat: 25.7655757, lng: -80.22178 }, radio: 4,
+      // Se ve a la vuelta, al pasar por delante (~8:20). soloTextura + recorre (pedido de la artista, 28/11): no hace
+      // falta mirarla desde su punto de vista (el travelling iba a la puerta esmerilada, sin interés, y mostraba los
+      // edificios vecinos); la mirada la recorre en las paredes de su vereda mientras camina, encendida del todo.
+      lugar: '1652 SW 8th St', tipo: 'photograph', soloTextura: true, recorre: true,
       vistas: [
-        { imagen: 'registros/calle-8-1652-foto-00.webp', apertura: 102, rumbo: 178.5, cabeceo: 0, giro: 0,
+        { imagen: 'registros/calle-8-1652-foto-00.webp', apertura: 102, rumbo: 178.5, cabeceo: 0, giro: 0, profundidad: 10,
           camara: { lat: 25.765592, lng: -80.22178, alt: 1.3 }, mira: { lat: 25.765555, lng: -80.221779, alt: 1.3 } }
       ]
     },
     {
       // fachadas/drive/los-montaditos/IMG_1846.DNG (llegó por Descargas el 27/11/2026) — Los Montaditos, 1643 SW 8 St (el
       // número está en la columna de la izquierda), vereda norte entre la 16 y la 17 Av. iPhone, 24 mm eq. (71,6°), de noche:
-      // de frente entre las dos columnas azules, el escenario y el patio bajo la marquesina, con la barra al fondo. En
-      // edificios.json es el brazo de 7,5 m de frente del volumen en U (lng −80.221986 … −80.222061, frente en lat 25.76576),
-      // justo donde lo marcó la artista (lng −80.2220258). El horizonte (las cabezas de la gente) cae en el centro: cámara
-      // horizontal a 1,5 m. El pie de las columnas (v ≈ 0,9) da la cámara a ~3,5 m de su frente; los fuegos de la
-      // marquesina, centrados, la ponen sobre el eje del brazo. La foto cubre ~5 m de ancho y ~3,4 m de alto en ese frente.
-      // ⚠ Sin pasar por calibrar.html. Se descubre a la ida, al pasar por delante (~6:50; se oye desde las 6:09).
+      // de frente entre las dos columnas azules, el escenario y el patio bajo la marquesina, con la barra al fondo. Con el
+      // Street View (28/11): las columnas azules y el techo rojo «Alma» son un alero ABIERTO sobre el patio, en la línea
+      // de la vereda, y el bar (1 planta, ~5 m) está 17 m atrás. OSM lo tenía todo como un bloque macizo de 10 m (la foto
+      // quedaba plana en su frente); en edificios.json se separó en: el bar (5 m, frente en lat 25.765914), el alero
+      // (losa de 4 a 5,3 m sobre el brazo de 7,5 m, lng −80.221986 … −80.222061, con cielorraso que recibe la foto) y las
+      // dos columnas (0,66 m, 3,1 m de luz). El horizonte (las cabezas de la gente) cae en el centro: cámara horizontal a
+      // 1,5 m. El pie de las columnas (v ≈ 0,9) da la cámara a ~3,4 m de su frente; las columnas, centradas, la ponen
+      // sobre el eje del alero. Con eso el cielorraso llega al bar en v ≈ 0,38 y el techo del bar queda en v ≈ 0,34,
+      // como en la foto. ⚠ Sin pasar por calibrar.html. Se descubre a la ida, al pasar por delante (~6:50; se oye desde las 6:09).
       lugar: 'Los Montaditos', tipo: 'photograph', punto: { lat: 25.765721, lng: -80.222025 }, radio: 4,
       vistas: [
         { imagen: 'registros/los-montaditos-foto-00.webp', apertura: 71.6, rumbo: 0, cabeceo: 0, giro: 0,
@@ -595,10 +621,32 @@ window.RECORRIDO = {
       // cordón norte, al oeste de la 17 Av. (frente al Starbucks): de ahí la foto baña la esquina y las dos veredas hacia
       // atrás. ⚠ Sin pasar por calibrar.html.
       // Se dispara en el cruce de la Calle 8 en la esquina de la 17 Av. (7:19.9), con el caminante todavía en la vereda norte.
-      lugar: 'Calle 8 & 17th Ave.', tipo: 'photograph', punto: { lat: 25.7657097, lng: -80.2224 }, radio: 4,
+      // (La que mira al oeste, desde el mismo cruce, es la siguiente: 17y8.jpeg, sólo como textura.)
+      // conCaminanteDesde (pedido 28/11): la huella baña las paredes de la cuadra entre la 16 y la 17 desde que la cámara
+      // vuelve a los ojos del caminante después de Mr. Cigars. Antes esperaba una ranura del shader y, cuando Mr. Cigars
+      // se la soltaba (~6:16), se prendía de golpe antes de llegar a Los Montaditos.
+      lugar: 'Calle 8 & 17th Ave.', tipo: 'photograph', punto: { lat: 25.7657097, lng: -80.2224 }, radio: 4, conCaminanteDesde: 'Mr. Cigars',
       vistas: [
         { imagen: 'registros/esquina-17-foto-00.webp', apertura: 72, rumbo: 88.32, cabeceo: 1.76, giro: 0, profundidad: 40,
           camara: { lat: 25.76568, lng: -80.222655, alt: 1.5 }, mira: { lat: 25.7656905, lng: -80.2222564, alt: 0.27 } }
+      ]
+    },
+    {
+      // fachadas/drive/esquina-17/17y8.jpeg (llegó por Descargas el 28/11/2026) — la Calle 8 desde el cruce de la 17 Av.,
+      // al atardecer, mirando al OESTE (hacia la 18, la 19…): a la izquierda el U Gas de la esquina SO (las flores), a la
+      // derecha el Starbucks de la esquina NO (la torre con el reloj); los autos vienen de frente. Sin EXIF: 4160 × 3120,
+      // apertura de un 24 mm eq. (72°). Ingeniería inversa: el punto de fuga de las líneas de carril (u ≈ 0,499,
+      // v ≈ 0,515) da el rumbo (268,2°: 0,12° a la derecha del eje de la calle) y 0,94° hacia arriba; el horizonte corta
+      // los autos a 2/3 de su alto (cámara a ~1,3 m); el cruce peatonal del otro lado de la 17 (v ≈ 0,57) la pone a ~21 m
+      // de él, sobre el cruce del lado este (donde cruza el caminante), y el borde del Starbucks (u ≈ 0,69) en el medio de
+      // la calzada. ⚠ Sin pasar por calibrar.html.
+      // soloTextura (pedido de la artista, 28/11): sin travelling; sólo se ve desde los ojos del caminante, como textura de
+      // los edificios de la Calle 8 más allá de la 17 (nunca entera desde su punto de vista).
+      // conCaminanteDesde: entera en las fachadas desde que el caminante sigue camino después de Top Cigars (~200 m antes).
+      lugar: 'Calle 8 & 17th Ave. (west)', tipo: 'photograph', soloTextura: true, conCaminanteDesde: 'Top Cigars · Skinny Louie',
+      vistas: [
+        { imagen: 'registros/esquina-17-oeste-00.webp', apertura: 72, rumbo: 268.2, cabeceo: -0.94, giro: 0, profundidad: 40,
+          camara: { lat: 25.765651, lng: -80.2224, alt: 1.3 }, mira: { lat: 25.7656397, lng: -80.2227987, alt: 1.96 } }
       ]
     }
   ]

@@ -198,27 +198,35 @@ body.modo-calle .vineta { opacity: 1; }
 .pie span { font-size: 0.85rem; color: var(--muted); }
 .pie #pie-n:empty { display: none; }
 
+/* el final ocupa el mismo lugar que la pantalla de inicio: el botón queda exactamente donde estaba Start
+   (mapa.js mide el Start al comenzar y guarda en --fin-abajo su distancia al borde de abajo) y el texto encima.
+   La ubicación no depende de body.pano-final: al volver a empezar sólo se desvanece, sin saltos. */
 .fin {
-  position: fixed; z-index: 4; left: 0; right: 0; top: 38%; text-align: center; pointer-events: none;
+  position: fixed; z-index: 4; inset: 0; pointer-events: none;
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 1.1rem;
+  padding: 0 1.5rem var(--fin-abajo, max(6rem, calc(env(safe-area-inset-bottom) + 4rem)));
+  text-align: center;
   font-family: var(--display); font-weight: 300; font-style: italic; font-size: 1.8rem; color: var(--fg);
   text-shadow: 0 0 24px var(--halo);
-  opacity: 0; transition: opacity 2s;
+  opacity: 0; transition: opacity 0.8s;
 }
-.fin.visible { opacity: 1; }
-.fin p { margin: 0; }
+.fin.visible { opacity: 1; transition: opacity 2s; }
+.fin p { margin: 0; position: relative; }
+/* sobre la panorámica del final: el mismo velo de papel de abajo que tiene el inicio */
+.fin::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; opacity: 0; transition: opacity 1.5s;
+  background: linear-gradient(to bottom, rgba(234,234,234,0) 62%, rgba(234,234,234,0.9) 100%);
+}
+body.pano-final .fin::before { opacity: 1; }
 .reiniciar {
-  margin-top: 1.1rem; display: inline-flex; align-items: center; gap: 0.5rem;
-  height: 2.6rem; padding: 0 1.2rem; border-radius: 999px; cursor: pointer;
+  position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 0.55rem;
+  min-width: 13rem; height: 3.4rem; padding: 0 2rem; border-radius: 999px; cursor: pointer;
   border: 1px solid var(--accent); background: var(--panel); color: var(--accent);
-  font-family: var(--display); font-weight: 500; font-style: normal; font-size: 1.05rem; text-shadow: none;
+  font-family: var(--display); font-weight: 500; font-style: normal; font-size: 1.35rem; letter-spacing: 0.01em;
+  text-shadow: none;
 }
-.reiniciar svg { width: 1.1rem; height: 1.1rem; fill: currentColor; }
+.reiniciar svg { width: 1.25rem; height: 1.25rem; fill: currentColor; }
 .fin.visible .reiniciar { pointer-events: auto; }
-/* sobre la panorámica del final: arriba, en el cielo, con un velo de papel */
-body.pano-final .fin {
-  top: 0; padding: calc(max(1.5rem, env(safe-area-inset-top)) + 16vh) 1.5rem 7rem;
-  background: linear-gradient(rgba(234,234,234,0.88), rgba(234,234,234,0.6) 65%, rgba(234,234,234,0));
-}
 
 /* ── interfaz: sólo durante el recorrido, y oculta hasta que se aprieta H (mapa.js pone body.ui-visible; la H la muestra y la oculta).
    En la panorámica, la partida, la vuelta y el final no se ve: al final quedan sólo «fin del recorrido» y el botón.

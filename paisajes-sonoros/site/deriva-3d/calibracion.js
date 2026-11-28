@@ -498,7 +498,7 @@ window.CALIBRACION = {
       },
       "mira": {
         "lat": 25.7657642,
-        "lng": -80.2185414,
+        "lng": -80.2185413,
         "alt": 2.09
       },
       "rumbo": -91.571,
@@ -640,6 +640,59 @@ window.CALIBRACION = {
       "centro": [
         0,
         -0.0064
+      ],
+      "pares": []
+    },
+    "registros/los-montaditos-foto-00.webp": {
+      "camara": {
+        "lat": 25.7657394,
+        "lng": -80.2220279,
+        "alt": 1.04
+      },
+      "mira": {
+        "lat": 25.7664535,
+        "lng": -80.2219617,
+        "alt": 8.19
+      },
+      "rumbo": 4.688,
+      "cabeceo": -0.314,
+      "giro": 0.984,
+      "apertura": 77.527,
+      "centro": [
+        0,
+        -0.1398
+      ],
+      "pares": [
+        {
+          "lat": 25.7656327,
+          "lng": -80.2215577,
+          "alt": 0
+        },
+        {
+          "lat": 25.765729,
+          "lng": -80.2220351,
+          "alt": 0
+        }
+      ]
+    },
+    "registros/esquina-17-oeste-00.webp": {
+      "camara": {
+        "lat": 25.7656231,
+        "lng": -80.2222656,
+        "alt": 1.3
+      },
+      "mira": {
+        "lat": 25.7656175,
+        "lng": -80.2230644,
+        "alt": 2.1
+      },
+      "rumbo": 269.586,
+      "cabeceo": 1.257,
+      "giro": -0.123,
+      "apertura": 52.834,
+      "centro": [
+        0.0009,
+        -0.0858
       ],
       "pares": []
     }
