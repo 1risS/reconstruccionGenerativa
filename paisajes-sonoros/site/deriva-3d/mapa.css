@@ -35,7 +35,7 @@ button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent
 /* ciclo (computadora, ver CICLO en mapa.js): los textos van en el marco; quedan la línea de carga y Start, y no hay
    «start again» (vuelve a empezar solo) */
 body.ciclo .inicio { background: none; justify-content: flex-end; }
-body.ciclo .inicio .muestra, body.ciclo .inicio .sitio, body.ciclo .inicio .aviso, body.ciclo .reiniciar { display: none; }
+body.ciclo .inicio .muestra, body.ciclo .inicio .sitio, body.ciclo .inicio .aviso, body.ciclo .fin { display: none; }
 /* con la panorámica detrás: el velo de papel queda arriba (título, sobre el cielo) y abajo (botón), y en el medio
    se ve la ciudad. En una pantalla apaisada y baja el texto ocupa casi todo: el velo se mantiene más parejo. */
 body.con-pano .inicio {
@@ -215,7 +215,6 @@ body.modo-calle .vineta { opacity: 1; }
   opacity: 0; transition: opacity 0.8s;
 }
 .fin.visible { opacity: 1; transition: opacity 2s; }
-.fin p { margin: 0; position: relative; }
 /* sobre la panorámica del final: el mismo velo de papel de abajo que tiene el inicio */
 .fin::before {
   content: ""; position: absolute; inset: 0; z-index: -1; opacity: 0; transition: opacity 1.5s;
