@@ -369,22 +369,22 @@ window.CALIBRACION = {
     },
     "registros/el-pub-foto-00.webp": {
       "camara": {
-        "lat": 25.7656372,
-        "lng": -80.2204833,
-        "alt": 1
+        "lat": 25.7656149,
+        "lng": -80.220454,
+        "alt": 2.39
       },
       "mira": {
-        "lat": 25.7650879,
-        "lng": -80.2199833,
-        "alt": 13.71
+        "lat": 25.7655827,
+        "lng": -80.220419,
+        "alt": 2.1
       },
-      "rumbo": 79.589,
-      "cabeceo": 2.653,
-      "giro": 5.349,
-      "apertura": 99.468,
+      "rumbo": 135.33,
+      "cabeceo": 3.25,
+      "giro": 0.48,
+      "apertura": 71.6,
       "centro": [
-        -1.5213,
-        -0.6267
+        0,
+        0
       ],
       "pares": []
     },

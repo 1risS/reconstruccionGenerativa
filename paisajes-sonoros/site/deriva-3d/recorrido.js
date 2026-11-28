@@ -55,6 +55,10 @@
 //                para fotos cuya cámara queda dentro o detrás de edificios de la maqueta.
 //    profundidad → (opcional) metros del punto de vista a lo que muestra la foto, sobre su eje: ahí va la mira (para el
 //                vuelo y para la ola). Para fotos calibradas sin pares, a las que calibrar.html les deja la mira a 80 m.
+//    retroceso → (opcional) metros: la foto se mira desde ese tanto más atrás por su eje (se sigue proyectando desde
+//                donde se tomó). Para grandes angulares que desde su punto de vista no entran con márgenes en un celular
+//                vertical. Lo que está a la distancia de la mira (la pared) se ve igual, más chico; el piso, un poco
+//                más corto.
 //    llega     → (opcional) 'fundido': no se vuela desde la vista anterior. Ésta se apaga, la cámara corta a oscuras
 //                y la nueva se enciende ya recompuesta (2,4 s en vez de 6). Para cuando el vuelo sólo muestra mapa vacío.
 //  desdeLejos  → (opcional) true: la huella se ve desde lejos (no espera a que el caminante se acerque) y va una capa
@@ -66,8 +70,15 @@
 //                se mira ésta, como su contexto. Hoy no lo usa ningún lugar (en Cubaocho se probó con el detalle de la
 //                entrada y se descartó: todas las observaciones muestran sólo la foto que se está mirando).
 //  sinHuella   → (opcional) true: el lugar no deja huella; al terminar el travelling su imagen se apaga del todo.
+//  entraConOla → (opcional) true, en un lugar cuya huella es la primera vista: la foto nunca aparece con un fundido.
+//                Antes del travelling no se ve (ni la huella); al empezar, entra con la ola (pixelada, desde el centro hacia
+//                afuera), y si después la huella se apaga mientras se mira otro lugar, vuelve también con la ola.
+//  sinFantasma → (opcional) true: en el travelling la ciudad no pasa a Fantasma: queda en Maqueta y se vuelve transparente
+//                a medida que la cámara llega al punto de vista (y opaca al volver al caminante). Va bien con entraConOla.
 //  conCaminante→ (opcional) true: la huella se ve entera desde lejos siempre que la cámara está en los ojos del caminante,
 //                aunque él esté mirando otro lugar (sin subir de capa, a diferencia de desdeLejos).
+//  conCaminanteDesde → (opcional) nombre (`lugar`) de otro lugar: la huella se comporta como conCaminante recién desde
+//                que la cámara vuelve a los ojos del caminante después del travelling de ese lugar (el Tower desde El Pub).
 //  contempla   → (opcional) segundos quieta en cada punto de vista del lugar (por defecto 6).
 //  traslado    → (opcional) segundos de viaje de una vista a la siguiente (por defecto 6).
 //  arranque    → (opcional, un solo lugar) la foto del punto de partida: la partida (el vuelo desde la panorámica del
@@ -231,7 +242,10 @@ window.RECORRIDO = {
       // aire, espera a que vuelva. Sus 5 vistas terminan después del audio: la cámara sigue hasta recomponer la última
       // y recién entonces sube a la vista general (ver EPÍLOGO en mapa.js). A la ida (cruce de 15 Av., ~1:00) no se
       // dispara: ahí se superponía con Guantanamera y Ball & Chain, que ella sí marcó, y los corría 15 s.
-      lugar: 'Tower Theater', punto: { lat: 25.7656298, lng: -80.21999 }, radio: 4,
+      // conCaminanteDesde (pedido 27/11): pasando El Pub, cuando la cámara vuelve a los ojos del caminante, la huella (la
+      // foto del dron) ya se ve a la distancia bañando las paredes de la cuadra hasta la 15 Av., entera y no según la
+      // cercanía, y queda ahí salvo mientras se mira cada foto desde su punto de vista.
+      lugar: 'Tower Theater', punto: { lat: 25.7656298, lng: -80.21999 }, radio: 4, conCaminanteDesde: 'El Pub Restaurant',
       vistas: [
         // fachadas/drive/tower-theater/00-_DSC1208.jpg — foto nocturna de la artista desde la 15 Av., apenas al norte de
         // Calle 8, mirando al suroeste: la pared este del teatro (la plaza, el árbol de Navidad) y la marquesina. Sin EXIF:
@@ -388,7 +402,9 @@ window.RECORRIDO = {
         // fachadas/drive/guantanamera/Guantanamera.jpg — la misma galería de noche (17/11), con el gran angular (14 mm eq.,
         // 102°). Mismo criterio: la pared del fondo (puertas con las banderas, piso en v ≈ 0,70) en la fachada del volumen;
         // con la cámara horizontal a 1,5 m eso la pone a 4 m de la pared (las puertas dobles dan 1,3 m de ancho).
-        { imagen: 'registros/guantanamera-foto-01.webp', apertura: 102, rumbo: -1.67, cabeceo: 0, giro: 0,
+        // retroceso: desde su punto de vista, a 4 m de la pared, el gran angular no entraba con márgenes (pedido de la
+        // artista, 27/11): se la mira desde 2 m más atrás.
+        { imagen: 'registros/guantanamera-foto-01.webp', apertura: 102, rumbo: -1.67, cabeceo: 0, giro: 0, retroceso: 2,
           camara: { lat: 25.7657884, lng: -80.219143, alt: 1.5 }, mira: { lat: 25.765825, lng: -80.2191442, alt: 1.5 } }
       ]
     },
@@ -526,16 +542,17 @@ window.RECORRIDO = {
     },
     {
       // fachadas/drive/el-pub-restaurant/Restaurant Pub 1537.jpeg — la ventanita de El Pub (1548), en la esquina de la
-      // 16 Av. (24 mm eq., 71,6°). La pared de la ventanita ES LA OCHAVA (confirmado por la artista): la foto está tomada
-      // de frente a ella, mirando al sureste (136°), con el zócalo horizontal. La arista de la derecha (u ≈ 0,79, detrás del
-      // barril) es la esquina suroeste de la ochava, donde dobla hacia la 16 Av.; el centro de la foto cae sobre la ochava.
-      // En el volumen la ochava mide 5,3 m (algo más que la real): para que la arista y el pie de la pared coincidan con
-      // él, la cámara queda a 4,6 m de la ochava, a 1,5 m de altura (el pie de la pared en v ≈ 0,80). Lente sin desplazar.
+      // 16 Av. (iPhone, 24 mm eq., 71,6°). La pared de la ventanita ES LA OCHAVA (confirmado por la artista): los azulejos
+      // van de u ≈ 0,16 a 0,79, y a los dos lados las fachadas de Calle 8 (izquierda) y de la 16 Av. (derecha, detrás del
+      // barril) se alejan. La cámara se ajustó por mínimos cuadrados para que las cuatro esquinas de la ochava (pie y
+      // borde superior, marcadas por la artista sobre la foto) caigan sobre las del volumen, con la lente real y sin
+      // desplazar: coinciden a 1 px, y la altura de la pared que sale del ajuste (4,97 m) es la del volumen (5 m). La ochava
+      // del volumen es algo más grande que la real, por eso la cámara queda a 2,4 m de altura. Mira 3,2° hacia abajo.
       // Marcada a las 10:02.7.
-      lugar: 'El Pub Restaurant', tipo: 'photograph', punto: { lat: 25.7656115, lng: -80.2205937 }, radio: 4,
+      lugar: 'El Pub Restaurant', tipo: 'photograph', entraConOla: true, sinFantasma: true, punto: { lat: 25.7656115, lng: -80.2205937 }, radio: 4,
       vistas: [
-        { imagen: 'registros/el-pub-foto-00.webp', apertura: 71.6, rumbo: 136.2, cabeceo: 0, giro: 0,
-          camara: { lat: 25.7656044, lng: -80.2204475, alt: 1.5 }, mira: { lat: 25.7655743, lng: -80.2204158, alt: 1.5 } }
+        { imagen: 'registros/el-pub-foto-00.webp', apertura: 71.6, rumbo: 135.33, cabeceo: 3.25, giro: 0.48,
+          camara: { lat: 25.7656149, lng: -80.220454, alt: 2.39 }, mira: { lat: 25.7655827, lng: -80.220419, alt: 2.1 } }
       ]
     },
     {

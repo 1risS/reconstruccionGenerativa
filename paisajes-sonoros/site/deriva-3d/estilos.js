@@ -192,7 +192,9 @@ export function iniciarEstilos(map, ciudad, { fijo = null } = {}) {
   const idPaleta = new URLSearchParams(location.search).get('paleta');
   const maq = maquetaCon(PALETAS.find((p) => p.id === idPaleta) || PALETAS.find((p) => p.id === PALETA_INICIAL));
 
-  const ctl = { actual: fijo ? null : FANTASMA, t: -1, vacio: 0, mezclar };
+  // el mapa base de la maqueta de un solo color, el del papel (ver transparencia en mezclar)
+  const maqLisa = { ...Object.fromEntries(Object.keys(MAQUETA.base).map((k) => [k, hexDe(maq.niebla)])), texto: maq.base.texto };
+  const ctl = { actual: fijo ? null : FANTASMA, t: -1, vacio: 0, transparencia: 0, mezclar };
   // vineta: (sólo en los fundidos) el color de la viñeta, mezclado entre los dos estilos. Si no, la de mapa.css según
   // el tono, que cambia de golpe a mitad del fundido: los bordes de la pantalla saltaban de oscuros a claros en un cuadro.
   function aplicar(est, { cielo = est.cielo, paleta = () => base(est.base), tono = est.tono, vineta = null } = {}) {
@@ -210,14 +212,21 @@ export function iniciarEstilos(map, ciudad, { fijo = null } = {}) {
   }
   // t = 0 Fantasma … 1 Maqueta. vacio: en vez de Fantasma, Vacío (sin mapa base ni horizonte; ver VACIO). También
   // puede ser un número de 0 a 1: el mapa base de Fantasma se funde hacia Vacío (va desapareciendo)
-  function mezclar(t, vacio = 0) {
+  // transparencia (sólo con t = 1): la maqueta, con sus colores, se vuelve transparente hasta dejar sólo la luz de las
+  // imágenes (0 = opaca, 1 = sólo las imágenes). Es el travelling de los lugares `sinFantasma` (El Pub): no pasa a
+  // Fantasma, pero los volúmenes y el piso se desvanecen al acercarse al punto de vista.
+  function mezclar(t, vacio = 0, transparencia = 0) {
     t = Math.max(0, Math.min(1, t));
     vacio = Math.round(Math.max(0, Math.min(1, +vacio)) * 50) / 50;
-    if (vacio !== ctl.vacio) ctl.t = -1;
+    transparencia = t === 1 ? Math.round(Math.max(0, Math.min(1, +transparencia)) * 250) / 250 : 0;
+    if (vacio !== ctl.vacio || transparencia !== ctl.transparencia) ctl.t = -1;
     if (t === ctl.t || (t > 0 && t < 1 && Math.abs(t - ctl.t) < 0.004)) return;
-    ctl.t = t; ctl.vacio = vacio;
+    ctl.t = t; ctl.vacio = vacio; ctl.transparencia = transparencia;
     const F = vacio >= 1 ? VACIO : vacio > 0 ? fantasmaVacio(vacio) : FANTASMA;
     if (t === 0) return aplicar(F);
+    // (el mapa base, calles y manzanas, también se va: se funde al color del papel, el del fondo y la niebla)
+    if (t === 1 && transparencia > 0) return aplicar({ ...maq, id: 'maqueta-transparente', fantasma: transparencia, transparente: true, ocluye: true },
+      { paleta: () => base(maq.base, maqLisa, transparencia) });
     if (t === 1) return aplicar(maq);
     const est = { ...maq, id: 'fundido', fantasma: 1 - t, transparente: true, ocluye: true,
       niebla: mix(F.niebla, maq.niebla, t), tinta: mix(F.tinta, maq.tinta, t),
