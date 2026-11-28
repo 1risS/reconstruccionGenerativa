@@ -739,7 +739,10 @@ export async function crearCiudad(THREE, { url, local, sol, vistas, alturas = []
     // se enciende cuando la cámara está en el punto de vista (desde otro lugar no coincidiría): ver setCamara.
     // En las FOTOS nunca: la reconstrucción tiene que ser sólo la ilusión óptica de la textura vista desde el punto
     // justo (pedido de la artista); una foto plana insertada se delata.
-    const D = dist + 40;
+    // A 5 m detrás de la mira (la fachada): desde el punto de vista el plano y la proyección coinciden, así que da igual
+    // qué tapa a qué. Estaba a 40 m y quedaba más allá del plano lejano de MapLibre (≈ 1235 m desde los dioramas de
+    // Ball & Chain, a ~1200 m de la fachada): se recortaba entero y del diorama se veía sólo lo que cae en los volúmenes.
+    const D = dist + 5;
     p.fondo = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.ShaderMaterial({
       uniforms: { uMapa: { value: vacia }, uOp: { value: 0 } },
       vertexShader: 'varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
@@ -1073,6 +1076,9 @@ export async function crearCiudad(THREE, { url, local, sol, vistas, alturas = []
     // para depurar: qué imagen ocupa cada ranura y con qué intensidad
     cielos: () => proys.filter((p) => p.cielo && p.cielo.visible).map((p) => [p.v.imagen.replace('registros/', ''),
       p.cielo.material.uniforms.uRanura.value.indexOf(1), +p.cielo.material.uniforms.uOp.value.toFixed(2)]),
+    // si la vista k tiene ranura (y ya se está dibujando): mapa.js lo usa para que una imagen que no estaba proyectada
+    // entre con la ola en vez de aparecer de golpe (ver SALEN CON LA OLA)
+    enRanura: (k) => ranuras.some((r) => r.p && r.p.idx === k && !r.sucio),
     ranuras: () => ranuras.map((r, i) => r.p && [r.p.v.imagen.replace('registros/', ''), +uniforms.uProyInt.value[i].toFixed(2)]),
     setRadio(a, b) { uniforms.uRadio.value.set(a, b); },
     // estilo: { indice, niebla, tinta, piso ([r,g,b] tal cual se ven), transparente (la malla se mezcla en vez de tapar),

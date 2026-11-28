@@ -673,6 +673,18 @@ function intensidades(t) {
     if (!ola) ola = olaEntre(gira, [], [], fGira, gira.vistas[0].mira);
     for (const s of salen) if (s.base > 0.002) { arr[s.idx] = s.base * resto(fGira); ola.lados[s.idx] = -1; }
   }
+  // la imagen del lugar hacia el que se gira: si al empezar el giro no estaba proyectada (le faltaba ranura o todavía no
+  // se veía), entra con la misma ola, desde su centro, en vez de aparecer de golpe cuando consigue la ranura
+  for (const p of PROYS) if (p !== gira) p.olaEntraDesde = null;
+  const hGira = gira && gira.huellas.length <= 1 && gira.vistas[0] === gira.huella && !gira.entraConOla ? gira.huella.idx : -1;
+  if (hGira >= 0 && gira.olaEntraDesde !== gira.inicio) {
+    gira.olaEntraDesde = gira.inicio;
+    gira.olaEntra = !!ciudad && !ciudad.enRanura(hGira);
+  }
+  if (hGira >= 0 && gira.olaEntra && (!ola || ola.p === gira)) {
+    if (!ola) ola = olaEntre(gira, [], gira.huella, fGira);
+    ola.lados[hGira] = 1;
+  }
   // vistas `fondo`: sólo mientras la cámara está con el caminante (en los ojos del que recorre la vereda), tenues
   // como una huella y DEBAJO de las demás vistas del lugar (que van en capas más altas). En cuanto la cámara sale hacia
   // un punto de vista se apagan: desde ahí se ve sólo la imagen que se está por mirar (la vista `fondo` misma, si es
@@ -699,6 +711,18 @@ function intensidades(t) {
   // una vista `fondo` va con la huella de su lugar (la foto 1 de Ball & Chain encima de la esquina): con 13 imágenes
   // encendidas quedaba séptima y perdía la ranura justo cuando aparecía la foto 1. Vale lo mismo que la huella.
   for (const p of PROYS) for (const v of p.vistas) if (v.fondo && prio[v.idx] > 0) prio[v.idx] = Math.max(prio[v.idx], prio[p.huella.idx] - 0.001);
+  // las que se van con la ola (SALEN CON LA OLA) miden la cercanía desde donde está el caminante AHORA: son las que lo
+  // rodean, y si pierden la ranura antes de que pase el frente desaparecen de golpe (la esquina de la 17 Av., que ya
+  // quedó atrás del punto adelantado, la perdía con la foto de 1652)
+  // (y la imagen del lugar hacia el que se gira tiene ranura desde que empieza el giro: si no, la conseguía a mitad de
+  // camino, cuando subía lo suficiente, y aparecía de golpe)
+  if (gira) prio[gira.vistas[0].idx] += 2;
+  // (lo mismo, un poco menos, la del próximo lugar al que se va a mirar: si no, la huella de un lugar que ya quedó atrás
+  // le quitaba la ranura a la de 1652 mientras el caminante caminaba hacia ella y desaparecía de golpe, ~7:52)
+  const proximo = PROYS.find((p) => t < p.inicio - p.anticipa);
+  if (proximo && prio[proximo.huella.idx] > 0) prio[proximo.huella.idx] += 1;
+  if (olaGira) for (const s of salen) if (prio[s.idx] > 0 && !VISTAS[s.idx].siempre)
+    prio[s.idx] = arr[s.idx] + 0.6 * clamp(1 - Math.hypot(VISTAS[s.idx].mira[0] - cx, VISTAS[s.idx].mira[1] - cy) / 200, 0, 1);
   return { arr, ola, prio };
 }
 const polar = (c, m) => ({ th: Math.atan2(c[0] - m[0], c[1] - m[1]) / RAD, r: Math.hypot(c[0] - m[0], c[1] - m[1]), z: c[2] });
