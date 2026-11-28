@@ -188,8 +188,8 @@ const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
 const K = [];
 R.puntos.forEach((p) => {
   const t = aSeg(p.t);
-  K.push({ t, lng: p.lng, lat: p.lat, nota: p.nota || '' });
-  if (p.hasta != null) K.push({ t: aSeg(p.hasta), lng: p.lng, lat: p.lat, nota: p.nota || '' });
+  K.push({ t, lng: p.lng, lat: p.lat, nota: p.nota || '', abre: p.abre });
+  if (p.hasta != null) K.push({ t: aSeg(p.hasta), lng: p.lng, lat: p.lat, nota: p.nota || '', abre: p.abre });
 });
 for (let i = 1; i < K.length; i++) if (K[i].t < K[i - 1].t) console.warn('recorrido.js: tiempos fuera de orden en', K[i]);
 
@@ -233,12 +233,14 @@ const mano = (x, y) => (x - EJE.mx) * EJE.n[0] + (y - EJE.my) * EJE.n[1] - EJE.c
 const MIRA_VEREDA = 8;    // grados que la mirada se abre de la dirección de la marcha hacia las fachadas de su vereda:
                           // mira casi siempre al frente; a las paredes sólo en los travellings y en las pausas
 const MIRA_PAUSA = 35;    // hasta dónde gira la cabeza hacia sus fachadas en las pausas (nunca hacia las de enfrente)
-// rumbo de la mirada del caminante: adelante y abierto `abre` grados hacia su vereda (cruzando la calle, sólo adelante)
-function rumboVereda(e, abre = MIRA_VEREDA) {
+// rumbo de la mirada del caminante: adelante y abierto `abre` grados hacia su vereda (cruzando la calle, sólo adelante).
+// Sin `abre`, el del tramo: `abre` del punto donde empieza (recorrido.js) o MIRA_VEREDA. Negativo = hacia la calle
+// (donde la línea va pegada a las fachadas, abrir hacia ellas llenaba media pantalla de pared).
+function rumboVereda(e, abre = K[e.k] && K[e.k].abre != null ? K[e.k].abre : MIRA_VEREDA) {
   const [x, y] = aLocal([e.lng, e.lat]), m = mano(x, y);
   const fachadas = m >= 0 ? EJE.rumboN : EJE.rumboN + 180;
   const w = clamp((Math.abs(m) - 2) / 4, 0, 1);
-  return e.rumbo + clamp(difAng(e.rumbo, fachadas), -abre, abre) * w;
+  return e.rumbo + clamp(difAng(e.rumbo, fachadas), -Math.abs(abre), Math.abs(abre)) * Math.sign(abre) * w;
 }
 
 function estado(t) {

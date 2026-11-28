@@ -8,6 +8,8 @@
 //           Esos tramos se muestran como "pausa · escucha · registro".
 //  lat/lng→ coordenadas (se pueden copiar de Google Maps: clic derecho → primer renglón)
 //  nota   → (opcional) texto que aparece en pantalla mientras se está en ese punto
+//  abre   → (opcional) grados que la mirada se abre hacia las fachadas de su vereda en el tramo que empieza en ese punto
+//           (por defecto 8). Negativo = hacia la calle: para tramos en que la línea va pegada a las paredes.
 //  Entre dos puntos la marcha es en línea recta y a velocidad constante:
 //  para seguir una curva o cruzar la calle, agregar puntos intermedios.
 //
@@ -108,8 +110,10 @@ window.RECORRIDO = {
 
   puntos: [
     // ── ida, vereda norte (hacia el oeste) ──
-    { t: '0:00',                      lat: 25.7658353, lng: -80.2182399, nota: 'Birds · start' },
-    { t: '0:46.7',                    lat: 25.765808,  lng: -80.2191451, nota: 'Guantanamera' },
+    // (los dos primeros, 2 m más hacia el cordón: la línea iba a 1,6–2 m de las fachadas y la cámara se arrastraba
+    // pegada a la pared; ahora va a ~4 m. Y abre −5: abierta hacia las fachadas, la pared llenaba media pantalla)
+    { t: '0:00',                      lat: 25.7658172, lng: -80.2182399, nota: 'Birds · start', abre: -5 },
+    { t: '0:46.7',                    lat: 25.7657899, lng: -80.2191451, nota: 'Guantanamera' },
     { t: '1:57.7',                    lat: 25.7657893, lng: -80.219765,  nota: 'Ball & Chain' },
     { t: '3:58.2',                    lat: 25.7657697, lng: -80.220411,  nota: 'El Cristo Restaurant' },
     { t: '4:29.5',                    lat: 25.7657638, lng: -80.220608,  nota: 'Top Cigars · Skinny Louie' },
