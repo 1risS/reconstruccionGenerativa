@@ -369,22 +369,22 @@ window.CALIBRACION = {
     },
     "registros/el-pub-foto-00.webp": {
       "camara": {
-        "lat": 25.7658981,
-        "lng": -80.2203648,
-        "alt": 1.21
+        "lat": 25.7656372,
+        "lng": -80.2204833,
+        "alt": 1
       },
       "mira": {
-        "lat": 25.7655304,
-        "lng": -80.2210365,
-        "alt": 15.53
+        "lat": 25.7650879,
+        "lng": -80.2199833,
+        "alt": 13.71
       },
-      "rumbo": 178.5,
-      "cabeceo": 0,
-      "giro": -5.432,
-      "apertura": 98.745,
+      "rumbo": 79.589,
+      "cabeceo": 2.653,
+      "giro": 5.349,
+      "apertura": 99.468,
       "centro": [
         -1.5213,
-        -0.2278
+        -0.6267
       ],
       "pares": []
     },
@@ -603,22 +603,22 @@ window.CALIBRACION = {
     },
     "registros/ball-and-chain-esquina-00.webp": {
       "camara": {
-        "lat": 25.7656379,
-        "lng": -80.2194116,
-        "alt": 1.6
+        "lat": 25.7656751,
+        "lng": -80.2194555,
+        "alt": 1.5
       },
       "mira": {
-        "lat": 25.7661024,
-        "lng": -80.2200214,
-        "alt": 3.5
+        "lat": 25.7661876,
+        "lng": -80.2200167,
+        "alt": 2.39
       },
-      "rumbo": -47.054,
-      "cabeceo": -2.531,
-      "giro": 1.676,
+      "rumbo": -44.766,
+      "cabeceo": -0.639,
+      "giro": 3.2,
       "apertura": 52.6,
       "centro": [
-        0.0948,
-        0.0588
+        0,
+        0
       ],
       "pares": []
     },

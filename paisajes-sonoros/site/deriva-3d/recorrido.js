@@ -61,7 +61,8 @@
 //                en las paredes, DEBAJO de las demás vistas del lugar (la huella va encima). Cuando la cámara sale hacia
 //                un punto de vista se apaga: ahí se ve sólo la foto que se está por mirar (Ball & Chain: la esquina).
 //  sobre       → (opcional, en una vista) posición de otra vista del lugar (desde 0) que queda encendida DEBAJO mientras
-//                se mira ésta, como su contexto (Cubaocho: el detalle de la entrada dentro de la foto frontal).
+//                se mira ésta, como su contexto. Hoy no lo usa ningún lugar (en Cubaocho se probó con el detalle de la
+//                entrada y se descartó: todas las observaciones muestran sólo la foto que se está mirando).
 //  sinHuella   → (opcional) true: el lugar no deja huella; al terminar el travelling su imagen se apaga del todo.
 //  conCaminante→ (opcional) true: la huella se ve entera desde lejos siempre que la cámara está en los ojos del caminante,
 //                aunque él esté mirando otro lugar (sin subir de capa, a diferencia de desdeLejos).
@@ -413,9 +414,8 @@ window.RECORRIDO = {
         // su calibración: las cuatro esquinas del vano (1,7 × 2,4 m) caen en el frente del volumen en lng −80.219293 …
         // −80.219276 (el umbral, en el piso, para que la alfombra quede en la vereda). Cámara a 3 m, a 1,3 m de altura,
         // mirando apenas hacia abajo (error ~13 px).
-        // sobre: 0 → mientras se mira el detalle, la foto frontal queda encendida debajo, como su contexto (si no, el
-        // detalle se veía como una foto plana sobre negro).
-        { imagen: 'registros/cubaocho-foto-01.webp', sobre: 0, apertura: 71.6, rumbo: -2.3, cabeceo: 4.65, giro: 0.59,
+        // (sin `sobre`: la foto frontal se apaga mientras se mira el detalle, como en todas las demás observaciones)
+        { imagen: 'registros/cubaocho-foto-01.webp', apertura: 71.6, rumbo: -2.3, cabeceo: 4.65, giro: 0.59,
           camara: { lat: 25.7657919, lng: -80.2192824, alt: 1.31 }, mira: { lat: 25.7658209, lng: -80.2192843, alt: 1.5 } },
         // fachadas/drive/cubaocho/Esquina de cuba 8 1758.jpg — el edificio desde la esquina SO de la 15 Av., de noche
         // (21 mm eq., ≈ 79° en 4:3): se ve la pared que da a la 15 Av. (la de la torre) y el frente sobre la Calle 8, que
@@ -545,6 +545,39 @@ window.RECORRIDO = {
       vistas: [
         { imagen: 'registros/calle-8-1652-foto-00.webp', apertura: 102, rumbo: 178.5, cabeceo: 0, giro: 0,
           camara: { lat: 25.765592, lng: -80.22178, alt: 1.3 }, mira: { lat: 25.765555, lng: -80.221779, alt: 1.3 } }
+      ]
+    },
+    {
+      // fachadas/drive/los-montaditos/IMG_1846.DNG (llegó por Descargas el 27/11/2026) — Los Montaditos, 1643 SW 8 St (el
+      // número está en la columna de la izquierda), vereda norte entre la 16 y la 17 Av. iPhone, 24 mm eq. (71,6°), de noche:
+      // de frente entre las dos columnas azules, el escenario y el patio bajo la marquesina, con la barra al fondo. En
+      // edificios.json es el brazo de 7,5 m de frente del volumen en U (lng −80.221986 … −80.222061, frente en lat 25.76576),
+      // justo donde lo marcó la artista (lng −80.2220258). El horizonte (las cabezas de la gente) cae en el centro: cámara
+      // horizontal a 1,5 m. El pie de las columnas (v ≈ 0,9) da la cámara a ~3,5 m de su frente; los fuegos de la
+      // marquesina, centrados, la ponen sobre el eje del brazo. La foto cubre ~5 m de ancho y ~3,4 m de alto en ese frente.
+      // ⚠ Sin pasar por calibrar.html. Se descubre a la ida, al pasar por delante (~6:50; se oye desde las 6:09).
+      lugar: 'Los Montaditos', tipo: 'photograph', punto: { lat: 25.765721, lng: -80.222025 }, radio: 4,
+      vistas: [
+        { imagen: 'registros/los-montaditos-foto-00.webp', apertura: 71.6, rumbo: 0, cabeceo: 0, giro: 0,
+          camara: { lat: 25.765729, lng: -80.222025, alt: 1.5 }, mira: { lat: 25.765762, lng: -80.222025, alt: 1.5 } }
+      ]
+    },
+    {
+      // fachadas/drive/esquina-17/8y17.jpeg (llegó por Descargas el 27/11/2026) — la Calle 8 desde la esquina de la 17 Av.,
+      // de noche, mirando al ESTE (hacia el comienzo del recorrido): la Calle 8 es mano única hacia el este (los autos se
+      // ven de atrás, con las patentes, que en Florida van sólo atrás). A la izquierda, el Mobil de la esquina NE (1695,
+      // el toldo rayado y la plaza); a la derecha, la vereda sur con los murales y el techo de tejas. Sin EXIF: 4160 × 3120,
+      // apertura de un 24 mm eq. (72°). Ingeniería inversa: el punto de fuga de la calle (líneas de carril y de la
+      // ciclovía, u ≈ 0,497, v ≈ 0,472) da el rumbo (0,24° a la derecha del eje de la calle, 88,1°) y 1,76° hacia abajo;
+      // el borde de arriba y la esquina derecha del toldo rayado (la cara oeste del volumen de 5 m del Mobil, lng
+      // −80.222345) dan la distancia (~31 m) y la distancia al costado (~10 m). Cámara a 1,5 m, en la calle, junto al
+      // cordón norte, al oeste de la 17 Av. (frente al Starbucks): de ahí la foto baña la esquina y las dos veredas hacia
+      // atrás. ⚠ Sin pasar por calibrar.html.
+      // Se dispara en el cruce de la Calle 8 en la esquina de la 17 Av. (7:19.9), con el caminante todavía en la vereda norte.
+      lugar: 'Calle 8 & 17th Ave.', tipo: 'photograph', punto: { lat: 25.7657097, lng: -80.2224 }, radio: 4,
+      vistas: [
+        { imagen: 'registros/esquina-17-foto-00.webp', apertura: 72, rumbo: 88.32, cabeceo: 1.76, giro: 0, profundidad: 40,
+          camara: { lat: 25.76568, lng: -80.222655, alt: 1.5 }, mira: { lat: 25.7656905, lng: -80.2222564, alt: 0.27 } }
       ]
     }
   ]

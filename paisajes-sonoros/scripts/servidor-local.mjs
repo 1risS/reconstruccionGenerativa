@@ -25,7 +25,15 @@ function guardarCalibracion(req, res) {
       // FUSIÓN: la página manda también la calibración de la que partió (`base`). Sólo se aplica lo que cambió respecto de
       // esa base; lo demás queda como está en el archivo. Si no, una página abierta desde antes (o un borrador viejo en
       // localStorage) devolvía las otras vistas a lo que eran cuando se abrió (la esquina de Cubaocho, 27/11).
-      if (c.base && typeof c.base === "object") {
+      // Sin `base` es una página con el código de antes de la fusión (una pestaña abierta desde la mañana del 27/11):
+      // reescribiría el archivo entero con lo que tenía al abrirse. Se rechaza: hay que recargar la página. (Así volvió
+      // a pisarse la esquina de Cubaocho a las 17:16 del 27/11, con el servidor ya reiniciado.)
+      if (!c.base || typeof c.base !== "object") {
+        console.log("calibracion.js NO guardado: la página es vieja (sin base). Recargarla y volver a guardar.");
+        res.writeHead(409, { "Content-Type": "text/plain; charset=utf-8" }).end("Página desactualizada: recargala y volvé a guardar.");
+        return;
+      }
+      {
         const archivo = join(ROOT, "deriva-3d/calibracion.js");
         let actual = { vistas: {}, alturas: [] };
         try {

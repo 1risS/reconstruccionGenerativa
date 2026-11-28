@@ -1,0 +1,9 @@
+- [Sesiones concurrentes](sesiones-concurrentes.md) — otra sesión de Claude puede estar editando: commitear sólo lo propio, deployar desde una copia limpia del commit
+- [Panorámica en la deriva](panoramica-deriva.md) — la foto del dron abre y cierra la deriva 3D; dónde se tomó y por qué hay una segunda ciudad
+- [Usuaria](usuaria.md) — Iris, español rioplatense, pedidos visuales breves; commit/deploy sólo cuando lo pide
+- [Cierre en el Tower y encaje de fotos](tower-cierre.md) — dron última vista; en las fotos nunca la foto 2D plana; techo y vereda tienen que coincidir con el volumen
+- [Fotos de Drive de la artista](fotos-drive-artista.md) — los números en los nombres son del iPhone, no direcciones; sin GPS
+- [Fotos del 26/11](fotos-26-11.md) — arbolito en la partida, El Cristo en capas, Domino Park dentro del Tower, 1652
+- [Paredes con video](paredes-video.md) — prueba de frames del video en las fachadas; respaldo en refs/respaldos/antes-texturas-video
+- [Capturas de la deriva](capturas-deriva.md) — Playwright + Chrome para ver transiciones cuadro a cuadro y medir la cámara
+- [UI para el público en la deriva](ui-publico-deriva.md) — público sólo Start/start again; interfaz con H es de desarrollo; paleta fija Carbón

@@ -9,3 +9,6 @@
 /paisajes-sonoros/site/audio/
 /cenital/
 /panoramica_little_havana.tif
+
+# Python
+__pycache__/

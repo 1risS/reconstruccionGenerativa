@@ -60,13 +60,25 @@ python3 -m venv .venv && .venv/bin/pip install "torch<2.9" "torchaudio<2.9" demu
 .venv/bin/python scripts/versiones-audios.py ../audios/tower_01.WAV
 ```
 
+## Descriptores del audio de la deriva
+
+`scripts/descriptores-audio.py` clasifica un audio cada 5 s con un modelo de AudioSet (pájaros, salsa, colectivos,
+bocinas…) e imprime las etiquetas más probables. Es la base de los textos de `sonidos` en `site/deriva-3d/recorrido.js`,
+que se redactan a mano cruzándolos con los lugares que marcó la artista.
+
+```bash
+.venv/bin/pip install transformers
+.venv/bin/python scripts/descriptores-audio.py ../audios/deriva_calle_8.WAV > clases.txt
+```
+
 ## Prueba de concepto: deriva en mapa 3D (`/deriva-3d/`)
 
 El QR impreso de `/deriva-calle-8/` redirige acá (`site/_redirects`, y `deriva-calle-8/index.html` repite la redirección para el servidor local). Los textos que ve el público están en inglés. Mapa 3D (MapLibre + OpenFreeMap,
 sin claves ni costo) que reproduce el recorrido sincronizado con `deriva_calle_8.m4a`.
 
 - `site/deriva-3d/recorrido.js` ← **puntos del recorrido** (tiempo del audio + coordenadas, `hasta` para las pausas)
-  y **miradas**: tramos en que la cámara gira hacia una fachada y aparece un registro (imágenes en `site/deriva-3d/registros/`)
+  y **miradas**: tramos en que la cámara gira hacia una fachada y aparece un registro (imágenes en `site/deriva-3d/registros/`).
+  **sonidos**: descriptores de lo que se oye, en la nota de arriba entre los momentos marcados (siguen con la tecla H)
 - Vistas: **Calle** (cámara a 1,65 m sobre la vereda; arrastrar = mirar alrededor), **Aérea** (sigue desde arriba), **Mapa** (recorrido completo)
 - Los cuadros sobre las fachadas se dibujan con Three.js dentro del mapa; sin imágenes muestran "material pendiente"
 - `site/deriva-3d/mapa.js`, `mapa.css` ← lógica y estilo

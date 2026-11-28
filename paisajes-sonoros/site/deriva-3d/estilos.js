@@ -101,7 +101,7 @@ function fantasmaVacio(v) {
     base, cielo: mezclarCielo(FANTASMA.cielo, VACIO.cielo, v) };
 }
 
-// PALETAS de la maqueta (menú desplegable arriba a la derecha, sólo durante el recorrido). Misma estructura que la
+// PALETAS de la maqueta (la que se usa es Carbón, PALETA_INICIAL; ?paleta=<id> prueba otra). Misma estructura que la
 // original (tres fachadas: rosa, crema y blanco; techo gris; papel) en tonos cada vez más oscuros. `papel` es el fondo,
 // la niebla y el cielo; el mapa base se oscurece en la misma proporción (cada canal × papel / papel de Yeso).
 // sombra: multiplicador de la cara en sombra. pisoSombra: [r, g, b, fuerza] de la sombra de los edificios en el piso.
@@ -134,7 +134,7 @@ function maquetaCon(p) {
     cielo, muestra: muestraDe(p),
     paleta: { fachadas: p.fachadas.map(hex), techo: hex(p.techo), sombra: p.sombra, pisoSombra: p.pisoSombra } };
 }
-const CLAVE_PALETA = 'deriva-paleta-maqueta';
+const PALETA_INICIAL = 'carbon';
 // color de la viñeta (las mismas de mapa.css → --vineta) de un tono a otro
 const VINETA = { claro: [234, 234, 234, 0.8], oscuro: [10, 8, 8, 0.75] };
 function vinetaEntre(a, b, t) {
@@ -188,10 +188,9 @@ export function iniciarEstilos(map, ciudad, { fijo = null } = {}) {
     }
   }
 
-  // paleta de la maqueta: ?paleta=<id> > la última elegida > Yeso
-  let idPaleta = new URLSearchParams(location.search).get('paleta');
-  if (!idPaleta) try { idPaleta = localStorage.getItem(CLAVE_PALETA); } catch (e) {}
-  let maq = maquetaCon(PALETAS.find((p) => p.id === idPaleta) || PALETAS[0]);
+  // paleta de la maqueta: Carbón (sin menú para cambiarla); ?paleta=<id> para probar otra
+  const idPaleta = new URLSearchParams(location.search).get('paleta');
+  const maq = maquetaCon(PALETAS.find((p) => p.id === idPaleta) || PALETAS.find((p) => p.id === PALETA_INICIAL));
 
   const ctl = { actual: fijo ? null : FANTASMA, t: -1, vacio: 0, mezclar };
   // vineta: (sólo en los fundidos) el color de la viñeta, mezclado entre los dos estilos. Si no, la de mapa.css según
@@ -233,37 +232,7 @@ export function iniciarEstilos(map, ciudad, { fijo = null } = {}) {
     // el fundido pinta el mapa base en cada cuadro: sin la transición propia de MapLibre (300 ms), que lo atrasaría
     try { map.style.stylesheet.transition = { duration: 0, delay: 0 }; } catch (e) {}
     mezclar(0);
-    menuPaletas();
   }
   return ctl;
 
-  // ── menú de paletas (mapa.css: .paletas) ──
-  function menuPaletas() {
-    const nav = document.createElement('nav');
-    nav.className = 'paletas';
-    nav.setAttribute('aria-label', 'Model colors');
-    nav.innerHTML = `<button class="paletas-abrir" aria-expanded="false" aria-controls="paletas-lista"><span></span></button>
-<ul class="paletas-lista" id="paletas-lista" role="radiogroup" aria-label="Model colors" hidden>${PALETAS.map((p) =>
-      `<li><button role="radio" data-paleta="${p.id}" aria-checked="false"><i style="background:${muestraDe(p)}"></i><b>${p.nombre}</b><small>${p.nota}</small></button></li>`).join('')}</ul>`;
-    document.body.appendChild(nav);
-    const abrir = nav.querySelector('.paletas-abrir'), lista = nav.querySelector('.paletas-lista');
-    const mostrar = (ver) => { lista.hidden = !ver; abrir.setAttribute('aria-expanded', ver); };
-    function marcar(p) {
-      abrir.setAttribute('aria-label', `Model colors: ${p.nombre}`);
-      abrir.querySelector('span').style.background = muestraDe(p);
-      nav.querySelectorAll('[data-paleta]').forEach((b) => b.setAttribute('aria-checked', b.dataset.paleta === p.id));
-    }
-    marcar(PALETAS.find((p) => p.id === idPaleta) || PALETAS[0]);
-    abrir.addEventListener('click', () => mostrar(lista.hidden));
-    lista.addEventListener('click', (ev) => {
-      const b = ev.target.closest('[data-paleta]');
-      if (!b) return;
-      const p = PALETAS.find((x) => x.id === b.dataset.paleta);
-      idPaleta = p.id; maq = maquetaCon(p); marcar(p);
-      try { localStorage.setItem(CLAVE_PALETA, p.id); } catch (e) {}
-      const t = ctl.t; ctl.t = -1; mezclar(t, ctl.vacio);   // vuelve a pintar con la paleta nueva
-    });
-    document.addEventListener('pointerdown', (ev) => { if (!nav.contains(ev.target)) mostrar(false); });
-    document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') mostrar(false); });
-  }
 }

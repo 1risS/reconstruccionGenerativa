@@ -3,6 +3,8 @@
 
 Sólo los mensajes de texto (sin salidas de herramientas, pensamiento ni imágenes) y con los emails reemplazados
 por [email]. Reescribe todas las sesiones, así que correrlo de nuevo actualiza las que siguieron.
+También copia la memoria persistente de Claude del proyecto (lo que aprendió entre sesiones) a conversaciones/memoria/:
+para recuperarla en otra máquina, copiar esos archivos a ~/.claude/projects/<ruta del proyecto>/memory/.
 
     python3 conversaciones/exportar.py
 """
@@ -77,8 +79,22 @@ for archivo in sorted(SESIONES.glob('*.jsonl')):
 filas.sort()
 indice = ['# Conversaciones con Claude Code\n',
           'Exportadas de las sesiones de este proyecto: sólo los mensajes (sin las salidas de las herramientas ni las '
-          'imágenes) y con los emails reemplazados por [email]. Para actualizarlas: `python3 conversaciones/exportar.py`.\n',
+          'imágenes) y con los emails reemplazados por [email]. Para actualizarlas: `python3 conversaciones/exportar.py`. '
+          'En [memoria/](memoria/) está la memoria persistente de Claude (lo que aprendió entre sesiones; índice en '
+          '[MEMORY.md](memoria/MEMORY.md)): para recuperarla en otra máquina, copiarla a '
+          '`~/.claude/projects/<ruta del proyecto>/memory/`.\n',
           '| Fecha | Sesión | Empieza con | Mensajes |', '|---|---|---|---|']
 indice += [f'| {f} | [{c}]({n}) | {t} | {k} |' for f, c, n, t, k in filas]
 (AQUI / 'README.md').write_text('\n'.join(indice) + '\n')
+
+# memoria persistente (un hecho por archivo + el índice MEMORY.md)
+MEMORIA = SESIONES / 'memory'
+if MEMORIA.is_dir():
+    destino = AQUI / 'memoria'
+    destino.mkdir(exist_ok=True)
+    for viejo in destino.glob('*.md'):
+        viejo.unlink()
+    for m in sorted(MEMORIA.glob('*.md')):
+        (destino / m.name).write_text(EMAIL.sub('[email]', m.read_text()))
+
 print(f'{len(filas)} sesiones exportadas', file=sys.stderr)
