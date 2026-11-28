@@ -420,6 +420,8 @@ const ARRANQUE_QUIETO = 7;  // segundos quieta en la foto al llegar
 const ARRANQUE_PASO = 3.4;   // metros por segundo con que la cámara camina de la foto hasta alcanzar al caminante
 const ARRANQUE_GIRO = 0.05;  // segundos en que la cámara pasa de la mirada de la partida al eje de la foto (casi nada:
                              // la partida ya llega con el cuadro exacto de la foto)
+const ARRANQUE_MIRADA = 3;   // segundos en que, al echar a andar desde la foto, la mirada pasa del eje de la foto (13,6° hacia
+                             // abajo) a la del caminante: si seguía el peso del travelling (w), miraba el piso media caminata
 const ARRANQUE_FANTASMA = [0.86, 1];   // tramo de la partida en que la maqueta vuelve a Fantasma al llegar a la foto
 let arranqueListo = true;    // false mientras dura la partida que baja a la foto
 if (ARRANQUE) ARRANQUE.orig = { desde: ARRANQUE.desde, inicio: ARRANQUE.inicio, subida: ARRANQUE.subida, bajada: ARRANQUE.bajada, hasta: ARRANQUE.hasta };
@@ -1240,19 +1242,23 @@ function camaraCalle(e, rumboCam, pitchCam, vu) {
   // arranque: de la foto al caminante la cámara camina por donde caminó él (caminoArranque), con el balanceo de sus
   // pasos (los que se oyen). Nada de líneas rectas: cortaban las esquinas de los edificios de la vereda.
   const caminando = vu.p.desdeFoto && !e.enFoto;
+  // peso de la foto en la mirada y el encuadre (rumbo, pitch, giro, campo de visión y centro óptico): w, salvo en la
+  // caminata del arranque, donde pasa a la mirada al frente del caminante en los primeros ARRANQUE_MIRADA segundos
+  // (con w, la cámara seguía media caminata con el cabeceo de la foto: a la altura de los ojos, mirando el piso)
+  const wm = caminando ? w * (1 - suave(clamp((tActual() - (vu.p.hasta - vu.p.bajada)) / ARRANQUE_MIRADA, 0, 1))) : w;
   let rollViaje = 0;
   if (caminando) {
     const { c: cc, u } = caminoArranque(vu.p, V, e);
     c = cc;
     const m = clamp(u * 6, 0, 1);   // (arranca quieta)
     c[2] += (alt - OJO) * m;
-    rollViaje = roll * m - roll * (1 - w);   // (el roll de la vereda ya entra abajo con 1 − w)
+    rollViaje = roll * m - roll * (1 - wm);   // (el roll de la vereda ya entra abajo con 1 − wm)
   }
   // la cabeza ya venía girando hacia el lugar (ANTICIPA): el resto del giro se reparte en la primera mitad del viaje.
   // A la vuelta, en casi toda la vuelta: la cabeza no viene girada hacia donde va el caminante y, concentrado en la
   // última mitad, el giro era un latigazo (157° en 2 s al volver de la esquina de Cubaocho)
   // (parejo sobre el tiempo de la vuelta, no sobre w, que ya viene suavizado: el giro quedaba concentrado en el medio)
-  const fv = vu.baja && !vu.p.desdeFoto ? parejo(clamp(vu.xb, 0, 1)) : suave(clamp(w / 0.5, 0, 1));   // (el arranque, como estaba)
+  const fv = caminando ? wm : vu.baja && !vu.p.desdeFoto ? parejo(clamp(vu.xb, 0, 1)) : suave(clamp(w / 0.5, 0, 1));
   // DOLLY ZOOM hacia las vistas isométricas: en la segunda mitad del viaje la cámara se aleja del lugar por la misma
   // línea (la dirección de la mirada no cambia) y el campo de visión se cierra en la misma proporción. El lugar
   // conserva su tamaño en pantalla mientras la perspectiva se aplana hasta volverse isometría: la ciudad se vuelve
@@ -1267,19 +1273,19 @@ function camaraCalle(e, rumboCam, pitchCam, vu) {
   // la pantalla que se quiere ver (ver encuadre): al llegar, la cámara mira por el eje de la foto, con el campo de
   // visión y el centro óptico que dejan la foto entera y centrada. En el viaje, todo pasa de a poco de la vereda a eso.
   const W = window.innerWidth, H = window.innerHeight;
-  const fc = e.enFoto ? vu.fov : fovCalle(), fovEq = fc + (vu.fov - fc) * w;   // (arranque: ya llegó con el de la foto)
+  const fc = e.enFoto ? vu.fov : fovCalle(), fovEq = fc + (vu.fov - fc) * wm;   // (arranque: ya llegó con el de la foto)
   const quiero = {
     rumbo: rumboCam + giroVuelo(difAng(rumboCam, L.rumbo + vu.dR)) * fv,
     pitch: pitchCam + (L.alto + vu.dP - pitchCam) * fv,      // puede pasar de PITCH_CALLE (fotos al horizonte)
-    giro: roll * (1 - w) + vu.giro * w + rollViaje,
+    giro: roll * (1 - wm) + vu.giro * wm + rollViaje,
     f: (g * H) / 2 / Math.tan((fovEq / 2) * RAD),
-    cx: W * (0.5 + (vu.xp - 0.5) * w), cy: H * (0.5 + (vu.yp - 0.5) * w) + ocCalle(fc) * (1 - w),   // (mirada al frente)
+    cx: W * (0.5 + (vu.xp - 0.5) * wm), cy: H * (0.5 + (vu.yp - 0.5) * wm) + ocCalle(fc) * (1 - wm),   // (mirada al frente)
   };
   // dónde queda el CENTRO DE LA FOTO respecto del centro óptico (encuadre la centra en la zona libre; con un `centro`
   // calibrado grande, como la segunda de Guantanamera, −0,70, están lejos): dibujar() corre la foto, no el centro óptico
   const zl = zonaLibre();
-  quiero.dfx = (W / 2 - W * vu.xp) * w;
-  quiero.dfy = (zl.arriba + zl.alto / 2 - H * vu.yp) * w;
+  quiero.dfx = (W / 2 - W * vu.xp) * wm;
+  quiero.dfy = (zl.arriba + zl.alto / 2 - H * vu.yp) * wm;
   // En el viaje, cuando la cámara pasa cerca de la mira, L.alto da saltos grandes: lo que se corrige por fuera del
   // rango de MapLibre se limita (al llegar, la diferencia es la de la foto: unos pocos grados).
   quiero.pitch = clamp(quiero.pitch, -EXCESO_MAX, PITCH_CALLE + EXCESO_MAX);
