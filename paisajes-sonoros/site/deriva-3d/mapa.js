@@ -2091,8 +2091,13 @@ function play() {
 function ir(t) {
   epilogo = null;
   t = Math.max(0, Math.min(duracion() - 0.1, t));
-  // un salto (anterior, la línea) deja el arranque como un travelling común: la partida ya no está
-  if (ARRANQUE && arranqueListo && ARRANQUE.desdeFoto) prepararArranque(false);
+  // un salto al tramo del arranque (volver al principio con anterior o con la línea) repite la secuencia de Start, sin
+  // el vuelo del dron: la cámara corta al punto de vista de la foto, se queda quieta y camina hasta el caminante. (Antes
+  // quedaba como un travelling común, de los ojos del caminante a la foto y de vuelta, y se veía peor.)
+  // Un salto más adelante deja el arranque como un travelling común: la partida ya no está.
+  const partidaEnCurso = pano && pano.partida && !pano.partida.llega;
+  if (ARRANQUE && iniciado && !partidaEnCurso && t < ARRANQUE.orig.hasta) { prepararArranque(true); reprogramarArranque(t); }
+  else if (ARRANQUE && arranqueListo && ARRANQUE.desdeFoto) prepararArranque(false);
   audio.currentTime = t;
   if (iniciado && audio.paused) play();
   if (modo !== 'calle' && !(modo === 'aerea' && seguir) && !panoActiva()) {
